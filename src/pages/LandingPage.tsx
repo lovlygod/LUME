@@ -99,13 +99,10 @@ const LandingPage = () => {
               {t("landing.cta.login")}
             </Link>
             <div className="flex items-center gap-4 text-xs text-white/60">
-              <a className="hover:text-white" href="https://t.me/" target="_blank" rel="noreferrer">
-                {t("landing.cta.telegram")}
-              </a>
-              <a className="hover:text-white" href="https://github.com/" target="_blank" rel="noreferrer">
+              <a className="hover:text-white" href="https://github.com/lovlygod/LUME" target="_blank" rel="noreferrer">
                 {t("landing.cta.github")}
               </a>
-              <a className="hover:text-white" href="/docs">
+              <a className="hover:text-white" href="https://github.com/lovlygod/LUME/tree/master/docs" target="_blank" rel="noreferrer">
                 {t("landing.cta.docs")}
               </a>
             </div>
