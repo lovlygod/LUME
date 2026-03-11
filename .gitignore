@@ -1,0 +1,20 @@
+.env
+node_modules
+dist
+.DS_Store
+
+# backend
+backend/
+!backend/README.md
+!backend/API.md
+backend/node_modules
+backend/.env
+backend/.env.*
+backend/uploads
+backend/moment-uploads
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

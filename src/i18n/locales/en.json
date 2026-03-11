@@ -1,0 +1,1126 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "search": "Search",
+    "noResults": "No results",
+    "cancel": "Cancel",
+    "save": "Save",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "optional": "Optional"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications",
+    "mark_all_read": "Mark all as read",
+    "new_message": "New message",
+    "reply": "Reply",
+    "mention": "Mention",
+    "reaction": "Reaction",
+    "server_invite": "Server invite",
+    "new": "New notification"
+  },
+  "navigation": {
+    "home": "Home",
+    "explore": "Explore",
+    "messages": "Messages",
+    "profile": "Profile",
+    "verified": "Verified",
+    "settings": "Settings",
+    "logout": "Logout",
+    "login": "Login",
+    "register": "Register"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "enterEmail": "Enter your email",
+    "enterPassword": "Enter your password",
+    "enterName": "Enter your name",
+    "name": "Name",
+    "username": "Username",
+    "chooseUsername": "Choose a username (min 5 chars)",
+    "createPassword": "Create a password",
+    "confirmPasswordPlaceholder": "Confirm your password",
+    "welcomeBack": "Welcome back",
+    "joinNetwork": "Create your node and join the network",
+    "authenticating": "Authenticating",
+    "creatingAccount": "Creating account",
+    "createAccount": "Create Account",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "loginError": "Invalid email or password",
+    "registerError": "Failed to register",
+    "usernameError": "Username must be at least 5 characters and contain only English letters and numbers",
+    "passwordError": "Password must be at least 6 characters",
+    "passwordMismatch": "Passwords do not match",
+    "allFieldsRequired": "All fields are required"
+  },
+  "logout": {
+    "title": "Logout",
+    "confirm": "Are you sure you want to logout? You will need to sign in again to access your account.",
+    "cancel": "Cancel",
+    "loggingOut": "Logging out..."
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your account preferences",
+    "appearance": "Appearance",
+    "theme": "Theme",
+    "themeDescription": "Choose your preferred theme",
+    "dark": "Dark",
+    "light": "Light",
+    "language": "Language",
+    "interfaceLanguage": "Interface Language",
+    "snowEffect": "Snow Effect",
+    "snowEffectDescription": "Animated falling snowflakes in the background",
+    "snowVariant": "Snow style",
+    "snowVariantDescription": "Choose particle style",
+    "snowVariantDots": "Dots",
+    "snowVariantFlakes": "Snowflakes",
+    "snowVariantHearts": "Hearts",
+    "privacy": "Privacy",
+    "postPrivacy": "Post Privacy",
+    "postPrivacyDescription": "Who can see your posts",
+    "messagePrivacy": "Messages",
+    "messagePrivacyDescription": "Who can send you messages",
+    "public": "Public",
+    "followersOnly": "Followers Only",
+    "everyone": "Everyone",
+    "saveChanges": "Save Changes",
+    "saving": "Saving...",
+    "saved": "Settings saved successfully",
+    "saveError": "Failed to save settings",
+    "languageChanged": "Language changed / Язык изменён",
+    "dangerZone": "Danger Zone",
+    "deleteAccount": "Delete Account",
+    "deleteAccountTitle": "Delete Account",
+    "deleteAccountDescription": "Permanently delete your account and all data",
+    "deleteAccountModalSubtitle": "This action cannot be undone",
+    "deleteAccountWarnings": "Warning! This will:",
+    "deleteAccountWarning1": "Delete all your posts and comments",
+    "deleteAccountWarning2": "Delete all your messages and chats",
+    "deleteAccountWarning3": "Delete your profile and followers",
+    "deleteAccountWarning4": "Cannot be undone - account cannot be recovered",
+    "deleteAccountPasswordLabel": "Enter your password",
+    "deleteAccountPasswordPlaceholder": "••••••••",
+    "deleteAccountPasswordTooShort": "Password must be at least 6 characters",
+    "deleteAccountConfirmLabel": "Type DELETE to confirm",
+    "deleteAccountConfirmPlaceholder": "DELETE",
+    "deleteAccountConfirmMismatch": "You must type DELETE to confirm",
+    "deleteAccountSuccess": "Account deleted successfully",
+    "deleteAccountError": "Failed to delete account",
+    "deleting": "Deleting..."
+  },
+  "sessions": {
+    "title": "Active Sessions",
+    "subtitle": "Manage devices where your account is logged in.",
+    "backToSettings": "Back to settings",
+    "logoutAll": "Log out all other sessions",
+    "manage": "Manage sessions",
+    "logoutAllTitle": "Log out of all other devices?",
+    "logoutAllDescription": "You will stay logged in on this device.",
+    "loggingOut": "Logging out...",
+    "currentSession": "Current session",
+    "otherSessions": "Other active sessions",
+    "thisDevice": "This device",
+    "logout": "Logout",
+    "ipLabel": "IP",
+    "locationLabel": "Location",
+    "providerLabel": "Provider",
+    "providerUnknown": "Unknown",
+    "ipUnknown": "Unknown",
+    "locationUnknown": "Unknown location",
+    "lastActiveLabel": "Last active",
+    "lastActiveNow": "now",
+    "lastActiveMinutes": "{count} minutes ago",
+    "lastActiveHours": "{count} hours ago",
+    "lastActiveDays": "{count} days ago",
+    "lastActiveUnknown": "unknown",
+    "terminated": "Session terminated",
+    "terminateError": "Failed to terminate session",
+    "terminatedAll": "Sessions terminated",
+    "terminateAllError": "Failed to terminate sessions",
+    "loadError": "Failed to load sessions",
+    "empty": "No active sessions found"
+  },
+  "profile": {
+    "signals": "Signals",
+    "signal": "Signal",
+    "followers": "followers",
+    "following": "following",
+    "follow": "Follow",
+    "followingLabel": "Following",
+    "message": "Message",
+    "editProfile": "Edit Profile",
+    "name": "Name",
+    "username": "Username",
+    "bio": "Bio",
+    "city": "City",
+    "website": "Website",
+    "joined": "Joined",
+    "noBio": "No bio available",
+    "noSignals": "No signals yet",
+    "firstSignal": "Share your first signal!",
+    "notPosted": "This user has not posted yet",
+    "viewNow": "View now",
+    "pinned": "Pinned",
+    "coverImage": "Cover Image",
+    "changeCover": "Change Cover",
+    "changeAvatar": "Change Avatar",
+    "loadingProfile": "Loading profile...",
+    "profileNotFound": "Profile not found",
+    "profileNotFoundDesc": "The user you're looking for doesn't exist or you don't have permission to view this profile.",
+    "userNotFound": "User not found",
+    "noFollowers": "No followers yet",
+    "noFollowing": "Not following anyone yet"
+  },
+  "messages": {
+    "title": "Messages",
+    "selectChat": "Select a chat",
+    "chooseConversation": "Choose a conversation from the list",
+    "noConversations": "No conversations yet",
+    "sendMessage": "Send a message...",
+    "send": "Send",
+    "sending": "Sending...",
+    "fileUploaded": "File uploaded",
+    "fileUploadError": "Failed to upload file",
+    "messageSent": "Message sent",
+    "messageSendError": "Failed to send message",
+    "messageDeleted": "Message deleted",
+    "deleteForMe": "Delete for me",
+    "deleteForEveryone": "Delete for everyone",
+    "deletedForYou": "Deleted for you",
+    "messageDeletedText": "This message was deleted",
+    "online": "online",
+    "lastSeen": "last seen",
+    "typing": "typing...",
+    "deleteMessageError": "Failed to delete message",
+    "deleteTimeLimit": "Cannot delete message for everyone after 15 minutes",
+    "attachment": "attachment",
+    "attachments": "attachments",
+    "noMessages": "No messages",
+    "startConversation": "Start a conversation",
+    "dropFiles": "Drop files here",
+    "dropFilesHint": "Images and documents up to 25MB",
+    "fileTooLarge": "File \"{filename}\" is too large. Max size: {maxSize}",
+    "fileTypeNotSupported": "File type \"{filename}\" is not supported"
+  },
+  "feed": {
+    "title": "Home",
+    "subtitle": "Your personal feed",
+    "whatIsHappening": "What is happening?",
+    "forYou": "For you",
+    "following": "Following",
+    "recommended": "Recommended",
+    "recommendedSubtitle": "Popular posts this week",
+    "followingSubtitle": "Posts from those you follow",
+    "sendSignal": "Post",
+    "sendingSignal": "Posting...",
+    "signalPlaceholder": "What's new?",
+    "newPosts": "new posts available",
+    "newPost": "new post available",
+    "noSignals": "No posts yet",
+    "firstSignal": "Share your first post!",
+    "refresh": "Refresh",
+    "viewNow": "View now",
+    "justNow": "Just now",
+    "reply": "Reply",
+    "replies": "replies",
+    "resonance": "Resonance",
+    "comments": "Comments",
+    "writeComment": "Write a comment...",
+    "noComments": "No comments yet",
+    "beFirstComment": "Be the first to respond!",
+    "deletePost": "Delete post",
+    "deletePostConfirm": "Are you sure you want to delete this post?",
+    "deletePostSuccess": "Post deleted successfully",
+    "deletePostError": "Failed to delete post",
+    "pinPost": "Pin post",
+    "unpinPost": "Unpin post",
+    "pinPostSuccess": "Post pinned",
+    "unpinPostSuccess": "Post unpinned",
+    "pinPostError": "Failed to pin post",
+    "reportPost": "Report post",
+    "reporting": "Reporting...",
+    "reportSuccess": "Report submitted successfully",
+    "reportError": "Failed to report post",
+    "postDeleted": "Post deleted",
+    "characterLimit": "characters",
+    "imageUploadError": "Failed to upload image"
+  },
+  "explore": {
+    "title": "Explore",
+    "subtitle": "Find users and servers",
+    "searchUsers": "Search users...",
+    "searchServers": "Search servers...",
+    "search": "Search",
+    "trending": "Trending",
+    "trendingSignals": "Trending Signals",
+    "suggestedNodes": "Suggested Nodes",
+    "users": "Users",
+    "servers": "Servers",
+    "noUsersFound": "No users found",
+    "noServersFound": "No servers found",
+    "searching": "Searching...",
+    "noTrendingSignals": "No trending signals yet",
+    "noSuggestedNodes": "No suggested nodes available",
+    "connect": "Connect",
+    "signals": "signals"
+  },
+  "verified": {
+    "title": "Get Verified",
+    "subtitle": "Confirm your status and get an official badge",
+    "bannerAlt": "Verification",
+    "alreadyVerified": "You are already verified!",
+    "requestPending": "Your verification request is pending review.",
+    "requestRejected": "Your verification request was rejected.",
+    "rejectionReason": "Reason",
+    "noReason": "No reason provided",
+    "submittedOn": "Submitted on",
+    "howToGet": "How to Get Verified",
+    "step1": "Create Content About VIPERR",
+    "step1Desc": "Record a short video about our messenger",
+    "step2": "Post on Social Media",
+    "step2Desc": "Share the video on one of the supported platforms",
+    "step3": "Get Views",
+    "step3Desc": "Gain at least 2000 organic views",
+    "step4": "Submit Your Request",
+    "step4Desc": "Send the video link and wait for verification",
+    "platforms": "Supported Platforms",
+    "platformTikTok": "TikTok",
+    "platformTikTokDesc": "Classic short video format",
+    "platformInstagram": "Instagram Reels",
+    "platformInstagramDesc": "Reels on Instagram with #viperr hashtag",
+    "platformYoutube": "YouTube Shorts",
+    "platformYoutubeDesc": "Short videos in Shorts format",
+    "requirements": "Content Requirements",
+    "requirement1": "Must be registered for at least 7 days",
+    "requirement2": "Video must be original content about VIPERR",
+    "requirement3": "Video must get at least 2000 views",
+    "requirement4": "No artificial view inflation or cheating allowed",
+    "requirement5": "Content must comply with platform rules",
+    "reasonLabel": "Why do you want verification and how will you use it?",
+    "reasonPlaceholder": "Explain why you want to be verified and how you plan to use the verified badge...",
+    "platformLabel": "Select Platform",
+    "platformSelect": "Select a platform...",
+    "videoUrlLabel": "Video Link",
+    "tiktokPlaceholder": "https://www.tiktok.com/@your_username/video/...",
+    "instagramPlaceholder": "https://www.instagram.com/reel/...",
+    "youtubePlaceholder": "https://youtube.com/shorts/...",
+    "videoUrlHint": "Must be a valid video URL with at least 2000 views",
+    "submit": "Submit for Verification",
+    "submitting": "Submitting...",
+    "submitSuccess": "Verification request submitted successfully. Please wait for review.",
+    "submitError": "Failed to submit verification request",
+    "verificationStatus": "Verification Status",
+    "verifiedAsCEO": "You are verified as CEO with special badge.",
+    "verifiedAsUser": "You are a verified user with the standard verification badge.",
+    "loading": "Loading..."
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "subtitle": "Manage users and verification",
+    "verificationRequests": "Verification Requests",
+    "users": "Users",
+    "reports": "Reports",
+    "noRequests": "No verification requests to review",
+    "noUsers": "No users found",
+    "noReports": "No post reports",
+    "userInfo": "User Information",
+    "name": "Name",
+    "username": "Username",
+    "email": "Email",
+    "requestId": "Request ID",
+    "submitted": "Submitted",
+    "requestDetails": "Request Details",
+    "status": "Status",
+    "reviewed": "Reviewed",
+    "reviewer": "Reviewer",
+    "tiktokVideo": "TikTok Video",
+    "requestReason": "Request Reason",
+    "reviewNotes": "Review Notes",
+    "reviewNotesPlaceholder": "Add notes about your decision...",
+    "approve": "Approve",
+    "reject": "Reject",
+    "approving": "Approving...",
+    "rejecting": "Rejecting...",
+    "approveSuccess": "Request approved successfully",
+    "rejectSuccess": "Request rejected successfully",
+    "reviewError": "Failed to review request",
+    "deletePost": "Delete post",
+    "dismiss": "Dismiss report",
+    "resolveDeleteSuccess": "Report resolved - post deleted",
+    "resolveDismissSuccess": "Report dismissed",
+    "reviewReportError": "Failed to review report",
+    "reportedPost": "Reported Post",
+    "reportedBy": "Reported by",
+    "postAuthor": "Post author",
+    "reason": "Reason",
+    "postContent": "Post content",
+    "reported": "Reported",
+    "joined": "Joined",
+    "verified": "Verified",
+    "verificationExpiry": "until",
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "resolved": "Resolved"
+  },
+  "notFound": {
+    "title": "404",
+    "subtitle": "Page not found",
+    "description": "The page you are looking for doesn't exist or has been moved.",
+    "returnHome": "Go to homepage"
+  },
+  "legal": {
+    "privacy": {
+      "title": "Privacy Policy",
+      "description": "This policy explains how we collect, use, and protect your information.",
+      "dataCollection": "Data collection and usage",
+      "dataCollectionBody": "We collect the information you provide when you create an account, complete your profile, or contact support. This may include your name, username, email, and profile details. We also collect technical data such as device identifiers, IP address, browser type, and usage logs to keep the service stable and secure.",
+      "cookies": "Cookies and tracking technologies",
+      "cookiesBody": "We use cookies and similar technologies to remember your preferences, keep you signed in, and understand how the platform is used. Some cookies are essential for security and core functionality, while others help us measure performance and improve the experience.",
+      "security": "Security and protection measures",
+      "securityBody": "We apply administrative, technical, and organizational safeguards to protect your data. Access is limited to authorized personnel, and we monitor for suspicious activity. You are responsible for keeping your credentials secure and notifying us about any unauthorized access."
+    },
+    "terms": {
+      "title": "Terms of Service",
+      "description": "These terms govern your access to and use of the platform.",
+      "userResponsibilities": "User responsibilities",
+      "userResponsibilitiesBody": "You agree to provide accurate information, respect other users, and comply with applicable laws. You are responsible for the content you post and for keeping your account credentials confidential.",
+      "prohibitedActivities": "Prohibited activities",
+      "prohibitedActivitiesBody": "You may not use the platform for illegal activity, harassment, spam, malware distribution, or unauthorized access. Attempts to disrupt the service, scrape data, or bypass security measures are prohibited.",
+      "termination": "Account termination",
+      "terminationBody": "We may suspend or terminate accounts that violate these terms, applicable laws, or our community guidelines. You may delete your account at any time. In serious cases, access may be restricted without prior notice."
+    },
+    "cookies": {
+      "title": "Cookie Policy",
+      "description": "Learn how cookies help us deliver essential functionality and improve your experience.",
+      "types": "Types of cookies we use",
+      "typesBody": "We use essential cookies for authentication and security, and functional cookies to remember your settings. These cookies are required for core features such as login, session management, and language preferences.",
+      "analytics": "Analytics and performance",
+      "analyticsBody": "Analytics cookies help us understand usage patterns and improve performance. We use aggregated metrics to evaluate features, troubleshoot issues, and optimize the user experience.",
+      "preferences": "Managing your preferences",
+      "preferencesBody": "You can manage cookie preferences through your browser settings and, where available, platform cookie controls. Disabling certain cookies may affect functionality such as staying signed in or saving preferences."
+    },
+    "links": {
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "cookies": "Cookie Policy"
+    }
+  },
+  "post": {
+    "deleteConfirm": "Are you sure you want to delete this post?",
+    "deleteSuccess": "Post deleted successfully",
+    "deleteError": "Failed to delete post",
+    "reportSuccess": "Report submitted successfully",
+    "reportError": "Failed to report post",
+    "pinSuccess": "Post pinned",
+    "unpinSuccess": "Post unpinned",
+    "pinError": "Failed to pin post",
+    "reply": "Reply",
+    "writeComment": "Write a comment...",
+    "noComments": "No comments yet",
+    "beFirstComment": "Be the first to respond!"
+  },
+  "toast": {
+    "unfollowed": "Unfollowed",
+    "followed": "Followed",
+    "followError": "Failed to follow",
+    "fileUploaded": "File uploaded",
+    "fileUploadError": "Failed to upload file",
+    "messageSent": "Message sent",
+    "messageSendError": "Failed to send message",
+    "messageDeleted": "Message deleted",
+    "messageDeleteError": "Failed to delete message",
+    "deleteTooLate": "Cannot delete message for everyone after 15 minutes",
+    "deleteNotAuthor": "Only the sender can delete a message for everyone",
+    "postDeleted": "Post deleted",
+    "postDeleteError": "Failed to delete post",
+    "reportSubmitted": "Report submitted",
+    "reportError": "Failed to report",
+    "postPinned": "Post pinned",
+    "postUnpinned": "Post unpinned",
+    "postPinError": "Failed to pin post",
+    "settingsSaved": "Settings saved successfully",
+    "settingsSaveError": "Failed to save settings",
+    "languageChanged": "Language changed / Язык изменён",
+    "verificationSubmitted": "Verification request submitted successfully",
+    "verificationError": "Failed to submit verification request",
+    "requestApproved": "Request approved",
+    "requestRejected": "Request rejected",
+    "reviewError": "Failed to review request",
+    "reportResolved": "Report resolved",
+    "reportDismissed": "Report dismissed",
+    "reviewReportError": "Failed to review report",
+    "loadDataError": "Failed to load data",
+    "loadFollowersError": "Failed to load list",
+    "loadVerificationError": "Failed to load user data"
+  },
+  "time": {
+    "justNow": "Just now",
+    "minutesAgo": "{count}m",
+    "hoursAgo": "{count}h",
+    "daysAgo": "{count}d",
+    "online": "online",
+    "lastSeen": "last seen {time}",
+    "typing": "typing..."
+  },
+  "badges": {
+    "verified": "Verified",
+    "developer": "Developer",
+    "ceo": "CEO"
+  },
+  "privacy": {
+    "public": "Public",
+    "followers": "Followers",
+    "private": "Private"
+  },
+  "theme": {
+    "dark": "Dark",
+    "light": "Light",
+    "system": "System"
+  },
+  "servers": {
+    "title": "Servers",
+    "subtitle": "Join communities and connect with people",
+    "create": "Create Server",
+    "createDescription": "Create a new community server for your group or community.",
+    "discover": "Discover",
+    "my": "My Servers",
+    "search": "Search servers...",
+    "noPublic": "No public servers found",
+    "noMy": "You haven't joined any servers yet",
+    "discoverBtn": "Discover Servers",
+    "public": "Public Server",
+    "private": "Private Server",
+    "join": "Join Server",
+    "requestAccess": "Request Access",
+    "leave": "Leave Server",
+    "settings": "Server Settings",
+    "settingsSubtitle": "Manage your server settings",
+    "members": "Manage Members",
+    "membersSubtitle": "Manage roles and permissions for server members",
+    "membersInServer": "{count} members in {server}",
+    "loadingMembers": "Loading members...",
+    "kickConfirm": "Are you sure you want to kick this member?",
+    "channels": "Channels",
+    "createChannel": "Create Channel",
+    "deleteChannel": "Delete Channel",
+    "deleteChannelConfirm": "Are you sure you want to delete {channel}? This action cannot be undone and all messages in this channel will be lost.",
+    "channelNamePlaceholder": "channel-name",
+    "icon": "Server Icon",
+    "iconDesc": "Change your server's profile picture",
+    "uploadIcon": "Upload",
+    "uploading": "Uploading...",
+    "removeIcon": "Remove Icon",
+    "general": "General Settings",
+    "generalDesc": "Update your server information",
+    "name": "Server Name",
+    "namePlaceholder": "My Awesome Server",
+    "description": "Description",
+    "descriptionPlaceholder": "A place for...",
+    "descriptionEmpty": "No description",
+    "username": "Server Username",
+    "save": "Save Changes",
+    "saving": "Saving...",
+    "saved": "Server settings saved",
+    "saveError": "Failed to save settings",
+    "danger": "Danger Zone",
+    "dangerDesc": "Irreversible actions for this server",
+    "delete": "Delete Server",
+    "deleteConfirm": "Are you sure you want to delete this server? This action cannot be undone.",
+    "deleted": "Server deleted",
+    "deleteError": "Failed to delete server",
+    "channelCreated": "Channel created",
+    "channelCreateError": "Failed to create channel",
+    "channelDeleted": "Channel deleted",
+    "channelDeleteError": "Failed to delete channel",
+    "requestPending": "Request Pending",
+    "requestPendingDesc": "Your request to join {server} is awaiting approval from the owner.",
+    "requestRejected": "Request Rejected",
+    "requestRejectedDesc": "Your request to join {server} was rejected by the owner.",
+    "requests": "Requests",
+    "showRequests": "Show",
+    "hideRequests": "Hide",
+    "accept": "Accept",
+    "reject": "Reject",
+    "roleUpdated": "Member role updated",
+    "roleUpdateError": "Failed to update role",
+    "kicked": "Member kicked",
+    "kickError": "Failed to kick member",
+    "iconUploaded": "Icon uploaded",
+    "iconUploadError": "Failed to upload icon",
+    "iconRemoved": "Icon removed",
+    "iconRemoveError": "Failed to remove icon",
+    "ownerOnly": "Only the server owner can access settings",
+    "back": "Back to Server",
+    "noMessages": "No messages yet",
+    "firstMessage": "Be the first to send a message!",
+    "loadingMessages": "Loading messages...",
+    "loadingMessagesError": "Failed to load messages",
+    "messagePlaceholder": "Message #{channel}",
+    "messageSent": "Message sent",
+    "messageSendError": "Failed to send message",
+    "fileUploaded": "File uploaded",
+    "fileUploadError": "Failed to upload file",
+    "messageDeleted": "Message deleted",
+    "messageDeleteError": "Failed to delete message",
+    "deleteTooLate": "Cannot delete message for everyone after 15 minutes",
+    "deleteNotAuthor": "Only the sender can delete a message for everyone",
+    "deleteForMe": "Delete for me",
+    "deleteForEveryone": "Delete for everyone",
+    "deletedText": "Message deleted",
+    "deletedForYou": "Deleted for you",
+    "deleteMessageConfirm": "Are you sure you want to delete this message?",
+    "fileLabel": "File ({size} KB)",
+    "fileSize": "{size} KB",
+    "iconRequired": "Public server requires an icon",
+    "usernameMin": "Username must be at least 5 characters",
+    "nameRequired": "Server name is required",
+    "created": "Server created",
+    "createError": "Failed to create server",
+    "joined": "Joined server",
+    "joinError": "Failed to join server",
+    "left": "Left server",
+    "leaveError": "Failed to leave server",
+    "requestSent": "Request sent",
+    "requestError": "Failed to send request",
+    "loading": "Loading server...",
+    "notFound": "Server not found",
+    "accessDenied": "Access denied",
+    "membersCount": "members",
+    "owner": "Owner",
+    "admin": "Admin",
+    "moderator": "Moderator",
+    "member": "Member",
+    "typeLabel": "Server Type",
+    "typePublicDesc": "Discoverable via username",
+    "typePrivateDesc": "Invite only via link",
+    "usernameHint": "Minimum 5 characters. Users will access via /server/yourname",
+    "creating": "Creating...",
+    "serversHeader": "Servers",
+    "kick": "Kick",
+    "changeRole": "Change Role",
+    "role": "Role",
+    "noMembers": "No members yet"
+  },
+  "landing": {
+    "hero": {
+      "pill": "Next-gen social platform",
+      "title": "LUME — where your signals resonate",
+      "subtitle": "Feed, messages, servers, and search in one fast interface. Control privacy and stay connected."
+    },
+    "cta": {
+      "openFeed": "Open feed",
+      "login": "Sign in",
+      "telegram": "Telegram",
+      "github": "GitHub",
+      "docs": "Docs"
+    },
+    "features": {
+      "feed": {
+        "title": "Feed",
+        "description": "Personal feed with updates, reactions, and posts."
+      },
+      "messages": {
+        "title": "Messages",
+        "description": "Private chats, replies, attachments, and moments in one place."
+      },
+      "servers": {
+        "title": "Servers",
+        "description": "Public and private spaces with channels and roles."
+      },
+      "explore": {
+        "title": "Explore",
+        "description": "Find users and servers with trends and recommendations."
+      },
+      "profile": {
+        "title": "Profile",
+        "description": "Your profile, posts, followers, and settings." 
+      },
+      "verification": {
+        "title": "Verification",
+        "description": "Submit requests and manage verification status."
+      },
+      "comingSoon": "Coming soon"
+    },
+    "links": {
+      "title": "Useful links",
+      "faq": "FAQ",
+      "rules": "Rules",
+      "support": "Support",
+      "status": "Status",
+      "contacts": "Contacts"
+    },
+    "footer": {
+      "copyright": "© 2026 LUME",
+      "tagline": "Feed • Messages • Servers"
+    },
+    "backHome": "Back to home"
+  },
+  "pages": {
+    "faq": {
+      "title": "FAQ",
+      "description": "Answers to common questions about the platform.",
+      "sections": {
+        "section1": {
+          "title": "Account & Access",
+          "content": "Registration takes only a few minutes: provide email, create a password, and confirm details. If access is lost, use recovery and review active sessions. For security, keep a strong password and avoid sharing it."
+        },
+        "section2": {
+          "title": "Feed & Posts",
+          "content": "The feed offers recommended and following views. Publish signals, attach images, and pin important posts on your profile. Comments and resonance help your content reach more people."
+        },
+        "section3": {
+          "title": "Messages & Moments",
+          "content": "Chats support attachments, replies, and ephemeral moments. A moment opens once and is then marked as viewed. If uploads fail, check connectivity and file size limits."
+        }
+      }
+    },
+    "rules": {
+      "title": "Rules",
+      "description": "Core principles for behavior and content on the platform.",
+      "sections": {
+        "section1": {
+          "title": "Respect & Safety",
+          "content": "No threats, harassment, discrimination, doxxing, or sharing personal data without consent. Maintain a respectful tone and report violations when necessary."
+        },
+        "section2": {
+          "title": "Content & Links",
+          "content": "Illegal content, spam, and malicious files are prohibited. Links must be safe and relevant. Adult content must follow platform rules and age restrictions."
+        },
+        "section3": {
+          "title": "Servers & Moderation",
+          "content": "Server owners define community rules. Moderators should act transparently, document decisions, and respond to reports within a reasonable timeframe."
+        }
+      }
+    },
+    "support": {
+      "title": "Support",
+      "description": "Support channels and request workflow.",
+      "sections": {
+        "section1": {
+          "title": "How to reach us",
+          "content": "Describe the issue clearly: what happened, when, and which actions triggered it. Include your username, device, and browser/app version. Screenshots and logs speed up resolution."
+        },
+        "section2": {
+          "title": "Processing stages",
+          "content": "Requests move through: received → in progress → needs info → resolved. We may ask for clarification. Timelines vary by complexity and load."
+        },
+        "section3": {
+          "title": "Account security",
+          "content": "If you suspect compromise, change your password, end active sessions, and review linked devices. Report the suspected time window to support."
+        }
+      }
+    },
+    "contacts": {
+      "title": "Contacts",
+      "description": "Official contacts for the platform team.",
+      "sections": {
+        "section1": {
+          "title": "General inquiries",
+          "content": "Use the official contact channel for general requests and include a clear subject. Replies are handled by priority and queue."
+        },
+        "section2": {
+          "title": "Partnerships",
+          "content": "Share goals, audience, and expected format to help us evaluate partnership proposals quickly."
+        },
+        "section3": {
+          "title": "Press",
+          "content": "For media requests, include outlet, format, deadlines, and the desired comment. We can provide official statements or assets."
+        }
+      }
+    }
+  },
+  "help": {
+    "label": "Help Center",
+    "nav": {
+      "title": "Sections"
+    },
+    "quick": {
+      "title": "Quick actions",
+      "description": "Find the right section or contact us directly.",
+      "support": "Open support",
+      "status": "Check status",
+      "contacts": "Contacts"
+    },
+    "faq": {
+      "title": "FAQ",
+      "subtitle": "Answers to the most common questions.",
+      "updated": "Updated today",
+      "searchLabel": "Search",
+      "searchPlaceholder": "Find an answer…",
+      "popular": "popular",
+      "needHelp": "Need help? Open support →",
+      "empty": "No matches found. Try another query.",
+      "categories": {
+        "account": "Account",
+        "feed": "Feed",
+        "messages": "Messages",
+        "servers": "Servers",
+        "privacy": "Privacy"
+      },
+      "account": {
+        "q1": {
+          "title": "How do I change my email?",
+          "answer": "Update your email in profile settings. You’ll need to confirm the new address.",
+          "bullet1": "Check spam folder",
+          "bullet2": "Confirmation is valid for 24 hours",
+          "bullet3": "New email activates after confirmation",
+          "popular": "true"
+        },
+        "q2": {
+          "title": "I forgot my password. What should I do?",
+          "answer": "Use password reset and follow the email instructions.",
+          "bullet1": "Review active sessions",
+          "bullet2": "Reset available every 15 minutes",
+          "bullet3": "All sessions will end after reset",
+          "popular": "true"
+        },
+        "q3": {
+          "title": "Can I change my username?",
+          "answer": "Yes, with a cooldown period.",
+          "bullet1": "Username must be unique",
+          "bullet2": "Change allowed every 30 days",
+          "bullet3": "Special symbols are restricted",
+          "popular": "false"
+        },
+        "q4": {
+          "title": "How do I delete my account?",
+          "answer": "Account deletion is available in settings and is irreversible.",
+          "bullet1": "Confirm your password",
+          "bullet2": "All data will be removed",
+          "bullet3": "Recovery is not possible",
+          "popular": "false"
+        },
+        "q5": {
+          "title": "Where can I see active devices?",
+          "answer": "Active sessions are listed in the security section.",
+          "bullet1": "You can end all sessions",
+          "bullet2": "Sessions sync instantly",
+          "bullet3": "New logins require confirmation",
+          "popular": "false"
+        }
+      },
+      "feed": {
+        "q1": {
+          "title": "How does the recommendation feed work?",
+          "answer": "Recommendations are based on reactions and follows.",
+          "bullet1": "Engagement resonance is considered",
+          "bullet2": "Refresh interval is 30 seconds",
+          "bullet3": "You can switch to following",
+          "popular": "true"
+        },
+        "q2": {
+          "title": "Why is my post not visible?",
+          "answer": "Check privacy settings and any content restrictions.",
+          "bullet1": "Post may be hidden by moderation",
+          "bullet2": "Indexing delay is possible",
+          "bullet3": "Verify network connection",
+          "popular": "false"
+        },
+        "q3": {
+          "title": "How do I pin a post?",
+          "answer": "Open the post menu and choose “Pin”.",
+          "bullet1": "Pinned post shows on profile",
+          "bullet2": "Only one pinned post",
+          "bullet3": "You can change anytime",
+          "popular": "false"
+        },
+        "q4": {
+          "title": "How do I delete a post?",
+          "answer": "Delete is available in the post menu.",
+          "bullet1": "Deletion is irreversible",
+          "bullet2": "Comments are removed too",
+          "bullet3": "You can report instead",
+          "popular": "false"
+        },
+        "q5": {
+          "title": "Why isn’t my feed updating?",
+          "answer": "Try refreshing or check your connection.",
+          "bullet1": "Auto-refresh runs in background",
+          "bullet2": "Check browser restrictions",
+          "bullet3": "Restart the app if needed",
+          "popular": "false"
+        }
+      },
+      "messages": {
+        "q1": {
+          "title": "How do I send an expiring photo?",
+          "answer": "In chat, enable Moment mode and add an image.",
+          "bullet1": "Opens once",
+          "bullet2": "No saving",
+          "bullet3": "Lives up to 24 hours",
+          "popular": "true"
+        },
+        "q2": {
+          "title": "How do I delete a message?",
+          "answer": "Long-press and delete for yourself or everyone.",
+          "bullet1": "For everyone only within 15 minutes",
+          "bullet2": "Deletion is irreversible",
+          "bullet3": "Media is removed with the message",
+          "popular": "false"
+        },
+        "q3": {
+          "title": "Are files supported?",
+          "answer": "Yes, you can send images and documents.",
+          "bullet1": "10 MB size limit",
+          "bullet2": "Types are validated automatically",
+          "bullet3": "Files stay in chat history",
+          "popular": "false"
+        },
+        "q4": {
+          "title": "Why aren’t messages delivered?",
+          "answer": "Check your connection and service status.",
+          "bullet1": "Check /status",
+          "bullet2": "Reconnect network",
+          "bullet3": "Retry sending",
+          "popular": "false"
+        },
+        "q5": {
+          "title": "How do I reply to a message?",
+          "answer": "Long-press a message and choose Reply.",
+          "bullet1": "Replies show in thread",
+          "bullet2": "Jump to original",
+          "bullet3": "Replies speed up conversations",
+          "popular": "false"
+        }
+      },
+      "servers": {
+        "q1": {
+          "title": "How do I create a server?",
+          "answer": "Go to servers and click “Create”.",
+          "bullet1": "Name and type required",
+          "bullet2": "Public servers need an icon",
+          "bullet3": "Access via /server/username",
+          "popular": "true"
+        },
+        "q2": {
+          "title": "How do I configure a server?",
+          "answer": "Server settings are available to owners.",
+          "bullet1": "Edit name and description",
+          "bullet2": "Deletion zone exists",
+          "bullet3": "Username change for public only",
+          "popular": "false"
+        },
+        "q3": {
+          "title": "How do I manage channels?",
+          "answer": "Add or remove channels in the server sidebar.",
+          "bullet1": "Owner/admin only",
+          "bullet2": "Deleting removes history",
+          "bullet3": "Order is manual",
+          "popular": "false"
+        },
+        "q4": {
+          "title": "Why was my request declined?",
+          "answer": "Reason is set by server owner.",
+          "bullet1": "You can reapply",
+          "bullet2": "Contact the moderator",
+          "bullet3": "Check server rules",
+          "popular": "false"
+        },
+        "q5": {
+          "title": "How do I leave a server?",
+          "answer": "Click “Leave” in the server footer block.",
+          "bullet1": "Access ends immediately",
+          "bullet2": "Chat history stays with server",
+          "bullet3": "Rejoin by invite",
+          "popular": "false"
+        }
+      },
+      "privacy": {
+        "q1": {
+          "title": "Who can see my posts?",
+          "answer": "Privacy is managed in profile settings.",
+          "bullet1": "Public or followers only",
+          "bullet2": "Setting applies to all posts",
+          "bullet3": "Change anytime",
+          "popular": "true"
+        },
+        "q2": {
+          "title": "How do I hide personal data?",
+          "answer": "Keep profile minimal and review links.",
+          "bullet1": "Do not publish your phone",
+          "bullet2": "Review bio",
+          "bullet3": "Limit inbound messages",
+          "popular": "false"
+        },
+        "q3": {
+          "title": "Can I disable messages?",
+          "answer": "Yes, in privacy settings.",
+          "bullet1": "Limit by followers",
+          "bullet2": "Setting applies instantly",
+          "bullet3": "Cannot be bypassed",
+          "popular": "false"
+        },
+        "q4": {
+          "title": "How do I delete my data?",
+          "answer": "Deleting account removes all data.",
+          "bullet1": "Action is irreversible",
+          "bullet2": "Posts and chats are deleted",
+          "bullet3": "Confirm password",
+          "popular": "false"
+        },
+        "q5": {
+          "title": "Who sees my activity?",
+          "answer": "Activity is visible to followers and server members.",
+          "bullet1": "Depends on settings",
+          "bullet2": "You can hide status",
+          "bullet3": "Check message privacy",
+          "popular": "false"
+        }
+      }
+    },
+    "rules": {
+      "title": "Rules",
+      "subtitle": "Guidelines for safety and content.",
+      "nav": {
+        "safety": "Safety",
+        "content": "Content",
+        "servers": "Servers moderation",
+        "privacy": "Privacy"
+      },
+      "allowed": "Allowed",
+      "forbidden": "Not allowed",
+      "notes": "Notes",
+      "actions": {
+        "title": "Moderation",
+        "subtitle": "Report a violation or contact moderators.",
+        "report": "Report",
+        "contact": "Contact moderation"
+      },
+      "safety": {
+        "title": "Community safety",
+        "lead": "We protect users and their data.",
+        "allowed": "Supportive dialogue, mutual respect, constructive critique.",
+        "forbidden": "Harassment, threats, discrimination, doxxing, incitement.",
+        "notes": "Use reports and blocking when violations occur."
+      },
+      "content": {
+        "title": "Content and links",
+        "lead": "Content must be safe and relevant.",
+        "allowed": "Original materials, discussions, useful links.",
+        "forbidden": "Spam, malware, illegal content.",
+        "notes": "Adult materials only within policy."
+      },
+      "servers": {
+        "title": "Servers and moderation",
+        "lead": "Owners and moderators are responsible.",
+        "allowed": "Transparent rules, timely responses to reports.",
+        "forbidden": "Hidden rules, abuse of power.",
+        "notes": "Violations are logged and can lead to bans."
+      },
+      "privacy": {
+        "title": "Privacy",
+        "lead": "Respect boundaries and personal data.",
+        "allowed": "Consensual information sharing.",
+        "forbidden": "Posting personal data without consent.",
+        "notes": "Remember local laws and platform policies."
+      }
+    },
+    "support": {
+      "title": "Support",
+      "subtitle": "Find the right help channel quickly.",
+      "quick": {
+        "title": "Topics",
+        "bug": "Report a bug",
+        "account": "Account issue",
+        "payments": "Payments",
+        "safety": "Safety"
+      },
+      "form": {
+        "title": "Mini support form",
+        "topic": "Topic",
+        "description": "Description",
+        "placeholder": "Describe your issue or request…",
+        "attach": "Attach screenshot",
+        "send": "Send"
+      },
+      "side": {
+        "title": "Tips",
+        "description": "Check system status and knowledge base before contacting support.",
+        "status": "System status",
+        "faq": "Knowledge base"
+      }
+    },
+    "contacts": {
+      "title": "Contacts",
+      "subtitle": "Reach us the way that works best for you.",
+      "nav": "Contacts",
+      "navDescription": "We’re always available and ready to help.",
+      "cards": {
+        "general": {
+          "title": "General",
+          "description": "Product questions and feedback.",
+          "action": "Open Telegram"
+        },
+        "partnerships": {
+          "title": "Partnerships",
+          "description": "Partnerships, collaborations, integrations.",
+          "action": "Send email"
+        },
+        "press": {
+          "title": "Press",
+          "description": "Media inquiries and press materials.",
+          "action": "Send email",
+          "kit": "Press kit"
+        }
+      },
+      "side": {
+        "title": "Need help?",
+        "description": "Open support for a quick resolution.",
+        "support": "Go to support"
+      }
+    }
+  },
+  "status": {
+    "title": "Status",
+    "subtitle": "Live system monitoring for the platform",
+    "live": "Live",
+    "overall": "Overall status",
+    "overview": "Overview",
+    "ok": "Operational",
+    "degraded": "Degraded",
+    "down": "Down",
+    "uptime": "Uptime",
+    "uptimePercent": "Uptime: {value}%",
+    "requests": "Requests",
+    "errorRate": "Errors: {value}%",
+    "services": {
+      "api": "API",
+      "database": "Database",
+      "websocket": "WebSocket",
+      "media": "Media"
+    },
+    "grid": {
+      "api": "API",
+      "auth": "Auth",
+      "feed": "Feed",
+      "messages": "Messages",
+      "servers": "Servers",
+      "media": "Media"
+    },
+    "cpu": "CPU (load avg)",
+    "memory": "Memory",
+    "memoryUsed": "{used} MB / {total} MB",
+    "connections": "Connections: {value}",
+    "metrics": "Metrics",
+    "system": "System",
+    "lastChecked": "Checked {seconds}s ago",
+    "noData": "No data",
+    "unavailable": "Status unavailable"
+  }
+}
