@@ -1,81 +1,86 @@
-﻿п»ї??# LUME Routes
+# LUME Routes
 
-**пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ:** 9 пїЅпїЅпїЅпїЅпїЅ 2026 пїЅ.
+English | [Русский](./ROUTES.ru.md)
 
----
-
-## Р’СЃРµ СЂРѕСѓС‚С‹ РїСЂРёР»РѕР¶РµРЅРёСЏ
-
-### Public routes (LandingLayout)
-
-| Path | Component | Р¤Р°Р№Р» | РћРїРёСЃР°РЅРёРµ |
-|------|-----------|------|----------|
-| `/` | LandingPage | `src/pages/LandingPage.tsx` | Р“Р»Р°РІРЅР°СЏ СЃС‚СЂР°РЅРёС†Р° |
-| `/faq` | FAQPage | `src/pages/FAQPage.tsx` | Р§Р°СЃС‚Рѕ Р·Р°РґР°РІР°РµРјС‹Рµ РІРѕРїСЂРѕСЃС‹ |
-| `/rules` | RulesPage | `src/pages/RulesPage.tsx` | РџСЂР°РІРёР»Р° РїР»Р°С‚С„РѕСЂРјС‹ |
-| `/support` | SupportPage | `src/pages/SupportPage.tsx` | РџРѕРґРґРµСЂР¶РєР° |
-| `/status` | StatusPage | `src/pages/StatusPage.tsx` | РЎС‚Р°С‚СѓСЃ СЃРёСЃС‚РµРјС‹ |
-| `/contacts` | ContactsPage | `src/pages/ContactsPage.tsx` | РљРѕРЅС‚Р°РєС‚С‹ |
-
-### Public routes (MainLayout)
-
-| Path | Component | Р¤Р°Р№Р» | РћРїС‹СЃР°РЅРёРµ |
-|------|-----------|------|----------|
-| `/privacy-policy` | PrivacyPolicy | `src/pages/PrivacyPolicy.tsx` | пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ |
-| `/terms-of-service` | TermsOfService | `src/pages/TermsOfService.tsx` | пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ |
-| `/cookie-policy` | CookiePolicy | `src/pages/CookiePolicy.tsx` | пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ cookies |
+**Last updated:** 2026-03-11
 
 ---
 
-### App routes (ProtectedRoute + MainLayout)
+## Public routes (LandingLayout)
 
-#### Auth
-| Path | Component | Р¤Р°Р№Р» | РћРїРёСЃР°РЅРёРµ |
-|------|-----------|------|----------|
-| `/login` | Login | `src/pages/auth/Login.tsx` | Р’С…РѕРґ |
-| `/register` | Register | `src/pages/auth/Register.tsx` | Р РµРіРёСЃС‚СЂР°С†РёСЏ |
+| Path | Component | File | Description |
+|------|-----------|------|-------------|
+| `/` | LandingPage | `src/pages/LandingPage.tsx` | Landing page |
+| `/faq` | FAQPage | `src/pages/FAQPage.tsx` | FAQ |
+| `/rules` | RulesPage | `src/pages/RulesPage.tsx` | Platform rules |
+| `/support` | SupportPage | `src/pages/SupportPage.tsx` | Support |
+| `/status` | StatusPage | `src/pages/StatusPage.tsx` | System status |
+| `/contacts` | ContactsPage | `src/pages/ContactsPage.tsx` | Contacts |
 
-#### Main
-| Path | Component | Р¤Р°Р№Р» | РћРїРёСЃР°РЅРёРµ |
-|------|-----------|------|----------|
-| `/feed` | Index | `src/pages/Index.tsx` | Р›РµРЅС‚Р° РїСѓР±Р»РёРєР°С†РёР№ |
-| `/explore` | Explore | `src/pages/Explore.tsx` | РџРѕРёСЃРє Рё РѕР±Р·РѕСЂ |
-| `/messages` | Messages | `src/pages/Messages.tsx` | РњРµСЃСЃРµРЅРґР¶РµСЂ (СЃРїРёСЃРѕРє С‡Р°С‚РѕРІ) |
-| `/messages/:chatId` | Messages | `src/pages/Messages.tsx` | Р§Р°С‚ СЃ РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј |
+## Public routes (MainLayout)
 
-#### Servers
-| Path | Component | Р¤Р°Р№Р» | РћРїРёСЃР°РЅРёРµ |
-|------|-----------|------|----------|
-| `/servers` | ServersPage | `src/pages/ServersPage.tsx` | РљР°С‚Р°Р»РѕРі СЃРµСЂРІРµСЂРѕРІ |
-| `/server/:identifier` | ServerPage | `src/pages/ServerPage.tsx` | РЎС‚СЂР°РЅРёС†Р° СЃРµСЂРІРµСЂР° |
-| `/server/:identifier/channel/:channelName` | ServerPage | `src/pages/ServerPage.tsx` | РљР°РЅР°Р» СЃРµСЂРІРµСЂР° |
-| `/server/:identifier/settings` | ServerSettingsPage | `src/pages/ServerSettingsPage.tsx` | РќР°СЃС‚СЂРѕР№РєРё СЃРµСЂРІРµСЂР° |
-| `/server/:identifier/members` | ServerMembersPage | `src/pages/ServerMembersPage.tsx` | РЈС‡Р°СЃС‚РЅРёРєРё СЃРµСЂРІРµСЂР° |
-
-#### Profile
-| Path | Component | Р¤Р°Р№Р» | РћРїРёСЃР°РЅРёРµ |
-|------|-----------|------|----------|
-| `/profile` | Profile | `src/pages/Profile.tsx` | РњРѕР№ РїСЂРѕС„РёР»СЊ |
-| `/profile/:userId` | UserProfile | `src/pages/UserProfile.tsx` | РџСЂРѕС„РёР»СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ |
-
-#### System
-| Path | Component | Р¤Р°Р№Р» | РћРїРёСЃР°РЅРёРµ |
-|------|-----------|------|----------|
-| `/verified` | Verified | `src/pages/Verified.tsx` | Р’РµСЂРёС„РёРєР°С†РёСЏ |
-| `/settings` | Settings | `src/pages/Settings.tsx` | РќР°СЃС‚СЂРѕР№РєРё Р°РєРєР°СѓРЅС‚Р° |
-| `/settings/sessions` | SessionsPage | `src/pages/settings/SessionsPage.tsx` | пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ |
-| `/admin` | AdminPanel | `src/pages/AdminPanel.tsx` | РђРґРјРёРЅ-РїР°РЅРµР»СЊ |
-| `*` | NotFound | `src/pages/NotFound.tsx` | 404 Not Found |
+| Path | Component | File | Description |
+|------|-----------|------|-------------|
+| `/privacy-policy` | PrivacyPolicy | `src/pages/PrivacyPolicy.tsx` | Privacy policy |
+| `/terms-of-service` | TermsOfService | `src/pages/TermsOfService.tsx` | Terms of service |
+| `/cookie-policy` | CookiePolicy | `src/pages/CookiePolicy.tsx` | Cookie policy |
 
 ---
 
-## Р РѕСѓС‚С‹ РІ РєРѕРґРµ
+## App routes (ProtectedRoute + MainLayout)
 
-**Р¤Р°Р№Р»:** `src/App.tsx`
+### Auth
+
+| Path | Component | File | Description |
+|------|-----------|------|-------------|
+| `/login` | Login | `src/pages/auth/Login.tsx` | Login |
+| `/register` | Register | `src/pages/auth/Register.tsx` | Register |
+
+### Main
+
+| Path | Component | File | Description |
+|------|-----------|------|-------------|
+| `/feed` | Index | `src/pages/Index.tsx` | Feed |
+| `/explore` | Explore | `src/pages/Explore.tsx` | Explore |
+| `/messages` | Messages | `src/pages/Messages.tsx` | Chat list |
+| `/messages/:chatId` | Messages | `src/pages/Messages.tsx` | Chat view |
+| `/messages?userId=:id` | Messages | `src/pages/Messages.tsx` | Open chat via query param |
+
+### Servers
+
+| Path | Component | File | Description |
+|------|-----------|------|-------------|
+| `/servers` | ServersPage | `src/pages/ServersPage.tsx` | Servers catalog |
+| `/server/:identifier` | ServerPage | `src/pages/ServerPage.tsx` | Server page |
+| `/server/:identifier/channel/:channelName` | ServerPage | `src/pages/ServerPage.tsx` | Channel chat |
+| `/server/:identifier/settings` | ServerSettingsPage | `src/pages/ServerSettingsPage.tsx` | Settings |
+| `/server/:identifier/members` | ServerMembersPage | `src/pages/ServerMembersPage.tsx` | Members |
+
+### Profile
+
+| Path | Component | File | Description |
+|------|-----------|------|-------------|
+| `/profile` | Profile | `src/pages/Profile.tsx` | My profile |
+| `/profile/:userId` | UserProfile | `src/pages/UserProfile.tsx` | User profile |
+
+### System
+
+| Path | Component | File | Description |
+|------|-----------|------|-------------|
+| `/verified` | Verified | `src/pages/Verified.tsx` | Verification |
+| `/settings` | Settings | `src/pages/Settings.tsx` | Settings |
+| `/settings/sessions` | SessionsPage | `src/pages/settings/SessionsPage.tsx` | Sessions |
+| `/admin` | AdminPanel | `src/pages/AdminPanel.tsx` | Admin panel |
+| `*` | NotFound | `src/pages/NotFound.tsx` | 404 |
+
+---
+
+## Routes in code
+
+**File:** `src/App.tsx`
 
 ```tsx
 <Routes>
-  {/* Public landing */}
   <Route path="/" element={<LandingLayout><LandingPage /></LandingLayout>} />
   <Route path="/faq" element={<FAQPage />} />
   <Route path="/rules" element={<RulesPage />} />
@@ -83,20 +88,17 @@
   <Route path="/status" element={<StatusPage />} />
   <Route path="/contacts" element={<ContactsPage />} />
 
-  {/* Public legal pages */}
   <Route element={<MainLayout />}>
     <Route path="/privacy-policy" element={<PrivacyPolicy />} />
     <Route path="/terms-of-service" element={<TermsOfService />} />
     <Route path="/cookie-policy" element={<CookiePolicy />} />
   </Route>
 
-  {/* Guest-only */}
   <Route element={<GuestRoute />}>
     <Route path="/login" element={<Login />} />
     <Route path="/register" element={<Register />} />
   </Route>
 
-  {/* Protected */}
   <Route element={<ProtectedRoute />}>
     <Route path="/server/:identifier/channel/:channelName" element={<ServerPage />} />
     <Route path="/server/:identifier/settings" element={<ServerSettingsPage />} />
@@ -124,66 +126,36 @@
 
 ---
 
-## Р›РѕРіРёРєР° conditional rendering
+## Conditional rendering
 
-### Hide Right Sidebar
-
-**Р¤Р°Р№Р»:** `src/layouts/MainLayout.tsx`
+**Hide right sidebar:**
 
 ```typescript
 const hideRightSidebar = pathname.startsWith("/messages");
 ```
 
-**РљРѕРіРґР° СЃРєСЂС‹РІР°РµС‚СЃСЏ:**
-- `/messages` вЂ” РјРµСЃСЃРµРЅРґР¶РµСЂ
-- `/messages/:chatId` вЂ” С‡Р°С‚ СЃ РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј
-
-**РџСЂРёС‡РёРЅР°:** Р‘РѕР»СЊС€Рµ РјРµСЃС‚Р° РґР»СЏ РїРµСЂРµРїРёСЃРєРё
-
----
-
-## Server routes
-
-### Identifier
-
-Server routes РёСЃРїРѕР»СЊР·СѓСЋС‚ `:identifier` РєРѕС‚РѕСЂС‹Р№ РјРѕР¶РµС‚ Р±С‹С‚СЊ:
-- **Username** (РґР»СЏ РїСѓР±Р»РёС‡РЅС‹С… СЃРµСЂРІРµСЂРѕРІ) вЂ” РЅР°РїСЂРёРјРµСЂ, `gaminghub`
-- **ID** (РґР»СЏ РїСЂРёРІР°С‚РЅС‹С… СЃРµСЂРІРµСЂРѕРІ) вЂ” РЅР°РїСЂРёРјРµСЂ, `123`
-
-**РџСЂРёРјРµСЂС‹:**
-- РџСѓР±Р»РёС‡РЅС‹Р№: `/server/gaminghub/channel/general`
-- РџСЂРёРІР°С‚РЅС‹Р№: `/server/123/channel/general`
-
 ---
 
 ## Nested routes
 
-### Messages
 ```
-/messages
-  в””в”Ђв”Ђ /:chatId  (MessagesPage, РїРѕРєР°Р·С‹РІР°РµС‚ С‡Р°С‚ СЃ РєРѕРЅРєСЂРµС‚РЅС‹Рј РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј)
-```
-
-### Server
-```
-/server/:identifier
-  в”њв”Ђв”Ђ /channel/:channelName  (С‡Р°С‚ РєР°РЅР°Р»Р°)
-  в”њв”Ђв”Ђ /settings  (РЅР°СЃС‚СЂРѕР№РєРё СЃРµСЂРІРµСЂР°)
-  в””в”Ђв”Ђ /members  (СѓС‡Р°СЃС‚РЅРёРєРё СЃРµСЂРІРµСЂР°)
+/messages/:chatId
+/server/:identifier/channel/:channelName
+/server/:identifier/settings
+/server/:identifier/members
 ```
 
 ---
 
-## Protected routes
+## Protected routes behavior
 
-Р’СЃРµ routes РІ `ProtectedRoute` С‚СЂРµР±СѓСЋС‚ Р°РІС‚РѕСЂРёР·Р°С†РёРё. РџСЂРѕРІРµСЂРєР° РїСЂРѕРёСЃС…РѕРґРёС‚ РЅР° СѓСЂРѕРІРЅРµ:
-1. **Frontend:** Redirect РЅР° `/login` РµСЃР»Рё РЅРµС‚ С‚РѕРєРµРЅР°
-2. **Backend:** `authenticateToken` middleware РЅР° API endpoints
+1. Frontend redirects to `/login` when no token is present.
+2. Backend enforces `authenticateToken` on protected APIs.
 
 ---
 
-## РЎРІСЏР·Р°РЅРЅС‹Рµ РґРѕРєСѓРјРµРЅС‚С‹
+## Related documents
 
-- [Overview](./OVERVIEW.md) вЂ” РљР°СЂС‚Р° РїСЂРёР»РѕР¶РµРЅРёСЏ
-- [Layout and Nav](./LAYOUT_AND_NAV.md) вЂ” Layout Рё РЅР°РІРёРіР°С†РёСЏ
-- [Features Inventory](../FEATURES_INVENTORY.md) вЂ” РЎРїРёСЃРѕРє С„СѓРЅРєС†РёР№
+- [Overview](./OVERVIEW.md)
+- [Layout and Navigation](./LAYOUT_AND_NAV.md)
+- [Features Inventory](../FEATURES_INVENTORY.md)
