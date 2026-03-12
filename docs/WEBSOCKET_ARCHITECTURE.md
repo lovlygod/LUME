@@ -1,6 +1,6 @@
 # WebSocket Architecture (LUME)
 
-English | [Русский](./WEBSOCKET_ARCHITECTURE.ru.md)
+English | [Русский](../docs-ru/WEBSOCKET_ARCHITECTURE.ru.md) | [中文](../docs-cn/WEBSOCKET_ARCHITECTURE.cn.md)
 
 **Last updated:** 2026-03-11
 **Status:** Implemented and in use

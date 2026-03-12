@@ -1,6 +1,6 @@
 # UI стиль (LUME)
 
-[English](./STYLE_SYSTEM.md) | Русский
+[English](../../docs/PROJECT_UI/STYLE_SYSTEM.md) | Русский | [中文](../../docs-cn/PROJECT_UI/STYLE_SYSTEM.cn.md)
 
 **Последнее обновление:** 2026-03-11
 

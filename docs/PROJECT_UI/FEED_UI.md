@@ -1,6 +1,6 @@
 # LUME Feed UI
 
-English | [Русский](./FEED_UI.ru.md)
+English | [Русский](../../docs-ru/PROJECT_UI/FEED_UI.ru.md) | [中文](../../docs-cn/PROJECT_UI/FEED_UI.cn.md)
 
 **Last updated:** 2026-03-11
 

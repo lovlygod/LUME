@@ -1,6 +1,6 @@
 # Layout и навигация LUME
 
-[English](./LAYOUT_AND_NAV.md) | Русский
+[English](../../docs/PROJECT_UI/LAYOUT_AND_NAV.md) | Русский | [中文](../../docs-cn/PROJECT_UI/LAYOUT_AND_NAV.cn.md)
 
 **Последнее обновление:** 2026-03-11
 

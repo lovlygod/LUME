@@ -1,6 +1,6 @@
 # Роуты (LUME)
 
-[English](./ROUTES.md) | Русский
+[English](../../docs/PROJECT_UI/ROUTES.md) | Русский | [中文](../../docs-cn/PROJECT_UI/ROUTES.cn.md)
 
 **Последнее обновление:** 2026-03-11
 
@@ -24,4 +24,4 @@ Legal: `/privacy-policy`, `/terms-of-service`, `/cookie-policy`.
 
 - [Overview](./OVERVIEW.ru.md)
 - [Layout and Navigation](./LAYOUT_AND_NAV.ru.md)
-- [Features Inventory](../FEATURES_INVENTORY.md)
+- [Features Inventory](../FEATURES_INVENTORY.ru.md)

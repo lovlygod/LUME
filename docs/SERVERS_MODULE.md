@@ -1,6 +1,6 @@
 # Servers Module (LUME)
 
-English | [Русский](./SERVERS_MODULE.ru.md)
+English | [Русский](../docs-ru/SERVERS_MODULE.ru.md) | [中文](../docs-cn/SERVERS_MODULE.cn.md)
 
 **Last updated:** 2026-03-11
 **Status:** Implemented and in use

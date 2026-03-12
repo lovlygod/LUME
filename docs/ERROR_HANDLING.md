@@ -1,6 +1,6 @@
 # Error Handling and Validation (LUME)
 
-English | [Русский](./ERROR_HANDLING.ru.md)
+English | [Русский](../docs-ru/ERROR_HANDLING.ru.md) | [中文](../docs-cn/ERROR_HANDLING.cn.md)
 
 **Last updated:** 2026-03-11
 **Status:** Implemented and in use

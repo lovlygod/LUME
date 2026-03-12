@@ -1,6 +1,6 @@
-# LUME Features Inventory
+# Реестр функций LUME
 
-English | [Русский](../docs-ru/FEATURES_INVENTORY.ru.md) | [中文](../docs-cn/FEATURES_INVENTORY.cn.md)
+[English](../docs/FEATURES_INVENTORY.md) | Русский | [中文](../docs-cn/FEATURES_INVENTORY.cn.md)
 
 **Последнее обновление:** 9 марта 2026 г.
 **Статус:** ✅ Актуально
@@ -340,21 +340,7 @@ English | [Русский](../docs-ru/FEATURES_INVENTORY.ru.md) | [中文](../do
 
 ---
 
-## 📊 React Query Integration
-
-### Хуки для серверов
-- **Файл:** `src/hooks/servers.ts`
-- **Статус:** ✅ Реализовано
-- **Хуки:** useMyServers, usePublicServers, useServer, useCreateServer, useUpdateServer, useDeleteServer, useJoinServer, useLeaveServer, useRequestJoin, useApproveJoinRequest, useRejectJoinRequest, useCreateChannel, useServerMembers, useUpdateMemberRole, useKickMember
-
-### Хуки для чатов
-- **Файл:** `src/hooks/chat.ts`
-- **Статус:** ✅ Реализовано
-- **Хуки:** useChats, useChatMessages, useSendMessage, useDeleteMessage, useMarkAsRead, useSendMessageOptimistic
-
----
-
-## 📈 Summary
+## 📊 Summary
 
 | Категория | Реализовано | Частично | Placeholder | Всего |
 |-----------|-------------|----------|-------------|-------|
@@ -386,7 +372,7 @@ English | [Русский](../docs-ru/FEATURES_INVENTORY.ru.md) | [中文](../do
 
 ## Связанные документы
 
-- [Error Handling](./ERROR_HANDLING.md)
-- [Servers Module](./SERVERS_MODULE.md)
+- [Error Handling](./ERROR_HANDLING.ru.md)
+- [Servers Module](./SERVERS_MODULE.ru.md)
 - [Project UI](./PROJECT_UI/)
 - [README](../README.md)

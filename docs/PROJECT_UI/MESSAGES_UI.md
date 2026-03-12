@@ -1,6 +1,6 @@
 # LUME Messages UI
 
-English | [Русский](./MESSAGES_UI.ru.md)
+English | [Русский](../../docs-ru/PROJECT_UI/MESSAGES_UI.ru.md) | [中文](../../docs-cn/PROJECT_UI/MESSAGES_UI.cn.md)
 
 **Last updated:** 2026-03-11
 

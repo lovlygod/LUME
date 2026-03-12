@@ -1,6 +1,6 @@
 # LUME Servers UI
 
-English | [Русский](./SERVERS_UI.ru.md)
+English | [Русский](../../docs-ru/PROJECT_UI/SERVERS_UI.ru.md) | [中文](../../docs-cn/PROJECT_UI/SERVERS_UI.cn.md)
 
 **Last updated:** 2026-03-11
 

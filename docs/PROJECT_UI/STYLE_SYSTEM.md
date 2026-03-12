@@ -1,6 +1,6 @@
 # LUME UI Style System
 
-English | [Русский](./STYLE_SYSTEM.ru.md)
+English | [Русский](../../docs-ru/PROJECT_UI/STYLE_SYSTEM.ru.md) | [中文](../../docs-cn/PROJECT_UI/STYLE_SYSTEM.cn.md)
 
 **Last updated:** 2026-03-11
 

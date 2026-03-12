@@ -1,6 +1,6 @@
 # UI ленты (LUME)
 
-[English](./FEED_UI.md) | Русский
+[English](../../docs/PROJECT_UI/FEED_UI.md) | Русский | [中文](../../docs-cn/PROJECT_UI/FEED_UI.cn.md)
 
 **Последнее обновление:** 2026-03-11
 

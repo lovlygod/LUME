@@ -1,6 +1,6 @@
 # Архитектура WebSocket (LUME)
 
-[English](./WEBSOCKET_ARCHITECTURE.md) | Русский
+[English](../docs/WEBSOCKET_ARCHITECTURE.md) | Русский | [中文](../docs-cn/WEBSOCKET_ARCHITECTURE.cn.md)
 
 **Последнее обновление:** 2026-03-11
 **Статус:** реализовано и используется
@@ -57,4 +57,4 @@ REDIS_DB=0
 
 - [Servers Module](./SERVERS_MODULE.ru.md)
 - [Error Handling](./ERROR_HANDLING.ru.md)
-- [Features Inventory](./FEATURES_INVENTORY.md)
+- [Features Inventory](./FEATURES_INVENTORY.ru.md)

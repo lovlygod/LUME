@@ -1,6 +1,6 @@
 # Модуль серверов (LUME)
 
-[English](./SERVERS_MODULE.md) | Русский
+[English](../docs/SERVERS_MODULE.md) | Русский | [中文](../docs-cn/SERVERS_MODULE.cn.md)
 
 **Последнее обновление:** 2026-03-11
 **Статус:** реализовано и используется
@@ -89,6 +89,6 @@
 
 - [WebSocket Architecture](./WEBSOCKET_ARCHITECTURE.ru.md)
 - [Error Handling](./ERROR_HANDLING.ru.md)
-- [Features Inventory](./FEATURES_INVENTORY.md)
+- [Features Inventory](./FEATURES_INVENTORY.ru.md)
 - [Project UI](./PROJECT_UI/)
 - [README](../README.md)

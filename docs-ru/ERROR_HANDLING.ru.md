@@ -1,6 +1,6 @@
 # Обработка ошибок и валидация (LUME)
 
-[English](./ERROR_HANDLING.md) | Русский
+[English](../docs/ERROR_HANDLING.md) | Русский | [中文](../docs-cn/ERROR_HANDLING.cn.md)
 
 **Последнее обновление:** 2026-03-11
 **Статус:** реализовано и используется
@@ -152,6 +152,6 @@ router.post('/servers', authenticateToken, asyncHandler(async (req, res) => {
 
 - [Servers Module](./SERVERS_MODULE.ru.md)
 - [WebSocket Architecture](./WEBSOCKET_ARCHITECTURE.ru.md)
-- [Features Inventory](./FEATURES_INVENTORY.md)
+- [Features Inventory](./FEATURES_INVENTORY.ru.md)
 - [Project UI](./PROJECT_UI/)
 - [README](../README.md)

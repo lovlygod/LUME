@@ -1,483 +1,485 @@
-# LUME — Полнофункциональная социальная сеть с мессенджером
+# LUME — Full-featured social network with messenger
+
+English | [Русский](./README.ru.md) | [中文](./README.cn.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/Node.js-latest-green.svg)](https://nodejs.org/)
 [![React](https://img.shields.io/badge/React-18.3.1-blue.svg)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-blue.svg)](https://www.typescriptlang.org/)
 
-**LUME** — это современная социальная сеть с функциями мессенджера, построенная на стеке Node.js + React. Проект включает в себя ленту публикаций, систему личных сообщений, верификацию пользователей, админ-панель, систему модерации контента и **серверы (communities)** с каналами.
+**LUME** is a modern social network with messenger features built on Node.js + React. The project includes a feed, direct messaging, user verification, admin panel, content moderation, and **servers (communities)** with channels.
 
 ---
 
-## 📋 Оглавление
+## 📋 Table of Contents
 
-- [Обзор проекта](#обзор-проекта)
-- [Технологический стек](#технологический-стек)
-- [Архитектура проекта](#архитектура-проекта)
-- [Функциональные возможности](#функциональные-возможности)
-- [Структура базы данных](#структура-базы-данных)
-- [API документация](#api-документация)
-- [WebSocket события](#websocket-события)
-- [Безопасность](#безопасность)
-- [Установка и запуск](#установка-и-запуск)
-- [Структура проекта](#структура-проекта)
-- [Конфигурация](#конфигурация)
-- [Лицензия](#лицензия)
-
----
-
-## 📖 Обзор проекта
-
-### Ключевые особенности:
-- 🔄 **Лента публикаций** в реальном времени с WebSocket обновлениями
-- 💬 **Мессенджер** для обмена личными сообщениями
-- 👥 **Серверы (Communities)** с каналами и ролями
-- 👤 **Профили пользователей** с аватарами и баннерами
-- ✅ **Система верификации** через TikTok видео
-- 🛡️ **Модерация контента** с системой репортов
-- 👑 **Админ-панель** для управления пользователями и контентом
-- ⚡ **Real-time уведомления** через WebSocket
-- 🔒 **Безопасность**: httpOnly cookies, rate limiting, CSP заголовки
-- 🌐 **i18n**: Русский и английский языки
+- [Project overview](#project-overview)
+- [Tech stack](#tech-stack)
+- [Project architecture](#project-architecture)
+- [Key features](#key-features)
+- [Database schema](#database-schema)
+- [API documentation](#api-documentation)
+- [WebSocket events](#websocket-events)
+- [Security](#security)
+- [Installation and launch](#installation-and-launch)
+- [Configuration](#configuration)
+- [License](#license)
 
 ---
 
-## 🛠️ Технологический стек
+## 📖 Project overview
+
+### Highlights:
+- 🔄 **Real-time feed** with WebSocket updates
+- 💬 **Messenger** for 1:1 private chats
+- 👥 **Servers (Communities)** with channels and roles
+- 👤 **User profiles** with avatars and banners
+- ✅ **Verification system** via TikTok video
+- 🛡️ **Content moderation** with reports
+- 👑 **Admin panel** for user/content management
+- ⚡ **Real-time notifications** via WebSocket
+- 🔒 **Security**: httpOnly cookies, rate limiting, CSP headers
+- 🌐 **i18n**: Russian and English UI
+
+---
+
+## 🛠️ Tech stack
 
 ### Frontend
-| Технология | Версия | Назначение |
-|------------|--------|------------|
-| React | 18.3.1 | UI библиотека |
-| TypeScript | 5.8.3 | Типизация |
-| React Router | 6.30.1 | Роутинг |
-| Framer Motion | 12.34.0 | Анимации |
-| Tailwind CSS | 3.4.17 | Стилизация |
-| Radix UI | various | Примитивы UI |
-| shadcn/ui | latest | UI компоненты |
-| TanStack Query | 5.90.21 | Управление состоянием сервера |
-| Emoji Picker React | 4.18.0 | Выбор эмодзи |
-| Sonner | 1.7.4 | Уведомления (toast) |
-| Zod | 3.25.76 | Валидация схем |
-| React Hook Form | 7.61.1 | Управление формами |
-| Lucide React | 0.462.0 | конки |
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| React | 18.3.1 | UI library |
+| TypeScript | 5.8.3 | Type safety |
+| React Router | 6.30.1 | Routing |
+| Framer Motion | 12.34.0 | Animations |
+| Tailwind CSS | 3.4.17 | Styling |
+| Radix UI | various | UI primitives |
+| shadcn/ui | latest | UI components |
+| TanStack Query | 5.90.21 | Server state management |
+| Emoji Picker React | 4.18.0 | Emoji picker |
+| Sonner | 1.7.4 | Toast notifications |
+| Zod | 3.25.76 | Schema validation |
+| React Hook Form | 7.61.1 | Form handling |
+| Lucide React | 0.462.0 | Icons |
 
 ### Backend
-| Технология | Версия | Назначение |
-|------------|--------|------------|
+| Technology | Version | Purpose |
+|------------|---------|---------|
 | Node.js | latest | Runtime |
-| Express | 4.18.2 | Web фреймворк |
-| SQLite3 | 5.1.6 | База данных |
-| WebSocket (ws) | 8.19.0 | Real-time связь |
-| JWT (jsonwebtoken) | 9.0.2 | Аутентификация |
-| Bcryptjs | 2.4.3 | Хеширование паролей |
-| Multer | 1.4.5-lts.1 | Загрузка файлов |
+| Express | 4.18.2 | Web framework |
+| SQLite3 | 5.1.6 | Database |
+| WebSocket (ws) | 8.19.0 | Real-time communication |
+| JWT (jsonwebtoken) | 9.0.2 | Authentication |
+| Bcryptjs | 2.4.3 | Password hashing |
+| Multer | 1.4.5-lts.1 | File uploads |
 | Cors | 2.8.5 | CORS middleware |
-| **Zod** | 4.3.6 | Валидация данных |
-| **Cookie-parser** | 1.4.7 | Работа с cookies |
+| **Zod** | 4.3.6 | Data validation |
+| **Cookie-parser** | 1.4.7 | Cookie handling |
 
 ---
 
-## 🏗️ Архитектура проекта
+## 🏗️ Project architecture
 
 ```
 LUME/
 ├── Frontend (Vite + React + TypeScript)
 │   ├── src/
-│   │   ├── components/     # UI компоненты
-│   │   │   ├── ui/         # shadcn/ui компоненты
-│   │   │   ├── servers/    # Компоненты серверов
-│   │   │   ├── feed/       # Компоненты ленты
-│   │   │   ├── post/       # Компоненты постов
-│   │   │   ├── chat/       # Компоненты чатов
-│   │   │   ├── media/      # Медиа компоненты
-│   │   │   ├── profile/    # Компоненты профиля
-│   │   │   ├── verification/ # Компоненты верификации
+│   │   ├── components/     # UI components
+│   │   │   ├── ui/         # shadcn/ui components
+│   │   │   ├── servers/    # Server components
+│   │   │   ├── feed/       # Feed components
+│   │   │   ├── post/       # Post components
+│   │   │   ├── chat/       # Chat components
+│   │   │   ├── media/      # Media components
+│   │   │   ├── profile/    # Profile components
+│   │   │   ├── verification/ # Verification components
 │   │   │   ├── help/       # Help shell
-│   │   │   └── layout/     # Layout компоненты
-│   │   ├── pages/          # Страницы приложения
-│   │   │   ├── auth/       # Auth страницы
-│   │   │   ├── messages/   # Страницы сообщений
-│   │   │   └── server/     # Страницы серверов
-│   │   ├── services/       # API клиент, errorHandler, websocket
-│   │   ├── contexts/       # React контексты (Auth, Language, Theme, Server)
-│   │   ├── hooks/          # Кастомные хуки (React Query)
-│   │   ├── i18n/           # Локализация
-│   │   ├── lib/            # Утилиты (queryClient, config, utils)
-│   │   ├── types/          # TypeScript типы
-│   │   └── test/           # Тесты
-│   └── public/             # Статические файлы
+│   │   │   └── layout/     # Layout components
+│   │   ├── pages/          # App pages
+│   │   │   ├── auth/       # Auth pages
+│   │   │   ├── messages/   # Messages pages
+│   │   │   └── server/     # Server pages
+│   │   ├── services/       # API client, errorHandler, websocket
+│   │   ├── contexts/       # React contexts (Auth, Language, Theme, Server)
+│   │   ├── hooks/          # Custom hooks (React Query)
+│   │   ├── i18n/           # Localization
+│   │   ├── lib/            # Utilities (queryClient, config, utils)
+│   │   ├── types/          # TypeScript types
+│   │   └── test/           # Tests
+│   └── public/             # Static assets
 │
 └── Backend (Express + SQLite)
     ├── src/
-    │   ├── server.js       # Точка входа, WebSocket сервер
-    │   ├── api.js          # API роуты (Auth, Posts, Messages, Profile)
-    │   ├── servers.js      # Серверы и каналы
-    │   ├── auth.js         # Аутентификация (JWT, refresh tokens, cookies)
-    │   ├── profile.js      # Профиль пользователя
-    │   ├── uploads.js      # Загрузка файлов
-    │   ├── validation.js   # Zod схемы валидации
-    │   ├── permissions.js  # Система прав доступа
+    │   ├── server.js       # Entry point + WebSocket server
+    │   ├── api.js          # API routes (Auth, Posts, Messages, Profile)
+    │   ├── servers.js      # Servers and channels
+    │   ├── auth.js         # Authentication (JWT, refresh tokens, cookies)
+    │   ├── profile.js      # User profile
+    │   ├── uploads.js      # File uploads
+    │   ├── validation.js   # Zod validation
+    │   ├── permissions.js  # Access control
     │   ├── rateLimiter.js  # Rate limiting middleware
-    │   ├── errors.js       # Обработка ошибок
-    │   ├── logger.js       # Логирование
-    │   ├── audit.js        # Аудит событий
-    │   ├── csrf.js         # CSRF защита
-    │   ├── linkPreview.js  # Open Graph превью
-    │   ├── serializers.js  # Сериализация данных
-    │   └── db.js           # База данных SQLite
+    │   ├── errors.js       # Error handling
+    │   ├── logger.js       # Logging
+    │   ├── audit.js        # Audit logging
+    │   ├── csrf.js         # CSRF protection
+    │   ├── linkPreview.js  # Open Graph preview
+    │   ├── serializers.js  # Data serialization
+    │   └── db.js           # SQLite database
     │
-    ├── uploads/            # Загруженные файлы
-    ├── database.db         # SQLite база
-    ├── migrate.js          # Основные миграции БД
-    ├── migrate-rate-limit.js # Миграция rate limiting
-    ├── migrate-communities.js # Миграция серверов
-    ├── migrate-audit.js    # Миграция audit
+    ├── uploads/            # Uploaded files
+    ├── database.db         # SQLite database
+    ├── migrate.js          # Core migrations
+    ├── migrate-rate-limit.js # Rate limiting migration
+    ├── migrate-communities.js # Servers migration
+    ├── migrate-audit.js    # Audit migration
     └── package.json
 ```
 
 ---
 
-## ⚙️ Функциональные возможности
+## ⚙️ Key features
 
-### 1. Серверы (Communities)
+### 1. Servers (Communities)
 
-**Возможности:**
-- Создание публичных и приватных серверов
-- Система ролей: Owner (100), Admin (80), Moderator (50), Member (10)
-- Текстовые каналы
-- Заявки на вступление для приватных серверов
-- Управление участниками (kick, change role)
-- Real-time сообщения в каналах
-- Загрузка файлов в сообщения
+**Features:**
+- Create public/private servers
+- Role system: Owner (100), Admin (80), Moderator (50), Member (10)
+- Text channels
+- Join requests for private servers
+- Member management (kick, change role)
+- Real-time channel messaging
+- File uploads in messages
 
-**URL навигация:**
-- Публичный: `/server/:username/channel/:channelName`
-- Приватный: `/server/:id/channel/:channelName`
+**URL navigation:**
+- Public: `/server/:username/channel/:channelName`
+- Private: `/server/:id/channel/:channelName`
 
-### 2. Лента публикаций (Feed)
+### 2. Feed
 
-**Возможности:**
-- Просмотр всех публикаций в хронологическом порядке
-- Создание постов с текстом (до 420 символов) и изображениями
-- Реакции "Resonance" (лайки) с подсчётом
-- Комментарии к постам с эмодзи
-- Репосты публикаций
-- Real-time обновления через WebSocket
-- Закреплённые посты в профиле
+**Features:**
+- Chronological feed
+- Post creation (up to 420 chars) with images
+- “Resonance” reactions
+- Emoji comments
+- Reposts
+- WebSocket real-time updates
+- Pinned posts in profile
 
-### 3. Система сообщений (Messenger)
+### 3. Messenger
 
-**Возможности:**
-- Личные сообщения между пользователями
-- Список чатов с последними сообщениями
-- Счётчик непрочитанных сообщений
-- Real-time доставка сообщений через WebSocket
-- Удаление сообщений (для себя / для всех)
-- Вложения файлов и изображений
-- ндикаторы прочтения
-- счезающие моменты (moments)
+**Features:**
+- 1:1 private messages
+- Chat list with last message
+- Unread counters
+- Real-time delivery via WebSocket
+- Delete messages (for me / for all)
+- File and image attachments
+- Read receipts
+- Voice messages
+- Ephemeral moments
 
-### 4. Профили пользователей
+### 4. User profiles
 
-**Возможности:**
-- Просмотр профилей других пользователей
-- Редактирование собственного профиля
-- Аватары и баннеры
-- Счётчики: подписчики, подписки, публикации
-- Подписки (follow system)
-- Закреплённый пост
+**Features:**
+- View other profiles
+- Edit own profile
+- Avatars and banners
+- Counters: followers, following, posts
+- Follow system
+- Pinned post
 
-### 5. Система верификации
+### 5. Verification system
 
-**Процесс:**
-1. Подача заявки (требуется регистрация ≥7 дней)
-2. Рассмотрение администратором
-3. Одобрение на 1 месяц с значком
+**Process:**
+1. Submit request (registration ≥7 days)
+2. Admin review
+3. Approved for 1 month with badge
 
-**Значки:** Verified, Developer, CEO
+**Badges:** Verified, Developer, CEO
 
-### 6. Безопасность 🔒
+### 6. Security 🔒
 
-- **httpOnly Cookies**: токены недоступны через JavaScript
-- **Rate Limiting**: защита от brute-force
-- **CSP заголовки**: защита от XSS
-- **Zod валидация**: строгая проверка данных
-- **Централизованная обработка ошибок**
-- **Централизованная проверка прав (Permissions)**: система ролей и прав доступа
+- **httpOnly Cookies**: tokens not accessible via JavaScript
+- **Rate Limiting**: brute-force protection
+- **CSP headers**: XSS protection
+- **Zod validation**: strict data validation
+- **Centralized error handling**
+- **Permission checks**: server role and access control
 
-### 7. Система прав доступа (Permissions)
+### 7. Permissions
 
-**Роли на сервере:**
-- **Owner (100)**: полный доступ, удаление сервера
-- **Admin (80)**: управление каналами, участниками, настройками
-- **Moderator (50)**: модерация сообщений, кик, таймауты
-- **Member (10)**: чтение каналов, отправка сообщений
+**Server roles:**
+- **Owner (100)**: full access, delete server
+- **Admin (80)**: manage channels and members
+- **Moderator (50)**: moderate messages, kick, timeouts
+- **Member (10)**: read and send
 
-**Принципы:**
-- Нельзя управлять пользователем с рангом >= твоего
-- Owner нельзя кикнуть/понизить
-- Проверка прав на каждый запрос через middleware
+**Rules:**
+- Cannot manage users with equal or higher rank
+- Owner cannot be kicked/demoted
+- Each request checks permissions via middleware
 
-### 8. Аудит и логирование
+### 8. Audit and logging
 
-**Аудит событий:**
-- Все входы/выходы пользователей
-- Удаление постов, сообщений, серверов
-- зменение ролей участников
-- Кик/бан пользователей
-- Запросы на верификацию
-- Действия администраторов
+**Audit events:**
+- User logins/logouts
+- Delete posts/messages/servers
+- Member role changes
+- Kick/ban actions
+- Verification requests
+- Admin actions
 
-**Хранение:**
-- Audit логи сохраняются в БД (`audit_logs`)
-- Автоматическая очистка старых записей (90 дней)
-- IP адрес, User Agent, детали операции
+**Storage:**
+- Audit logs stored in `audit_logs`
+- Auto-cleanup after 90 days
+- IP address, User Agent, and details
 
 ---
 
-## 🗄️ Структура базы данных
+## 🗄️ Database schema
 
-### Основные таблицы
+### Core tables
 
 #### `users`
-| Поле | Тип | Описание |
-|------|-----|----------|
-| id | INTEGER | Первичный ключ |
-| email | TEXT | Email (уникальный) |
-| password_hash | TEXT | Хешированный пароль |
-| name | TEXT | мя |
-| username | TEXT | Username (уникальный) |
-| bio | TEXT | О себе |
-| avatar | TEXT | URL аватара |
-| banner | TEXT | URL баннера |
-| city | TEXT | Город |
-| website | TEXT | Сайт |
-| verified | BOOLEAN | Статус верификации |
-| followers_count | INTEGER | Количество подписчиков |
-| join_date | DATETIME | Дата регистрации |
-| last_seen_at | DATETIME | Последний вход |
+| Field | Type | Description |
+|-------|------|-------------|
+| id | INTEGER | Primary key |
+| email | TEXT | Email (unique) |
+| password_hash | TEXT | Hashed password |
+| name | TEXT | Name |
+| username | TEXT | Username (unique) |
+| bio | TEXT | About |
+| avatar | TEXT | Avatar URL |
+| banner | TEXT | Banner URL |
+| city | TEXT | City |
+| website | TEXT | Website |
+| verified | BOOLEAN | Verification status |
+| followers_count | INTEGER | Followers count |
+| join_date | DATETIME | Registration date |
+| last_seen_at | DATETIME | Last seen |
 
 #### `posts`
-| Поле | Тип | Описание |
-|------|-----|----------|
-| id | INTEGER | Первичный ключ |
-| user_id | INTEGER | Автор |
-| text | TEXT | Текст (max 420) |
-| image_url | TEXT | URL изображения |
-| timestamp | DATETIME | Дата создания |
-| replies_count | INTEGER | Количество комментариев |
-| reposts_count | INTEGER | Количество репостов |
-| resonance_count | INTEGER | Количество лайков |
+| Field | Type | Description |
+|-------|------|-------------|
+| id | INTEGER | Primary key |
+| user_id | INTEGER | Author |
+| text | TEXT | Text (max 420) |
+| image_url | TEXT | Image URL |
+| timestamp | DATETIME | Created at |
+| replies_count | INTEGER | Comment count |
+| reposts_count | INTEGER | Repost count |
+| resonance_count | INTEGER | Like count |
 
 #### `chats` / `messages`
-| Поле | Тип | Описание |
-|------|-----|----------|
-| id | INTEGER | Первичный ключ |
-| sender_id | INTEGER | Отправитель |
-| receiver_id | INTEGER | Получатель |
-| text | TEXT | Текст |
-| created_at | DATETIME | Дата |
-| deleted_for_all | BOOLEAN | Удалено для всех |
-| moment_id | INTEGER | ID момента (для исчезающих) |
+| Field | Type | Description |
+|-------|------|-------------|
+| id | INTEGER | Primary key |
+| sender_id | INTEGER | Sender |
+| receiver_id | INTEGER | Receiver |
+| text | TEXT | Text |
+| created_at | DATETIME | Timestamp |
+| deleted_for_all | BOOLEAN | Deleted for all flag |
+| moment_id | INTEGER | Moment ID (ephemeral) |
 
 #### `moments`
-| Поле | Тип | Описание |
-|------|-----|----------|
-| id | INTEGER | Первичный ключ |
-| sender_id | INTEGER | Отправитель |
-| receiver_id | INTEGER | Получатель |
-| thumb_data_url | TEXT | Thumb preview |
-| ttl_seconds | INTEGER | Время жизни |
-| expires_at | DATETIME | стекает |
+| Field | Type | Description |
+|-------|------|-------------|
+| id | INTEGER | Primary key |
+| sender_id | INTEGER | Sender |
+| receiver_id | INTEGER | Receiver |
+| thumb_data_url | TEXT | Thumbnail preview |
+| ttl_seconds | INTEGER | TTL seconds |
+| expires_at | DATETIME | Expiration time |
 
-### Таблицы серверов
+### Server tables
 
 #### `servers`
-| Поле | Тип | Описание |
-|------|-----|----------|
-| id | INTEGER | Первичный ключ |
-| username | TEXT | Уникальный username (для public) |
-| name | TEXT | Название |
-| description | TEXT | Описание |
-| icon_url | TEXT | URL иконки |
+| Field | Type | Description |
+|-------|------|-------------|
+| id | INTEGER | Primary key |
+| username | TEXT | Public username (unique) |
+| name | TEXT | Server name |
+| description | TEXT | Description |
+| icon_url | TEXT | Icon URL |
 | type | TEXT | public/private |
-| owner_id | INTEGER | Владелец |
-| created_at | DATETIME | Дата создания |
+| owner_id | INTEGER | Owner |
+| created_at | DATETIME | Created at |
 
 #### `server_members`
-| Поле | Тип | Описание |
-|------|-----|----------|
-| server_id | INTEGER | Сервер |
-| user_id | INTEGER | Участник |
-| role_id | INTEGER | Роль |
-| joined_at | DATETIME | Дата вступления |
+| Field | Type | Description |
+|-------|------|-------------|
+| server_id | INTEGER | Server |
+| user_id | INTEGER | Member |
+| role_id | INTEGER | Role |
+| joined_at | DATETIME | Joined at |
 
 #### `server_roles`
-| Поле | Тип | Описание |
-|------|-----|----------|
-| id | INTEGER | Первичный ключ |
-| server_id | INTEGER | Сервер |
-| name | TEXT | Название роли |
-| rank | INTEGER | Ранг (приоритет) |
-| permissions_json | TEXT | Права (JSON) |
-| is_system | BOOLEAN | Системная роль |
+| Field | Type | Description |
+|-------|------|-------------|
+| id | INTEGER | Primary key |
+| server_id | INTEGER | Server |
+| name | TEXT | Role name |
+| rank | INTEGER | Rank (priority) |
+| permissions_json | TEXT | Permissions (JSON) |
+| is_system | BOOLEAN | System role |
 
 #### `server_channels`
-| Поле | Тип | Описание |
-|------|-----|----------|
-| id | INTEGER | Первичный ключ |
-| server_id | INTEGER | Сервер |
-| name | TEXT | Название |
+| Field | Type | Description |
+|-------|------|-------------|
+| id | INTEGER | Primary key |
+| server_id | INTEGER | Server |
+| name | TEXT | Channel name |
 | type | TEXT | text/voice |
-| position | INTEGER | Позиция в списке |
+| position | INTEGER | Position |
 
 #### `server_messages`
-| Поле | Тип | Описание |
-|------|-----|----------|
-| id | INTEGER | Первичный ключ |
-| channel_id | INTEGER | Канал |
-| user_id | INTEGER | Автор |
-| text | TEXT | Текст |
-| created_at | DATETIME | Дата |
+| Field | Type | Description |
+|-------|------|-------------|
+| id | INTEGER | Primary key |
+| channel_id | INTEGER | Channel |
+| user_id | INTEGER | Author |
+| text | TEXT | Text |
+| created_at | DATETIME | Timestamp |
 
 #### `server_join_requests`
-| Поле | Тип | Описание |
-|------|-----|----------|
-| id | INTEGER | Первичный ключ |
-| server_id | INTEGER | Сервер |
-| user_id | INTEGER | Заявитель |
+| Field | Type | Description |
+|-------|------|-------------|
+| id | INTEGER | Primary key |
+| server_id | INTEGER | Server |
+| user_id | INTEGER | Requestor |
 | status | TEXT | pending/approved/rejected |
-| created_at | DATETIME | Дата заявки |
+| created_at | DATETIME | Requested at |
 
-### Системные таблицы
+### System tables
 
 #### `rate_limits`
-| Поле | Тип | Описание |
-|------|-----|----------|
-| id | INTEGER | Первичный ключ |
-| ip | TEXT | IP адрес |
+| Field | Type | Description |
+|-------|------|-------------|
+| id | INTEGER | Primary key |
+| ip | TEXT | IP address |
 | action | TEXT | login/register/forgot_password |
-| attempts | INTEGER | Количество попыток |
-| blocked_until | DATETIME | Заблокирован до |
+| attempts | INTEGER | Attempts count |
+| blocked_until | DATETIME | Blocked until |
 
 #### `audit_logs`
-| Поле | Тип | Описание |
-|------|-----|----------|
-| id | INTEGER | Первичный ключ |
-| event_type | TEXT | Тип события |
-| user_id | INTEGER | Кто совершил |
-| target_id | INTEGER | ID объекта |
-| ip_address | TEXT | IP адрес |
+| Field | Type | Description |
+|-------|------|-------------|
+| id | INTEGER | Primary key |
+| event_type | TEXT | Event type |
+| user_id | INTEGER | Actor |
+| target_id | INTEGER | Target ID |
+| ip_address | TEXT | IP address |
 | user_agent | TEXT | User Agent |
-| details | TEXT | JSON с деталями |
-| created_at | DATETIME | Дата события |
+| details | TEXT | JSON details |
+| created_at | DATETIME | Timestamp |
 
 ---
 
-## 📡 API документация
+## 📡 API documentation
 
-Полная документация API доступна в файле [backend/API.md](./backend/API.md).
+Full API docs live in [backend/API.md](./backend/API.md).
 
-### Базовый URL
+### Base URL
 ```
 http://localhost:5000/api
 ```
 
-### Основные endpoints
+### Core endpoints
 
 #### Auth
-- `POST /register` — Регистрация
-- `POST /login` — Вход
-- `POST /refresh` — Обновление токена
-- `POST /logout` — Выход
+- `POST /register` — Register
+- `POST /login` — Login
+- `POST /refresh` — Refresh token
+- `POST /logout` — Logout
 
 #### Profile
-- `GET /profile` — Мой профиль
-- `GET /profile/:userId` — Профиль пользователя
-- `PUT /profile` — Обновить профиль
-- `POST /profile/avatar` — Загрузить аватар
-- `POST /profile/banner` — Загрузить баннер
-- `DELETE /profile` — Удалить аккаунт
+- `GET /profile` — My profile
+- `GET /profile/:userId` — User profile
+- `PUT /profile` — Update profile
+- `POST /profile/avatar` — Upload avatar
+- `POST /profile/banner` — Upload banner
+- `DELETE /profile` — Delete account
 
 #### Posts
-- `GET /posts` — Лента
-- `GET /posts/recommended` — Популярное
-- `GET /posts/following` — Подписки
-- `POST /posts` — Создать пост
-- `DELETE /posts/:postId` — Удалить пост
-- `POST /posts/:postId/resonance` — Лайк
+- `GET /posts` — Feed
+- `GET /posts/recommended` — Recommended
+- `GET /posts/following` — Following
+- `POST /posts` — Create post
+- `DELETE /posts/:postId` — Delete post
+- `POST /posts/:postId/resonance` — Like
 
 #### Messages
-- `GET /messages` — Список чатов
-- `GET /messages/:userId` — стория переписки
-- `POST /messages` — Отправить сообщение
-- `DELETE /messages/:messageId` — Удалить сообщение
+- `GET /messages` — Chat list
+- `GET /messages/:userId` — Message history
+- `POST /messages` — Send message
+- `DELETE /messages/:messageId` — Delete message
 
 #### Servers
-- `POST /servers` — Создать сервер
-- `GET /servers/my` — Мои серверы
-- `GET /servers/public` — Публичные серверы
-- `GET /servers/:identifier` — Сервер по username/ID
-- `POST /servers/:id/join` — Вступить
-- `POST /servers/:id/channels` — Создать канал
-- `POST /servers/:serverId/channels/:channelId/messages` — Сообщение в канал
+- `POST /servers` — Create server
+- `GET /servers/my` — My servers
+- `GET /servers/public` — Public servers
+- `GET /servers/:identifier` — Server by username/ID
+- `POST /servers/:id/join` — Join
+- `POST /servers/:id/channels` — Create channel
+- `POST /servers/:serverId/channels/:channelId/messages` — Channel message
 
 ---
 
-## 🔌 WebSocket события
+## 🔌 WebSocket events
 
-### Подключение
+### Connection
 ```
 ws://localhost:5000/ws
 ```
 
-### События
+### Events
 
-**Клиент → Сервер:**
-- `register` — Регистрация пользователя
+**Client → Server:**
+- `register` — Register user
 - `ping` — Heartbeat
-- `typing:start` / `typing:stop` — ндикатор набора
-- `chat:read` — Прочтение чата
-- `message:delivered` — Доставка сообщения
-- `server:subscribe` / `server:unsubscribe` — Подписка на сервер
+- `typing:start` / `typing:stop` — Typing indicator
+- `chat:read` — Mark chat read
+- `message:delivered` — Delivery
+- `server:subscribe` / `server:unsubscribe` — Subscribe to server
 
-**Сервер → Клиент:**
-- `new_post` — Новый пост
-- `new_message` — Новое сообщение
-- `typing:update` — ндикатор набора
-- `chat:read_update` — Прочтение чата
-- `presence:update` — Статус онлайн
-- `channel:new_message` — Сообщение в канале
-- `server:created` / `server:deleted` — Сервер создан/удалён
+**Server → Client:**
+- `new_post` — New post
+- `new_message` — New message
+- `typing:update` — Typing status
+- `chat:read_update` — Read status
+- `presence:update` — Online status
+- `channel:new_message` — Channel message
+- `server:created` / `server:deleted` — Server created/deleted
 
 ---
 
-## 🛡️ Безопасность
+## 🛡️ Security
 
 ### 1. httpOnly Cookies
-Токены хранятся в httpOnly cookies, недоступны через JavaScript.
+Tokens are stored in httpOnly cookies and inaccessible via JavaScript.
 
 ### 2. Rate Limiting
-- Login: 5 попыток / 15 минут
-- Register: 3 попытки / 1 час
+- Login: 5 attempts / 15 minutes
+- Register: 3 attempts / 1 hour
 
 ### 3. Content Security Policy
-Строгие заголовки CSP для защиты от XSS.
+Strict CSP headers protect against XSS.
 
-### 4. Zod Валидация
-Строгая валидация всех входящих данных.
+### 4. Zod validation
+All inputs are strictly validated.
 
-### 5. Централизованная обработка ошибок
-Единый формат ошибок API.
+### 5. Centralized error handling
+Unified API error format.
 
-### 6. Централизованная проверка прав
-Система ролей и прав доступа для серверов.
+### 6. Permission checks
+Role-based access control for servers.
 
 ---
 
-## 🚀 Установка и запуск
+## 🚀 Installation and launch
 
-### 1. Клонирование
+### 1. Clone
 ```bash
 git clone <repository-url>
 cd LUME
@@ -488,13 +490,13 @@ cd LUME
 cd backend
 npm install
 
-# Миграции БД
-node migrate.js                    # Основные таблицы
+# Database migrations
+node migrate.js                    # Core tables
 node migrate-rate-limit.js         # Rate limiting
-node migrate-audit.js              # Audit логи
-node migrate-communities.js        # Серверы (communities)
+node migrate-audit.js              # Audit logs
+node migrate-communities.js        # Servers (communities)
 
-# Запуск
+# Start
 npm run dev
 ```
 
@@ -504,14 +506,14 @@ npm install
 npm run dev
 ```
 
-### 4. Доступ
+### 4. Access
 - Frontend: `http://localhost:8080`
 - Backend API: `http://localhost:5000/api`
 - Health check: `http://localhost:5000/health`
 
 ---
 
-## ⚙️ Конфигурация
+## ⚙️ Configuration
 
 ### Backend (.env)
 ```env
@@ -522,28 +524,28 @@ LOG_LEVEL=info  # error | warn | info | debug
 ```
 
 ### Frontend
-Не требует переменных окружения.
+No environment variables required.
 API URL: `http://localhost:5000/api`
 
 ---
 
-## 📄 Лицензия
+## 📄 License
 
 MIT License
 
 ---
 
-## 👥 Авторы
+## 👥 Authors
 
 - **zxclovly** — Owner & Admin
 
 ---
 
-## 📚 Дополнительная документация
+## 📚 Additional documentation
 
-- [Features Inventory](./docs/FEATURES_INVENTORY.md) — Полный список функций
-- [Error Handling](./docs/ERROR_HANDLING.md) — Система обработки ошибок
-- [Servers Module](./docs/SERVERS_MODULE.md) — Документация по модулю серверов
-- [Project UI](./docs/PROJECT_UI/) — UI/UX документация
+- [Features Inventory](./docs/FEATURES_INVENTORY.md) — Complete feature list
+- [Error Handling](./docs/ERROR_HANDLING.md) — Error handling system
+- [Servers Module](./docs/SERVERS_MODULE.md) — Servers module docs
+- [Project UI](./docs/PROJECT_UI/) — UI/UX documentation
 - [API Documentation](./backend/API.md) — API endpoints
 

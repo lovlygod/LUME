@@ -1,61 +1,61 @@
-# LUME Project UI Overview
+# LUME 项目 UI 概览
 
-English | [Русский](../../docs-ru/PROJECT_UI/OVERVIEW.ru.md) | [中文](../../docs-cn/PROJECT_UI/OVERVIEW.cn.md)
+中文 | [Русский](../../docs-ru/PROJECT_UI/OVERVIEW.ru.md) | [English](../../docs/PROJECT_UI/OVERVIEW.md)
 
-**Last updated:** 2026-03-11
+**最后更新：** 2026-03-11
 
 ---
 
-## App map
+## 应用地图
 
 ```
 LUME
-├── Landing (public)
+├── Landing（公开）
 │   ├── /                 — LandingPage
 │   ├── /faq              — FAQ
 │   ├── /rules            — Rules
 │   ├── /support          — Support
 │   ├── /status           — Status
 │   └── /contacts         — Contacts
-├── App (authenticated)
+├── App（登录后）
 │   ├── /feed             — Feed
 │   ├── /explore          — Explore
 │   ├── /messages         — Messenger
 │   │   └── /messages/:chatId
-│   ├── /messages?userId=... — Open chat via query param
-│   ├── /servers          — Servers catalog
+│   ├── /messages?userId=... — 通过 query 参数打开聊天
+│   ├── /servers          — 服务器目录
 │   ├── /server/:identifier
 │   │   ├── /channel/:channelName
 │   │   ├── /settings
 │   │   └── /members
-│   ├── /profile          — My profile
-│   ├── /profile/:userId  — User profile
-│   ├── /verified         — Verification
-│   ├── /settings         — Account settings
-│   ├── /admin            — Admin panel
-│   └── /settings/sessions
-│   └── /verified          — Verification flow
+│   ├── /profile          — 我的资料
+│   ├── /profile/:userId  — 用户资料
+│   ├── /verified         — 认证
+│   ├── /settings         — 账号设置
+│   ├── /admin            — 管理面板
+│   ├── /settings/sessions
+│   └── /verified          — 认证流程
 └── System
     └── *                 — 404 Not Found
 ```
 
 ---
 
-## Layouts
+## 布局
 
 ### LandingLayout
 
-- Used for public pages.
-- Header + content + footer, no sidebars.
+- 用于公开页面。
+- Header + 内容 + Footer，无侧边栏。
 
 ### AppLayout
 
-- Primary authenticated layout.
-- Left navigation + main content + right sidebar.
+- 登录后的主布局。
+- 左侧导航 + 主内容 + 右侧栏。
 
 ---
 
-## Navigation flow
+## 导航流程
 
 ```
 Landing → Login → Feed
@@ -65,10 +65,10 @@ Servers → Server → Channel / Members / Settings
 
 ---
 
-## Page list
+## 页面列表
 
-| Page | File | Layout |
-|------|------|--------|
+| 页面 | 文件 | 布局 |
+|------|------|------|
 | Feed | `src/pages/Index.tsx` | AppLayout |
 | Explore | `src/pages/Explore.tsx` | AppLayout |
 | Messages | `src/pages/Messages.tsx` | AppLayout |
@@ -97,9 +97,9 @@ Servers → Server → Channel / Members / Settings
 
 ---
 
-## Related documents
+## 相关文档
 
-- [Routes](./ROUTES.md)
-- [Layout and Navigation](./LAYOUT_AND_NAV.md)
-- [Style System](./STYLE_SYSTEM.md)
-- [Features Inventory](../FEATURES_INVENTORY.md)
+- [Routes](./ROUTES.cn.md)
+- [Layout and Navigation](./LAYOUT_AND_NAV.cn.md)
+- [Style System](./STYLE_SYSTEM.cn.md)
+- [Features Inventory](../FEATURES_INVENTORY.cn.md)

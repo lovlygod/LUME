@@ -1,6 +1,6 @@
 # Обзор UI LUME
 
-[English](./OVERVIEW.md) | Русский
+[English](../../docs/PROJECT_UI/OVERVIEW.md) | Русский | [中文](../../docs-cn/PROJECT_UI/OVERVIEW.cn.md)
 
 **Последнее обновление:** 2026-03-11
 

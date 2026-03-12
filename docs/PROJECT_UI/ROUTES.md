@@ -1,6 +1,6 @@
 # LUME Routes
 
-English | [Русский](./ROUTES.ru.md)
+English | [Русский](../../docs-ru/PROJECT_UI/ROUTES.ru.md) | [中文](../../docs-cn/PROJECT_UI/ROUTES.cn.md)
 
 **Last updated:** 2026-03-11
 
