@@ -100,7 +100,7 @@ export const MessageSearch = ({ onResultClick, t, chats }: MessageSearchProps) =
 
   const handleResultClick = (result: SearchResult, chatMatch?: Chat) => {
     // Переход к чату с сообщением
-    const contactId = result.contact?.id || chatMatch?.userId || result.user.id;
+    const contactId = chatMatch?.userId || result.contact?.id || result.user.id;
     navigate(`/messages/${contactId}`);
     
     // Сохраняем ID сообщения для прокрутки к нему (можно реализовать через context)
@@ -233,7 +233,7 @@ export const MessageSearch = ({ onResultClick, t, chats }: MessageSearchProps) =
                         <div className="mt-1 text-xs text-white/40">
                           {t("messages.inChat") || "В чате"} с{" "}
                           <span className="text-white/60">
-                            {result.contact?.name || chatMatch?.name || result.user.name}
+                            {chatMatch?.name || result.contact?.name || result.user.name}
                           </span>
                         </div>
                       </div>
