@@ -215,6 +215,7 @@
     "searchPlaceholder": "Поиск сообщений...",
     "searchError": "Не удалось найти сообщения",
     "searchNoResults": "Ничего не найдено",
+    "inChat": "В чате",
     "dropFiles": "Перетащите файлы сюда",
     "dropFilesHint": "Изображения и документы до 25MB",
     "fileTooLarge": "Файл \"{filename}\" слишком большой. Максимальный размер: {maxSize}",

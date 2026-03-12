@@ -195,20 +195,20 @@ export const MessageSearch = ({ onResultClick, t }: MessageSearchProps) => {
                   >
                     <div className="flex items-start gap-3">
                       {/* Аватар контакта */}
-                      <img
-                        src={normalizeImageUrl(result.contact?.avatar || result.user.avatar)}
-                        alt={result.contact?.name || result.user.name}
-                        className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                      />
+                        <img
+                          src={normalizeImageUrl(result.user.avatar)}
+                          alt={result.user.name}
+                          className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                        />
                       
                       <div className="flex-1 min-w-0">
                         {/* Имя и время */}
                         <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium text-white truncate">
-                              {result.contact?.name || result.user.name}
+                              {result.user.name}
                             </span>
-                            {result.contact?.verified && (
+                            {result.user.verified && (
                               <span className="text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded">
                                 ✓
                               </span>
