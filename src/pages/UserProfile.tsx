@@ -307,7 +307,16 @@ const UserProfile = () => {
           <div className="mt-3 flex items-center gap-4 text-sm text-secondary">
             <div className="flex items-center gap-1.5">
               <Calendar className="h-3.5 w-3.5" />
-              <span>{t("profile.joined")} {user.joinDate || '2024'}</span>
+              <span>
+                {t("profile.joined")}{" "}
+                {user.joinDate && !Number.isNaN(Date.parse(user.joinDate))
+                  ? new Date(user.joinDate).toLocaleDateString("ru-RU", {
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric",
+                    })
+                  : "-"}
+              </span>
             </div>
           </div>
         </div>
@@ -357,5 +366,4 @@ const UserProfile = () => {
 };
 
 export default UserProfile;
-
 
