@@ -98,9 +98,8 @@ export const MessageSearch = ({ onResultClick, t, chats }: MessageSearchProps) =
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleResultClick = (result: SearchResult) => {
+  const handleResultClick = (result: SearchResult, chatMatch?: Chat) => {
     // Переход к чату с сообщением
-    const chatMatch = chats?.find((chat) => String(chat.id) === String(result.chatId));
     const contactId = result.contact?.id || chatMatch?.userId || result.user.id;
     navigate(`/messages/${contactId}`);
     
@@ -194,9 +193,9 @@ export const MessageSearch = ({ onResultClick, t, chats }: MessageSearchProps) =
                   const chatMatch = chats?.find((chat) => String(chat.id) === String(result.chatId));
 
                   return (
-                  <button
-                    key={result.id}
-                    onClick={() => handleResultClick(result)}
+                   <button
+                     key={result.id}
+                    onClick={() => handleResultClick(result, chatMatch)}
                     className="w-full px-4 py-3 hover:bg-white/5 transition-colors text-left border-b border-white/5 last:border-b-0"
                   >
                     <div className="flex items-start gap-3">
