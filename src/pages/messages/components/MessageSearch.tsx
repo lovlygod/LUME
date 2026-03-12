@@ -175,7 +175,7 @@ export const MessageSearch = ({ onResultClick, t }: MessageSearchProps) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-full left-0 right-0 mt-2 rounded-[20px] border border-white/10 bg-white/10 backdrop-blur-[24px] shadow-xl overflow-hidden z-50"
+            className="absolute top-full left-0 right-0 mt-2 rounded-[20px] border border-white/15 bg-white/25 backdrop-blur-[24px] shadow-xl overflow-hidden z-50"
           >
             {error ? (
               <div className="px-4 py-3 text-sm text-red-200">
