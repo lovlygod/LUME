@@ -14,7 +14,7 @@ const MainLayout = () => {
 
   return (
     <AppLayout>
-      <div className="flex h-screen w-full overflow-hidden min-h-0">
+      <div className="flex h-screen w-full overflow-hidden min-h-0 pb-24 lg:pb-0">
         {/* Left Sidebar - 260px fixed */}
         {!isPolicyPage && <SidebarLeft />}
 

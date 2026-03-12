@@ -56,6 +56,7 @@
     --glass-radius: 28px;
     --glass-shadow: 0 12px 40px rgba(0,0,0,0.35);
     --glass-transition: 0.4s cubic-bezier(.4,0,.2,1);
+    --mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   .light {
@@ -183,6 +184,10 @@
 
   .text-secondary {
     color: var(--text-secondary);
+  }
+
+  .pb-safe {
+    padding-bottom: calc(1rem + var(--mobile-safe-bottom));
   }
 }
 

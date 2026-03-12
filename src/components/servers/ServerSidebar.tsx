@@ -144,7 +144,7 @@ export const ServerSidebar: React.FC<ServerSidebarProps> = ({ onChannelSelect })
   if (!currentServer) return null;
 
   return (
-    <div className="w-72 h-full p-4">
+    <div className="hidden lg:block w-72 h-full p-4">
       <div className="flex h-full flex-col overflow-hidden rounded-[30px] border border-white/10 bg-white/5 backdrop-blur-[24px]">
         {/* Server Header */}
         <div className="px-5 py-4 border-b border-white/10">

@@ -8,7 +8,7 @@ interface ServerLayoutProps {
 
 export const ServerLayout: React.FC<ServerLayoutProps> = ({ children }) => {
   return (
-    <div className="flex h-screen w-full gap-0.1 overflow-hidden bg-background">
+    <div className="flex h-screen w-full gap-0.1 overflow-hidden bg-background pb-24 lg:pb-0">
       {/* Left Sidebar - стандартный левый сайдбар LUME */}
       <SidebarLeft />
 
