@@ -75,7 +75,7 @@ const ChatList = ({
 
     {!selectedChatId && (
       <div className="px-5 pb-3">
-        <MessageSearch t={t} />
+        <MessageSearch t={t} chats={chats} />
       </div>
     )}
 

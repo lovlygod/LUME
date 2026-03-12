@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { messagesAPI } from "@/services/api";
+import type { Chat } from "@/types/messages";
 import { normalizeImageUrl } from "@/lib/utils";
 import { Loader } from "@/components/ui/Loader";
 
@@ -29,11 +30,12 @@ export interface SearchResult {
 interface MessageSearchProps {
   onResultClick?: (result: SearchResult) => void;
   t: (key: string) => string;
+  chats?: Chat[];
 }
 
 const DEBOUNCE_DELAY = 300;
 
-export const MessageSearch = ({ onResultClick, t }: MessageSearchProps) => {
+export const MessageSearch = ({ onResultClick, t, chats }: MessageSearchProps) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -98,7 +100,8 @@ export const MessageSearch = ({ onResultClick, t }: MessageSearchProps) => {
 
   const handleResultClick = (result: SearchResult) => {
     // Переход к чату с сообщением
-    const contactId = result.contact?.id || result.user.id;
+    const chatMatch = chats?.find((chat) => String(chat.id) === String(result.chatId));
+    const contactId = result.contact?.id || chatMatch?.userId || result.user.id;
     navigate(`/messages/${contactId}`);
     
     // Сохраняем ID сообщения для прокрутки к нему (можно реализовать через context)
@@ -187,7 +190,10 @@ export const MessageSearch = ({ onResultClick, t }: MessageSearchProps) => {
               </div>
             ) : (
               <div className="max-h-[400px] overflow-y-auto">
-                {results.map((result) => (
+                {results.map((result) => {
+                  const chatMatch = chats?.find((chat) => String(chat.id) === String(result.chatId));
+
+                  return (
                   <button
                     key={result.id}
                     onClick={() => handleResultClick(result)}
@@ -228,13 +234,13 @@ export const MessageSearch = ({ onResultClick, t }: MessageSearchProps) => {
                         <div className="mt-1 text-xs text-white/40">
                           {t("messages.inChat") || "В чате"} с{" "}
                           <span className="text-white/60">
-                            {result.contact?.name || result.user.name}
+                            {result.contact?.name || chatMatch?.name || result.user.name}
                           </span>
                         </div>
                       </div>
                     </div>
                   </button>
-                ))}
+                )})}
               </div>
             )}
           </motion.div>

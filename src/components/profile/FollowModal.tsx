@@ -36,16 +36,10 @@ const FollowModal = ({ open, tab, onTabChange, followers, following, onClose }: 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            style={{
-              position: "fixed",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              zIndex: 50,
-            }}
-            className="w-full max-w-md glass-panel rounded-3xl overflow-hidden mx-4"
+            className="fixed inset-0 z-50 flex items-center justify-center px-4"
           >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+            <div className="w-full max-w-md glass-panel rounded-3xl overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
               <h3 className="font-semibold text-white">
                 {tab === "followers" ? t("profile.followers") : t("profile.following")}
               </h3>
@@ -55,9 +49,9 @@ const FollowModal = ({ open, tab, onTabChange, followers, following, onClose }: 
               >
                 <X className="h-4 w-4 text-white/70" />
               </button>
-            </div>
+              </div>
 
-            <div className="flex border-b border-white/10">
+              <div className="flex border-b border-white/10">
               <button
                 onClick={() => onTabChange("followers")}
                 className={`flex-1 px-4 py-2.5 text-sm font-medium transition-smooth ${
@@ -74,9 +68,9 @@ const FollowModal = ({ open, tab, onTabChange, followers, following, onClose }: 
               >
                 {t("profile.following")}
               </button>
-            </div>
+              </div>
 
-            <div className="max-h-[400px] overflow-y-auto">
+              <div className="max-h-[400px] overflow-y-auto">
               {list.length > 0 ? (
                 list.map((user) => (
                   <button
@@ -116,6 +110,7 @@ const FollowModal = ({ open, tab, onTabChange, followers, following, onClose }: 
                   {tab === "followers" ? t("profile.noFollowers") : t("profile.noFollowing")}
                 </div>
               )}
+              </div>
             </div>
           </motion.div>
         </>
