@@ -285,7 +285,7 @@ const Explore = () => {
                               {user.name.charAt(0)}
                             </div>
                           )}
-                          {user.verified && (
+                          {Boolean(user.verified) && (
                             <div className="absolute -bottom-0.5 -right-0.5">
                               <VerifiedBadge className="h-4 w-4" />
                             </div>
@@ -298,7 +298,7 @@ const Explore = () => {
                             <span className="font-semibold text-white truncate">
                               {user.name}
                             </span>
-                            {user.verified && (
+                            {Boolean(user.verified) && (
                               <VerifiedBadge className="h-4 w-4" />
                             )}
                             {isDeveloperCrown(user.username)
