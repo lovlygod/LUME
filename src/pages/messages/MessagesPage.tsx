@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { LayoutGroup, AnimatePresence, motion } from "framer-motion";
+import { MessageCircle } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -484,7 +485,7 @@ const MessagesPage = () => {
             >
               <div className="rounded-[24px] border border-white/10 bg-white/5 px-6 py-5 text-center backdrop-blur-[24px]">
                 <div className="h-14 w-14 rounded-full bg-white/8 flex items-center justify-center mx-auto mb-3">
-                  ??
+                  <MessageCircle className="h-6 w-6 text-white/50" />
                 </div>
                 <p className="text-lg font-medium text-white mb-1">{t("messages.selectChat")}</p>
                 <p className="text-sm text-secondary">{t("messages.chooseConversation")}</p>
@@ -498,4 +499,3 @@ const MessagesPage = () => {
 };
 
 export default MessagesPage;
-
