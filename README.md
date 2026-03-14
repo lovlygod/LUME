@@ -67,7 +67,7 @@ English | [Русский](./README.ru.md) | [中文](./README.cn.md)
 |------------|---------|---------|
 | Node.js | latest | Runtime |
 | Express | 4.18.2 | Web framework |
-| SQLite3 | 5.1.6 | Database |
+| PostgreSQL | 16+ | Database |
 | WebSocket (ws) | 8.19.0 | Real-time communication |
 | JWT (jsonwebtoken) | 9.0.2 | Authentication |
 | Bcryptjs | 2.4.3 | Password hashing |
@@ -108,7 +108,7 @@ LUME/
 │   │   └── test/           # Tests
 │   └── public/             # Static assets
 │
-└── Backend (Express + SQLite)
+└── Backend (Express + PostgreSQL)
     ├── src/
     │   ├── server.js       # Entry point + WebSocket server
     │   ├── api.js          # API routes (Auth, Posts, Messages, Profile)
@@ -125,10 +125,9 @@ LUME/
     │   ├── csrf.js         # CSRF protection
     │   ├── linkPreview.js  # Open Graph preview
     │   ├── serializers.js  # Data serialization
-    │   └── db.js           # SQLite database
+    │   └── db.js           # PostgreSQL database
     │
     ├── uploads/            # Uploaded files
-    ├── database.db         # SQLite database
     ├── migrate.js          # Core migrations
     ├── migrate-rate-limit.js # Rate limiting migration
     ├── migrate-communities.js # Servers migration

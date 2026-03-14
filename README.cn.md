@@ -68,7 +68,7 @@
 |------|------|------|
 | Node.js | latest | 运行时 |
 | Express | 4.18.2 | Web 框架 |
-| SQLite3 | 5.1.6 | 数据库 |
+| PostgreSQL | 16+ | 数据库 |
 | WebSocket (ws) | 8.19.0 | 实时通信 |
 | JWT (jsonwebtoken) | 9.0.2 | 认证 |
 | Bcryptjs | 2.4.3 | 密码哈希 |
@@ -109,7 +109,7 @@ LUME/
 │   │   └── test/           # 测试
 │   └── public/             # 静态文件
 │
-└── Backend (Express + SQLite)
+└── Backend (Express + PostgreSQL)
     ├── src/
     │   ├── server.js       # 入口与 WebSocket
     │   ├── api.js          # API 路由 (Auth, Posts, Messages, Profile)
@@ -126,10 +126,9 @@ LUME/
     │   ├── csrf.js         # CSRF 保护
     │   ├── linkPreview.js  # Open Graph 预览
     │   ├── serializers.js  # 数据序列化
-    │   └── db.js           # SQLite
+    │   └── db.js           # PostgreSQL
     │
     ├── uploads/            # 上传文件
-    ├── database.db         # SQLite 数据库
     ├── migrate.js          # 主要迁移
     ├── migrate-rate-limit.js # 限流迁移
     ├── migrate-communities.js # 服务器迁移

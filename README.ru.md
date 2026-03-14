@@ -67,7 +67,7 @@
 |------------|--------|------------|
 | Node.js | latest | Runtime |
 | Express | 4.18.2 | Web фреймворк |
-| SQLite3 | 5.1.6 | База данных |
+| PostgreSQL | 16+ | База данных |
 | WebSocket (ws) | 8.19.0 | Real-time связь |
 | JWT (jsonwebtoken) | 9.0.2 | Аутентификация |
 | Bcryptjs | 2.4.3 | Хеширование паролей |
@@ -108,7 +108,7 @@ LUME/
 │   │   └── test/           # Тесты
 │   └── public/             # Статические файлы
 │
-└── Backend (Express + SQLite)
+└── Backend (Express + PostgreSQL)
     ├── src/
     │   ├── server.js       # Точка входа, WebSocket сервер
     │   ├── api.js          # API роуты (Auth, Posts, Messages, Profile)
@@ -125,10 +125,9 @@ LUME/
     │   ├── csrf.js         # CSRF защита
     │   ├── linkPreview.js  # Open Graph превью
     │   ├── serializers.js  # Сериализация данных
-    │   └── db.js           # База данных SQLite
+    │   └── db.js           # База данных PostgreSQL
     │
     ├── uploads/            # Загруженные файлы
-    ├── database.db         # SQLite база
     ├── migrate.js          # Основные миграции БД
     ├── migrate-rate-limit.js # Миграция rate limiting
     ├── migrate-communities.js # Миграция серверов
