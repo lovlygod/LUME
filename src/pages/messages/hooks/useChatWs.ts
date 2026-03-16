@@ -16,6 +16,7 @@ const ensureMessageShape = (data: {
   attachments?: Attachment[];
   replyToMessageId?: string | null;
   sticker?: Message["sticker"] | null;
+  linkPreview?: Message["linkPreview"] | null;
 }): Message => ({
   id: data.id.toString(),
   senderId: String(data.senderId),
@@ -27,6 +28,7 @@ const ensureMessageShape = (data: {
   own: false,
   attachments: data.attachments || [],
   replyToMessageId: data.replyToMessageId || null,
+  linkPreview: data.linkPreview || null,
 });
 
 export const useChatWs = (params: {
@@ -52,6 +54,7 @@ export const useChatWs = (params: {
         attachments?: Attachment[];
         replyToMessageId?: string | null;
         sticker?: Message["sticker"] | null;
+        linkPreview?: Message["linkPreview"] | null;
       }) => {
         const message = ensureMessageShape(data);
         const isIncoming = String(data.senderId) !== String(params.currentUserId);

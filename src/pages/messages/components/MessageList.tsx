@@ -111,6 +111,13 @@ const MessageList = ({
     const lastMessage = visibleMessages[visibleMessages.length - 1];
     if (!lastMessage) return;
 
+    if (!lastMessageIdRef.current) {
+      stickToBottomRef.current = true;
+      requestAnimationFrame(() => {
+        scrollEl.scrollTop = scrollEl.scrollHeight;
+      });
+    }
+
     if (lastMessageIdRef.current && lastMessage.id !== lastMessageIdRef.current && stickToBottomRef.current) {
       requestAnimationFrame(() => {
         scrollEl.scrollTop = scrollEl.scrollHeight;
