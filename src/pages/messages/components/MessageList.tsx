@@ -22,6 +22,8 @@ interface MessageListProps {
   currentUser: User | null;
   selectedChatUser: User | null;
   highlightedMessageId: string | null;
+  scrollToMessageId?: string | null;
+  scrollToMessageNonce?: number;
   onReply: (msg: Message) => void;
   onToggleHeart: (msg: Message) => void;
   doubleClickAction: "reply" | "heart";
@@ -47,6 +49,8 @@ const MessageList = ({
   currentUser,
   selectedChatUser,
   highlightedMessageId,
+  scrollToMessageId,
+  scrollToMessageNonce,
   onReply,
   onToggleHeart,
   doubleClickAction,
@@ -125,6 +129,13 @@ const MessageList = ({
     }
     lastMessageIdRef.current = lastMessage.id;
   }, [visibleMessages]);
+
+  useEffect(() => {
+    if (!scrollToMessageId) return;
+    const targetIndex = visibleMessages.findIndex((msg) => msg.id === scrollToMessageId);
+    if (targetIndex === -1) return;
+    rowVirtualizer.scrollToIndex(targetIndex, { align: "center" });
+  }, [scrollToMessageId, scrollToMessageNonce, visibleMessages, rowVirtualizer]);
 
   const totalSize = rowVirtualizer.getTotalSize();
   const virtualItems = rowVirtualizer.getVirtualItems();

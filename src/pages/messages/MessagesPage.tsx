@@ -65,6 +65,8 @@ const MessagesPage = () => {
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
   const [activeImageSrc, setActiveImageSrc] = useState<string | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [scrollToMessageId, setScrollToMessageId] = useState<string | null>(null);
+  const [scrollToMessageNonce, setScrollToMessageNonce] = useState(0);
   const [stickersOpen, setStickersOpen] = useState(false);
   const [myStickerPacks, setMyStickerPacks] = useState<StickerPack[]>([]);
   const [lumeStickerPacks, setLumeStickerPacks] = useState<StickerPack[]>([]);
@@ -496,6 +498,8 @@ const MessagesPage = () => {
 
 
   const handleReplyJump = (messageId: string) => {
+    setScrollToMessageId(messageId);
+    setScrollToMessageNonce((prev) => prev + 1);
     setHighlightedMessageId(messageId);
     setTimeout(() => setHighlightedMessageId(null), 1200);
   };
@@ -561,6 +565,8 @@ const MessagesPage = () => {
                         currentUser={currentUser}
                         selectedChatUser={selectedChatUser}
                         highlightedMessageId={highlightedMessageId}
+                        scrollToMessageId={scrollToMessageId}
+                        scrollToMessageNonce={scrollToMessageNonce}
                         onReply={setReplyFromMessage}
                         onToggleHeart={handleToggleHeart}
                         doubleClickAction={doubleClickAction}

@@ -41,6 +41,8 @@ const ServerPage = () => {
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
   const [activeImageSrc, setActiveImageSrc] = useState<string | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [scrollToMessageId, setScrollToMessageId] = useState<string | null>(null);
+  const [scrollToMessageNonce, setScrollToMessageNonce] = useState(0);
 
   const queryClient = useQueryClient();
   const { data: serverData, isLoading: serverLoading } = useServerMeta(identifier);
@@ -186,6 +188,8 @@ const ServerPage = () => {
   };
 
   const handleReplyJump = (messageId: string) => {
+    setScrollToMessageId(messageId);
+    setScrollToMessageNonce((prev) => prev + 1);
     setHighlightedMessageId(messageId);
     setTimeout(() => setHighlightedMessageId(null), 1200);
   };
@@ -300,6 +304,8 @@ const ServerPage = () => {
                 messages={messages}
                 currentUser={currentUser}
                 highlightedMessageId={highlightedMessageId}
+                scrollToMessageId={scrollToMessageId}
+                scrollToMessageNonce={scrollToMessageNonce}
                 onReply={setReplyFromMessage}
                 onReplyJump={handleReplyJump}
                 onDeleteRequest={(msgId, x, y) => setShowDeleteMenu({ msgId, x, y })}

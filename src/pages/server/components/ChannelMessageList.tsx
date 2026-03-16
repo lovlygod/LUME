@@ -9,6 +9,8 @@ interface ChannelMessageListProps {
   messages: Array<ServerMessage & { deletedForMe?: boolean; deletedForAll?: boolean; replyToMessageId?: string | null }>;
   currentUser: User | null;
   highlightedMessageId: string | null;
+  scrollToMessageId?: string | null;
+  scrollToMessageNonce?: number;
   onReply: (msg: ServerMessage) => void;
   onReplyJump: (messageId: string) => void;
   onDeleteRequest: (messageId: string, x: number, y: number) => void;
@@ -70,6 +72,8 @@ export const ChannelMessageList = ({
   messages,
   currentUser,
   highlightedMessageId,
+  scrollToMessageId,
+  scrollToMessageNonce,
   onReply,
   onReplyJump,
   onDeleteRequest,
@@ -158,6 +162,13 @@ export const ChannelMessageList = ({
     }
     lastMessageIdRef.current = lastMessage.id;
   }, [messagesCount, visibleMessages, handleAutoScroll]);
+
+  useEffect(() => {
+    if (!scrollToMessageId) return;
+    const targetIndex = visibleMessages.findIndex((msg) => msg.id === scrollToMessageId);
+    if (targetIndex === -1) return;
+    rowVirtualizer.scrollToIndex(targetIndex, { align: "center" });
+  }, [scrollToMessageId, scrollToMessageNonce, visibleMessages, rowVirtualizer]);
 
   useEffect(() => {
     if (stickToBottomRef.current && messagesCount > 0) {
