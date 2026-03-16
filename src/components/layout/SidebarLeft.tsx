@@ -53,8 +53,8 @@ const SidebarLeft = () => {
 
   const authNavItems = [
     { to: "/feed", icon: Home, label: t("home") },
-    { to: "/explore", icon: Compass, label: t("explore") },
     { to: "/messages", icon: MessageCircle, label: t("messages") },
+    { to: "/explore", icon: Compass, label: t("explore") },
     { to: "/servers", icon: Users, label: t("servers.title") },
   ];
 
