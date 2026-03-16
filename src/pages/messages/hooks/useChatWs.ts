@@ -32,7 +32,7 @@ const ensureMessageShape = (data: {
 export const useChatWs = (params: {
   currentUserId?: string;
   selectedChatId?: string | null;
-  onTyping?: (isTyping: boolean) => void;
+  onTyping?: (isTyping: boolean, userId?: string) => void;
   onPresence?: (online: boolean, lastSeenAt?: string | null) => void;
   onReadReceipt?: (data: { chatId: string; userId: string; lastReadMessageId: string }) => void;
 }) => {
@@ -128,7 +128,7 @@ export const useChatWs = (params: {
           { isTyping, userId: String(data.userId) }
         );
         if (String(data.chatId) === String(params.selectedChatId)) {
-          params.onTyping?.(isTyping);
+          params.onTyping?.(isTyping, String(data.userId));
         }
       }
     );

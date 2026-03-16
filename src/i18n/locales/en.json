@@ -70,13 +70,6 @@
       "server_join_request": "requested to join"
     }
   },
-  "time": {
-    "just_now": "just now",
-    "minutes_ago": "{count} minutes ago",
-    "hours_ago": "{count} hours ago",
-    "days_ago": "{count} days ago",
-    "yesterday": "yesterday"
-  },
   "navigation": {
     "home": "Home",
     "explore": "Explore",
@@ -170,7 +163,23 @@
     "deleteAccountConfirmMismatch": "You must type DELETE to confirm",
     "deleteAccountSuccess": "Account deleted successfully",
     "deleteAccountError": "Failed to delete account",
-    "deleting": "Deleting..."
+    "deleting": "Deleting...",
+    "chat": "Chat",
+    "doubleClickAction": "Double Click Action",
+    "doubleClickActionDescription": "Select what happens on double click",
+    "doubleClickReply": "Reply to message",
+    "doubleClickHeart": "React with ❤️"
+  },
+  "messages": {
+    "copyMessage": "Copy message",
+    "deleteForMe": "Delete for me",
+    "deleteForEveryone": "Delete for everyone",
+    "reply": "Reply",
+    "copySuccess": "Message text copied",
+    "copyError": "Failed to copy text",
+    "copyEmpty": "No text to copy",
+    "typingIndicator": "{name} typing...",
+    "replyAction": "Reply"
   },
   "sessions": {
     "title": "Active Sessions",
@@ -268,7 +277,11 @@
     "dropFiles": "Drop files here",
     "dropFilesHint": "Images and documents up to 25MB",
     "fileTooLarge": "File \"{filename}\" is too large. Max size: {maxSize}",
-    "fileTypeNotSupported": "File type \"{filename}\" is not supported"
+    "fileTypeNotSupported": "File type \"{filename}\" is not supported",
+    "copyMessage": "Copy message",
+    "copySuccess": "Message text copied",
+    "copyError": "Failed to copy text",
+    "copyEmpty": "No text to copy"
   },
   "feed": {
     "title": "Home",

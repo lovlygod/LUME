@@ -261,7 +261,13 @@
     "dropFiles": "Перетащите файлы сюда",
     "dropFilesHint": "Изображения и документы до 25MB",
     "fileTooLarge": "Файл \"{filename}\" слишком большой. Максимальный размер: {maxSize}",
-    "fileTypeNotSupported": "Тип файла \"{filename}\" не поддерживается"
+    "fileTypeNotSupported": "Тип файла \"{filename}\" не поддерживается",
+    "copyMessage": "Копировать сообщение",
+    "copySuccess": "Текст сообщения скопирован",
+    "copyError": "Не удалось скопировать текст",
+    "copyEmpty": "Нет текста для копирования",
+    "typingIndicator": "{name} печатает...",
+    "replyAction": "Ответить"
   },
   "feed": {
     "title": "Главная",

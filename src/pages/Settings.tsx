@@ -21,7 +21,8 @@ const Settings = () => {
     snowEffect: false,
     snowVariant: "dots" as "dots" | "flakes" | "hearts",
     postPrivacy: "public",
-    messagePrivacy: "everyone"
+    messagePrivacy: "everyone",
+    doubleClickAction: "reply" as "reply" | "heart",
   });
 
   useEffect(() => {
@@ -42,7 +43,16 @@ const Settings = () => {
       }
     }
     
-    setSettings(prev => ({ ...prev, theme: savedTheme, snowEffect: savedSnow, snowVariant: savedSnowVariant }));
+    const savedDoubleClickAction =
+      (localStorage.getItem("doubleClickAction") as "reply" | "heart" | null) || "reply";
+
+    setSettings(prev => ({
+      ...prev,
+      theme: savedTheme,
+      snowEffect: savedSnow,
+      snowVariant: savedSnowVariant,
+      doubleClickAction: savedDoubleClickAction,
+    }));
   }, []);
 
   const handleSave = async () => {
@@ -61,6 +71,9 @@ const Settings = () => {
         messagePrivacy: settings.messagePrivacy
       }));
 
+      localStorage.setItem("doubleClickAction", settings.doubleClickAction);
+      window.dispatchEvent(new Event("doubleClickActionChange"));
+
       toast.success(t("settingsSaved"));
       
       // Dispatch theme change event
@@ -76,6 +89,12 @@ const Settings = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDoubleClickActionChange = (action: "reply" | "heart") => {
+    setSettings((prev) => ({ ...prev, doubleClickAction: action }));
+    localStorage.setItem("doubleClickAction", action);
+    window.dispatchEvent(new Event("doubleClickActionChange"));
   };
 
   const handleLanguageChange = (lang: "ru" | "en") => {
@@ -142,7 +161,7 @@ const Settings = () => {
           </div>
           
           <div className="card-glass p-5 space-y-4 rounded-[24px]">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center">
                   <Globe className="h-5 w-5 text-white/60" />
@@ -186,7 +205,7 @@ const Settings = () => {
           </div>
           
           <div className="card-glass p-5 space-y-4 rounded-[24px]">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center">
                   <Snowflake className="h-5 w-5 text-white/60" />
@@ -339,6 +358,52 @@ const Settings = () => {
                 >
                   {t("followersOnly")}
                 </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Chat */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 text-foreground">
+            <MessageCircle className="h-5 w-5" />
+            <h2 className="text-lg font-semibold">{t("settings.chat")}</h2>
+          </div>
+
+          <div className="card-glass p-5 space-y-4 rounded-[24px]">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center">
+                  <MessageCircle className="h-5 w-5 text-white/60" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-white">{t("settings.doubleClickAction")}</p>
+                  <p className="text-xs text-secondary">{t("settings.doubleClickActionDescription")}</p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-2 text-xs text-white/80">
+                  <input
+                    type="radio"
+                    name="doubleClickAction"
+                    value="reply"
+                    checked={settings.doubleClickAction === "reply"}
+                    onChange={() => handleDoubleClickActionChange("reply")}
+                    className="accent-white"
+                  />
+                  {t("settings.doubleClickReply")}
+                </label>
+                <label className="flex items-center gap-2 text-xs text-white/80">
+                  <input
+                    type="radio"
+                    name="doubleClickAction"
+                    value="heart"
+                    checked={settings.doubleClickAction === "heart"}
+                    onChange={() => handleDoubleClickActionChange("heart")}
+                    className="accent-white"
+                  />
+                  {t("settings.doubleClickHeart")}
+                </label>
               </div>
             </div>
           </div>

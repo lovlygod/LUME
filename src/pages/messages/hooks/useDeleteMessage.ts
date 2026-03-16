@@ -9,6 +9,13 @@ export const useDeleteMessage = (chatId?: string | null) => {
   return useMutation({
     mutationFn: async (payload: { messageId: string; scope?: "me" | "all" }) =>
       messagesAPI.deleteMessage(payload.messageId, payload.scope ?? "me"),
+    onError: (error, variables) => {
+      console.error("[DeleteMessage] failed", {
+        messageId: variables.messageId,
+        scope: variables.scope ?? "me",
+        error,
+      });
+    },
     onSuccess: (_data, variables) => {
       if (!chatId) return;
       const key = messageQueryKeys.chatMessages(chatId);

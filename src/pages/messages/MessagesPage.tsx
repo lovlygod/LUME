@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LayoutGroup, AnimatePresence, motion } from "framer-motion";
 import { MessageCircle } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -28,6 +28,8 @@ import MessageComposer from "./components/MessageComposer";
 import { MessageSearch } from "./components/MessageSearch";
 import { ImageViewer } from "@/components/media/ImageViewer";
 import StickerModal from "@/components/stickers/StickerModal";
+import TypingIndicator from "@/components/chat/TypingIndicator";
+import MessageContextMenu from "@/components/chat/MessageContextMenu";
 
 interface ReplyPreview {
   id: string;
@@ -47,6 +49,7 @@ const MessagesPage = () => {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(chatId || null);
   const [msgText, setMsgText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [typingUserId, setTypingUserId] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(false);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -69,6 +72,14 @@ const MessagesPage = () => {
   const [stickerModalOpen, setStickerModalOpen] = useState(false);
   const [activeSticker, setActiveSticker] = useState<Sticker | null>(null);
   const [activeStickerPack, setActiveStickerPack] = useState<StickerPack | null>(null);
+  const [doubleClickAction, setDoubleClickAction] = useState<"reply" | "heart">("reply");
+  const [reactionMap, setReactionMap] = useState<Record<string, boolean>>({});
+  const [contextMenuState, setContextMenuState] = useState<{
+    message: Message;
+    position: { x: number; y: number };
+  } | null>(null);
+  const typingStopTimerRef = useRef<number | null>(null);
+  const typingDebounceRef = useRef<number | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -129,7 +140,10 @@ const MessagesPage = () => {
   useChatWs({
     currentUserId: currentUser?.id,
     selectedChatId,
-    onTyping: setIsTyping,
+    onTyping: (typing, userId) => {
+      setIsTyping(typing);
+      setTypingUserId(typing ? userId || null : null);
+    },
     onPresence: (online, lastSeenAt) => {
       setIsOnline(online);
       if (lastSeenAt) setLastSeen(lastSeenAt);
@@ -138,15 +152,74 @@ const MessagesPage = () => {
 
   useEffect(() => {
     if (!selectedChatId) return;
-    const timer = setTimeout(() => {
+    if (typingDebounceRef.current) {
+      window.clearTimeout(typingDebounceRef.current);
+    }
+    typingDebounceRef.current = window.setTimeout(() => {
       if (msgText.trim()) {
         wsService.sendTypingStart(selectedChatId);
       } else {
         wsService.sendTypingStop(selectedChatId);
       }
-    }, 200);
-    return () => clearTimeout(timer);
+    }, 500);
+
+    if (typingStopTimerRef.current) {
+      window.clearTimeout(typingStopTimerRef.current);
+    }
+    if (msgText.trim()) {
+      typingStopTimerRef.current = window.setTimeout(() => {
+        wsService.sendTypingStop(selectedChatId);
+      }, 2000);
+    }
+
+    return () => {
+      if (typingDebounceRef.current) {
+        window.clearTimeout(typingDebounceRef.current);
+      }
+    };
   }, [msgText, selectedChatId]);
+
+  useEffect(() => {
+    const storedAction = localStorage.getItem("doubleClickAction") as "reply" | "heart" | null;
+    if (storedAction === "heart" || storedAction === "reply") {
+      setDoubleClickAction(storedAction);
+    } else {
+      localStorage.setItem("doubleClickAction", "reply");
+    }
+
+    const storedReactions = localStorage.getItem("messageHeartReactions");
+    if (storedReactions) {
+      try {
+        const parsed = JSON.parse(storedReactions) as Record<string, boolean>;
+        setReactionMap(parsed || {});
+      } catch {
+        setReactionMap({});
+      }
+    }
+    const handleDoubleClickSetting = () => {
+      const updated = localStorage.getItem("doubleClickAction") as "reply" | "heart" | null;
+      if (updated === "heart" || updated === "reply") {
+        setDoubleClickAction(updated);
+      }
+    };
+
+    window.addEventListener("doubleClickActionChange", handleDoubleClickSetting);
+    return () => window.removeEventListener("doubleClickActionChange", handleDoubleClickSetting);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (typingStopTimerRef.current) {
+        window.clearTimeout(typingStopTimerRef.current);
+      }
+      if (typingDebounceRef.current) {
+        window.clearTimeout(typingDebounceRef.current);
+      }
+      if (selectedChatId) {
+        wsService.sendTypingStop(selectedChatId);
+      }
+    };
+  }, [selectedChatId]);
 
   useEffect(() => {
     let mounted = true;
@@ -236,6 +309,7 @@ const MessagesPage = () => {
       ...(attachmentIds.length ? { attachmentIds } : {}),
       ...(replyTo?.id ? { replyToMessageId: replyTo.id } : {}),
     });
+    wsService.sendTypingStop(selectedChatId);
     setMsgText("");
     setAttachments([]);
     setReplyTo(null);
@@ -387,6 +461,38 @@ const MessagesPage = () => {
     });
   };
 
+  const handleToggleHeart = (msg: Message) => {
+    console.log("[Heart] toggle", {
+      messageId: msg.id,
+      doubleClickAction,
+      previous: Boolean(reactionMap[msg.id]),
+    });
+    setReactionMap((prev) => {
+      const next = { ...prev, [msg.id]: !prev[msg.id] };
+      if (!next[msg.id]) {
+        delete next[msg.id];
+      }
+      localStorage.setItem("messageHeartReactions", JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const handleCopyMessageText = async (msg: Message) => {
+    const text = msg.text?.trim();
+    if (!text) {
+      toast.error(t("messages.copyEmpty"));
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(t("messages.copySuccess"));
+    } catch (error) {
+      console.error("Copy text failed", error);
+      toast.error(t("messages.copyError"));
+    }
+  };
+
+
   const handleReplyJump = (messageId: string) => {
     setHighlightedMessageId(messageId);
     setTimeout(() => setHighlightedMessageId(null), 1200);
@@ -454,6 +560,12 @@ const MessagesPage = () => {
                         selectedChatUser={selectedChatUser}
                         highlightedMessageId={highlightedMessageId}
                         onReply={setReplyFromMessage}
+                        onToggleHeart={handleToggleHeart}
+                        doubleClickAction={doubleClickAction}
+                        reactionMap={reactionMap}
+                        onOpenContextMenu={(message, position) =>
+                          setContextMenuState({ message, position })
+                        }
                         onReplyJump={handleReplyJump}
                         onDeleteRequest={(msgId, x, y) => setShowDeleteMenu({ msgId, x, y })}
                         onOpenMoment={handleOpenMoment}
@@ -489,6 +601,10 @@ const MessagesPage = () => {
                     )}
                   </div>
                 </div>
+
+                {isTyping && typingUserId && selectedChatUser && (
+                  <TypingIndicator label={t("messages.typingIndicator", { name: selectedChatUser.name })} />
+                )}
 
                 <MessageComposer
                   msgText={msgText}
@@ -548,6 +664,31 @@ const MessagesPage = () => {
                 pack={activeStickerPack}
                 onAddPack={handleAddStickerPack}
               />
+
+              {contextMenuState && (
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setContextMenuState(null)}
+                />
+              )}
+
+              <AnimatePresence>
+                {contextMenuState && (
+                  <MessageContextMenu
+                    message={contextMenuState.message}
+                    position={contextMenuState.position}
+                    onClose={() => setContextMenuState(null)}
+                    onReply={setReplyFromMessage}
+                    onCopyText={handleCopyMessageText}
+                    onDeleteForMe={(messageId) => handleDeleteMessage(messageId, "me")}
+                    onDeleteForAll={
+                      contextMenuState.message.own
+                        ? (messageId) => handleDeleteMessage(messageId, "all")
+                        : undefined
+                    }
+                  />
+                )}
+              </AnimatePresence>
 
               <AnimatePresence>
                 {showDeleteMenu && (

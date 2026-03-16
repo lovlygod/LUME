@@ -23,6 +23,10 @@ interface MessageListProps {
   selectedChatUser: User | null;
   highlightedMessageId: string | null;
   onReply: (msg: Message) => void;
+  onToggleHeart: (msg: Message) => void;
+  doubleClickAction: "reply" | "heart";
+  reactionMap: Record<string, boolean>;
+  onOpenContextMenu: (msg: Message, position: { x: number; y: number }) => void;
   onReplyJump: (messageId: string) => void;
   onDeleteRequest: (messageId: string, x: number, y: number) => void;
   onOpenMoment: (msg: Message) => void;
@@ -44,6 +48,10 @@ const MessageList = ({
   selectedChatUser,
   highlightedMessageId,
   onReply,
+  onToggleHeart,
+  doubleClickAction,
+  reactionMap,
+  onOpenContextMenu,
   onReplyJump,
   onDeleteRequest,
   onOpenMoment,
@@ -135,6 +143,8 @@ const MessageList = ({
           const isVoiceMessage = msg.type === "voice" || hasVoiceAttachment;
           const isStickerMessage = msg.type === "sticker" && !!msg.sticker?.url;
 
+          const hasHeart = Boolean(reactionMap[msg.id]);
+
           return (
             <div
               key={msg.id}
@@ -148,11 +158,49 @@ const MessageList = ({
                 transform: `translateY(${virtualRow.start}px)`,
               }}
               className={`flex w-full pb-3 ${msg.own ? "justify-end" : "justify-start"}`}
-              onDoubleClick={() => onReply(msg)}
+              onDoubleClick={() => {
+                if (doubleClickAction === "heart") {
+                  onToggleHeart(msg);
+                  return;
+                }
+                if (window.getSelection()?.toString()) {
+                  return;
+                }
+                onReply(msg);
+              }}
               onContextMenu={(event) => {
                 event.preventDefault();
-                if (msg.own) {
-                  onDeleteRequest(msg.id, event.clientX, event.clientY);
+                if (window.getSelection()?.toString()) {
+                  return;
+                }
+                onOpenContextMenu(msg, { x: event.clientX, y: event.clientY });
+              }}
+              onTouchStart={(event) => {
+                const touch = event.touches[0];
+                if (!touch) return;
+                const target = event.currentTarget as HTMLDivElement;
+                const timerId = window.setTimeout(() => {
+                  if (window.getSelection()?.toString()) {
+                    return;
+                  }
+                  onOpenContextMenu(msg, { x: touch.clientX, y: touch.clientY });
+                }, 550);
+                target.dataset.longPressTimer = String(timerId);
+              }}
+              onTouchEnd={(event) => {
+                const target = event.currentTarget as HTMLDivElement;
+                const timerId = target.dataset.longPressTimer;
+                if (timerId) {
+                  window.clearTimeout(Number(timerId));
+                  delete target.dataset.longPressTimer;
+                }
+              }}
+              onTouchMove={(event) => {
+                const target = event.currentTarget as HTMLDivElement;
+                const timerId = target.dataset.longPressTimer;
+                if (timerId) {
+                  window.clearTimeout(Number(timerId));
+                  delete target.dataset.longPressTimer;
                 }
               }}
             >
@@ -222,8 +270,8 @@ const MessageList = ({
                           momentLoadingMap[msg.id] ||
                           !!msg.moment?.viewedAt ||
                           !!momentBlockedMap[msg.id]
-                        }
-                      >
+                }
+              >
                         <div className="relative w-full aspect-square rounded-[20px] overflow-hidden border border-white/10 bg-white/5">
                           <img
                             src={msg.moment.thumbDataUrl || ""}
@@ -318,6 +366,11 @@ const MessageList = ({
                           : ""
                     }`}
                   >
+                    {hasHeart && (
+                      <span className="flex items-center gap-1 rounded-full bg-white/10 px-2 py-1 text-[10px] text-white/80">
+                        ❤️ 1
+                      </span>
+                    )}
                     <span>
                       {new Date(msg.timestamp).toLocaleTimeString("en-US", {
                         hour: "2-digit",
