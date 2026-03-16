@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import type { StickerPack, Sticker } from "@/types/stickers";
 import StickerCanvas from "@/components/stickers/StickerCanvas";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface StickerModalProps {
   open: boolean;
@@ -12,15 +13,16 @@ interface StickerModalProps {
 }
 
 const StickerModal = ({ open, onOpenChange, sticker, pack, onAddPack }: StickerModalProps) => {
+  const { t } = useLanguage();
   if (!sticker) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-white">{pack?.name || "Sticker pack"}</DialogTitle>
+          <DialogTitle className="text-white">{pack?.name || t("stickers.packTitleFallback")}</DialogTitle>
           <DialogDescription className="text-white/60">
-            {pack?.description || "Add this sticker pack to your collection."}
+            {pack?.description || t("stickers.packDescriptionFallback")}
           </DialogDescription>
         </DialogHeader>
         <motion.div
@@ -40,7 +42,7 @@ const StickerModal = ({ open, onOpenChange, sticker, pack, onAddPack }: StickerM
             onClick={onAddPack}
             className="w-full rounded-full bg-white/15 text-white py-2 text-sm font-semibold hover:bg-white/20 transition-smooth"
           >
-            Add Sticker Pack
+            {t("stickers.addPack")}
           </button>
         </motion.div>
       </DialogContent>

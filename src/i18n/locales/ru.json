@@ -163,7 +163,12 @@
     "deleteAccountConfirmMismatch": "Вы должны ввести DELETE для подтверждения",
     "deleteAccountSuccess": "Аккаунт успешно удалён",
     "deleteAccountError": "Не удалось удалить аккаунт",
-    "deleting": "Удаление..."
+    "deleting": "Удаление...",
+    "chat": "Чат",
+    "doubleClickAction": "Действие двойного клика",
+    "doubleClickActionDescription": "Выберите действие при двойном клике",
+    "doubleClickReply": "Ответить на сообщение",
+    "doubleClickHeart": "Реакция ❤️"
   },
   "sessions": {
     "title": "Активные сессии",
@@ -268,6 +273,19 @@
     "copyEmpty": "Нет текста для копирования",
     "typingIndicator": "{name} печатает...",
     "replyAction": "Ответить"
+  },
+  "stickers": {
+    "myStickers": "Мои стикеры",
+    "lumeStickers": "Стикеры LUME",
+    "empty": "Пока нет стикеров",
+    "browsePacks": "Открыть наборы стикеров",
+    "packTitleFallback": "Набор стикеров",
+    "packDescriptionFallback": "Добавьте этот набор в свою коллекцию.",
+    "addPack": "Добавить набор",
+    "packAdded": "Набор стикеров добавлен",
+    "packAddError": "Не удалось добавить набор стикеров",
+    "packRefreshError": "Не удалось обновить наборы стикеров",
+    "packLoadError": "Не удалось загрузить набор стикеров"
   },
   "feed": {
     "title": "Главная",

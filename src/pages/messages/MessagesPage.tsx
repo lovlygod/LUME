@@ -336,10 +336,10 @@ const MessagesPage = () => {
     if (!activeStickerPack?.id) return;
     try {
       await stickersAPI.addPack(activeStickerPack.id);
-      toast.success("Sticker pack added");
+      toast.success(t("stickers.packAdded"));
     } catch (_error) {
       console.error("Sticker pack add failed", _error);
-      toast.error("Failed to add sticker pack");
+      toast.error(t("stickers.packAddError"));
       return;
     }
 
@@ -348,7 +348,7 @@ const MessagesPage = () => {
       setMyStickerPacks(refreshed.packs || []);
     } catch (_error) {
       console.error("Sticker pack refresh failed", _error);
-      toast.error("Failed to refresh sticker packs");
+      toast.error(t("stickers.packRefreshError"));
     }
   };
 
@@ -362,7 +362,7 @@ const MessagesPage = () => {
       setStickersByPack((prev) => ({ ...prev, [packId]: res.stickers || [] }));
       setActiveStickerPackId(packId);
     } catch (_error) {
-      toast.error("Failed to load sticker pack");
+      toast.error(t("stickers.packLoadError"));
     }
   };
 

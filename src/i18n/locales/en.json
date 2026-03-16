@@ -170,16 +170,18 @@
     "doubleClickReply": "Reply to message",
     "doubleClickHeart": "React with ❤️"
   },
-  "messages": {
-    "copyMessage": "Copy message",
-    "deleteForMe": "Delete for me",
-    "deleteForEveryone": "Delete for everyone",
-    "reply": "Reply",
-    "copySuccess": "Message text copied",
-    "copyError": "Failed to copy text",
-    "copyEmpty": "No text to copy",
-    "typingIndicator": "{name} typing...",
-    "replyAction": "Reply"
+  "stickers": {
+    "myStickers": "My Stickers",
+    "lumeStickers": "LUME Stickers",
+    "empty": "No stickers yet",
+    "browsePacks": "Browse sticker packs",
+    "packTitleFallback": "Sticker pack",
+    "packDescriptionFallback": "Add this sticker pack to your collection.",
+    "addPack": "Add Sticker Pack",
+    "packAdded": "Sticker pack added",
+    "packAddError": "Failed to add sticker pack",
+    "packRefreshError": "Failed to refresh sticker packs",
+    "packLoadError": "Failed to load sticker pack"
   },
   "sessions": {
     "title": "Active Sessions",
@@ -264,6 +266,7 @@
     "online": "online",
     "lastSeen": "last seen",
     "typing": "typing...",
+    "typingIndicator": "{name} typing...",
     "deleteMessageError": "Failed to delete message",
     "deleteTimeLimit": "Cannot delete message for everyone after 15 minutes",
     "attachment": "attachment",
@@ -281,7 +284,8 @@
     "copyMessage": "Copy message",
     "copySuccess": "Message text copied",
     "copyError": "Failed to copy text",
-    "copyEmpty": "No text to copy"
+    "copyEmpty": "No text to copy",
+    "replyAction": "Reply"
   },
   "feed": {
     "title": "Home",

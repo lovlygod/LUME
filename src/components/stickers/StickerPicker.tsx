@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { Sticker, StickerPack } from "@/types/stickers";
 import StickerGrid from "@/components/stickers/StickerGrid";
 import StickerPackTabs from "@/components/stickers/StickerPackTabs";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface StickerPickerProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ const StickerPicker = ({
   onPickPack,
   onBrowsePacks,
 }: StickerPickerProps) => {
+  const { t } = useLanguage();
   const [tab, setTab] = useState("mine");
 
   const packs = tab === "mine" ? myPacks : lumePacks;
@@ -63,13 +65,13 @@ const StickerPicker = ({
 
           {tab === "mine" && packs.length === 0 ? (
             <div className="text-center py-10">
-              <p className="text-sm text-white/70">No stickers yet</p>
+              <p className="text-sm text-white/70">{t("stickers.empty")}</p>
               <button
                 type="button"
                 onClick={onBrowsePacks}
                 className="mt-3 text-xs text-white/80 underline"
               >
-                Browse sticker packs
+                {t("stickers.browsePacks")}
               </button>
             </div>
           ) : (
