@@ -20,13 +20,55 @@
   "notifications": {
     "title": "Уведомления",
     "empty": "Нет уведомлений",
+    "load_more": "Показать ещё",
     "mark_all_read": "Отметить все как прочитанные",
     "new_message": "Новое сообщение",
     "reply": "Ответ",
     "mention": "Упоминание",
     "reaction": "Реакция",
     "server_invite": "Приглашение на сервер",
-    "new": "Новое уведомление"
+    "new": "Новое уведомление",
+    "people": "человека",
+    "someone": "Кто-то",
+    "action": {
+      "message": "отправил вам сообщение",
+      "reaction": "поставил реакцию",
+      "post_resonance": "поставил реакцию",
+      "post_comment": "оставил комментарий",
+      "comment": "оставил комментарий",
+      "reply": "ответил на ваш комментарий",
+      "mention": "упомянул вас",
+      "follow": "подписался на вас",
+      "server_invite": "пригласил вас на сервер {server}",
+      "server_join": "присоединился к серверу",
+      "server_join_request": "отправил заявку на вступление",
+      "default": "Новое уведомление"
+    },
+    "fallback": {
+      "message": "{actor} отправил вам сообщение",
+      "reaction": "{actor} поставил реакцию",
+      "post_resonance": "{actor} поставил реакцию",
+      "post_comment": "{actor} оставил комментарий",
+      "comment": "{actor} оставил комментарий",
+      "reply": "{actor} ответил",
+      "mention": "{actor} упомянул вас",
+      "follow": "{actor} подписался на вас",
+      "server_invite": "{actor} пригласил вас на сервер",
+      "server_join": "{actor} присоединился к серверу",
+      "server_join_request": "{actor} отправил заявку на вступление"
+    },
+    "grouped": {
+      "reaction": "поставили реакцию",
+      "post_resonance": "поставили реакцию",
+      "comment": "оставили комментарий",
+      "post_comment": "оставили комментарий",
+      "follow": "подписались",
+      "mention": "упомянули вас",
+      "reply": "ответили",
+      "message": "отправили сообщения",
+      "server_invite": "пригласили на сервер",
+      "server_join_request": "отправили заявку на вступление"
+    }
   },
   "navigation": {
     "home": "Главная",

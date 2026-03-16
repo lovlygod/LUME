@@ -158,7 +158,7 @@ const SidebarLeft = () => {
       <aside className="hidden h-screen w-[260px] shrink-0 flex-col gap-2 py-6 pr-6 lg:flex">
         {/* Logo */}
         <div className="mb-6 px-2">
-          <Link to="/" className="inline-block">
+          <Link to="/feed" className="inline-block">
             <div className="flex items-center gap-2">
               <div className="relative">
                 <Loader size={40} />

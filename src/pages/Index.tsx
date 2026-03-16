@@ -8,6 +8,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import Post from "@/components/post/Post";
 import PostComposer from "@/components/feed/PostComposer";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import { queryKeys } from "@/lib/queryClient";
 import { Loader } from "@/components/ui/Loader";
 
@@ -20,6 +21,8 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState<FeedTab>("recommended");
   const hasLoadedInitial = useRef(false);
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const feedRef = useRef<HTMLDivElement | null>(null);
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: queryKeys.posts.list(activeTab),
@@ -120,6 +123,29 @@ const Index = () => {
     };
   }, [refetch, queryClient, activeTab]);
 
+  useEffect(() => {
+    const postId = searchParams.get('post');
+    if (!postId) return;
+
+    const attemptScroll = () => {
+      const selector = `[data-post-id="${postId}"]`;
+      const node = feedRef.current?.querySelector(selector) || document.querySelector(selector);
+      if (!node) return false;
+      node.scrollIntoView({ behavior: "smooth", block: "center" });
+      node.classList.add('ring-1', 'ring-white/40', 'shadow-[0_0_0_1px_rgba(255,255,255,0.16)]');
+      window.setTimeout(() => {
+        node.classList.remove('ring-1', 'ring-white/40', 'shadow-[0_0_0_1px_rgba(255,255,255,0.16)]');
+      }, 2200);
+      return true;
+    };
+
+    if (attemptScroll()) return;
+    const timeout = window.setTimeout(() => {
+      attemptScroll();
+    }, 400);
+    return () => window.clearTimeout(timeout);
+  }, [searchParams, posts]);
+
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
     await refetch();
@@ -135,7 +161,7 @@ const Index = () => {
   }
 
   return (
-    <div className="py-7">
+    <div className="py-7" ref={feedRef}>
       {/* Header with Tabs */}
       <div className="mb-6 rounded-[28px] border border-white/10 bg-white/5 backdrop-blur-[24px]">
         <div className="flex items-center justify-between px-6 py-5">
@@ -241,6 +267,7 @@ const Index = () => {
             <Post
               key={post.id}
               id={post.id.toString()}
+              dataPostId={post.id.toString()}
               userId={String(post.userId)}
               text={post.text}
               imageUrl={post.imageUrl}

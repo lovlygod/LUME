@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Bell, Check, CheckCheck, X, MessageCircle, AtSign, Heart, Users, Reply } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Bell, Check, CheckCheck, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Notification, NotificationType } from '@/types';
@@ -8,6 +8,9 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { wsService } from '@/services/websocket';
 import { apiRequest } from '@/services/api';
+import Avatar from '@/components/Avatar';
+import { normalizeImageUrl } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 interface NotificationsPanelProps {
   open: boolean;
@@ -17,9 +20,13 @@ interface NotificationsPanelProps {
 const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenChange }) => {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const limit = 20;
 
   // Notify when panel closes
   useEffect(() => {
@@ -29,18 +36,20 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
   }, [open]);
 
   // Fetch notifications
-  const fetchNotifications = useCallback(async () => {
+  const fetchNotifications = useCallback(async (nextOffset = 0, append = false) => {
     if (!user) return;
 
     setLoading(true);
     try {
-      const data = await apiRequest<{ notifications: Notification[] }>('/notifications', {
+      const data = await apiRequest<{ notifications: Notification[]; limit?: number; offset?: number }>('/notifications?limit=20&offset=' + nextOffset, {
         method: 'GET',
       });
-      setNotifications(data.notifications);
       const newUnreadCount = data.notifications.filter((n: Notification) => !n.read).length;
       setUnreadCount(newUnreadCount);
       window.dispatchEvent(new CustomEvent('notifications:updated', { detail: { count: newUnreadCount } }));
+      setNotifications(prev => append ? [...prev, ...data.notifications] : data.notifications);
+      setOffset(nextOffset + data.notifications.length);
+      setHasMore(data.notifications.length >= limit);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
@@ -51,13 +60,16 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
   // Mark notification as read
   const markAsRead = useCallback(async (notificationId?: string) => {
     try {
-      await apiRequest('/notifications/read', {
-        method: 'POST',
-        body: JSON.stringify({
-          notificationId,
-          markAllAsRead: !notificationId,
-        }),
-      });
+      if (notificationId) {
+        await apiRequest(`/notifications/${notificationId}/read`, { method: 'POST' });
+      } else {
+        await apiRequest('/notifications/read', {
+          method: 'POST',
+          body: JSON.stringify({
+            markAllAsRead: true,
+          }),
+        });
+      }
       if (notificationId) {
         setNotifications(prev =>
           prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
@@ -78,6 +90,16 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
     if (!notification.read) {
       markAsRead(notification.id);
     }
+    if (notification.url) {
+      navigate(notification.url);
+    }
+    onOpenChange(false);
+  };
+
+  const handleActorClick = (event: React.MouseEvent, notification: Notification) => {
+    event.stopPropagation();
+    if (!notification.actor_id) return;
+    navigate(`/profile/${notification.actor_id}`);
     onOpenChange(false);
   };
 
@@ -85,8 +107,9 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
   useEffect(() => {
     if (!open || !user) return;
     const run = async () => {
-      await fetchNotifications();
-      await markAsRead();
+      setOffset(0);
+      setHasMore(true);
+      await fetchNotifications(0, false);
     };
     void run();
   }, [open, user, markAsRead, fetchNotifications]);
@@ -95,18 +118,27 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
   useEffect(() => {
     if (!user) return;
 
-    const handleNotification = (data: { type: NotificationType; entityId: string; timestamp: string }) => {
+    const handleNotification = (data: { type: NotificationType; actor_id?: string; actor_username?: string; actor_avatar?: string; message?: string; url?: string; timestamp: string }) => {
       const newNotification: Notification = {
         id: Date.now().toString(),
-        userId: user.id,
         type: data.type,
-        entityId: data.entityId,
+        actor_id: data.actor_id || null,
+        actor_username: data.actor_username || null,
+        actor_avatar: data.actor_avatar || null,
+        target_id: null,
+        target_type: null,
+        message: data.message || null,
         read: false,
-        createdAt: data.timestamp,
+        created_at: data.timestamp,
+        url: data.url || null,
       };
 
       setNotifications(prev => [newNotification, ...prev]);
-      setUnreadCount(prev => prev + 1);
+      setUnreadCount(prev => {
+        const next = prev + 1;
+        window.dispatchEvent(new CustomEvent('notifications:updated', { detail: { count: next } }));
+        return next;
+      });
     };
 
     // Subscribe via wsService
@@ -117,56 +149,127 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
     };
   }, [user]);
 
-  const getNotificationIcon = (type: NotificationType) => {
-    switch (type) {
-      case 'message':
-        return <MessageCircle className="h-4 w-4" />;
-      case 'reply':
-        return <Reply className="h-4 w-4" />;
-      case 'mention':
-        return <AtSign className="h-4 w-4" />;
-      case 'reaction':
-        return <Heart className="h-4 w-4" />;
-      case 'server_invite':
-        return <Users className="h-4 w-4" />;
-      default:
-        return <Bell className="h-4 w-4" />;
-    }
-  };
 
-  const getNotificationColor = (type: NotificationType) => {
-    switch (type) {
-      case 'message':
-        return 'bg-blue-500/20 text-blue-400';
-      case 'reply':
-        return 'bg-green-500/20 text-green-400';
-      case 'mention':
-        return 'bg-purple-500/20 text-purple-400';
-      case 'reaction':
-        return 'bg-red-500/20 text-red-400';
-      case 'server_invite':
-        return 'bg-orange-500/20 text-orange-400';
-      default:
-        return 'bg-white/10 text-white';
+  const resolveLabel = useCallback((key: string, fallback: string) => {
+    const value = t(key);
+    if (value === key || value.startsWith('time.') || value.startsWith('notifications.')) {
+      return fallback;
     }
-  };
+    return value;
+  }, [t]);
 
-  const getNotificationText = (type: NotificationType) => {
-    switch (type) {
-      case 'message':
-        return t('notifications.new_message') || 'Новое сообщение';
-      case 'reply':
-        return t('notifications.reply') || 'Ответ';
-      case 'mention':
-        return t('notifications.mention') || 'Упоминание';
-      case 'reaction':
-        return t('notifications.reaction') || 'Реакция';
-      case 'server_invite':
-        return t('notifications.server_invite') || 'Приглашение на сервер';
-      default:
-        return t('notifications.new') || 'Новое уведомление';
+  const resolveTimeLabel = useCallback((camelKey: string, snakeKey: string, fallback: string) => {
+    const camel = resolveLabel(camelKey, '');
+    if (camel) return camel;
+    return resolveLabel(snakeKey, fallback);
+  }, [resolveLabel]);
+
+  const extractServerName = useCallback((message?: string | null) => {
+    if (!message) return null;
+    const ruMatch = message.match(/сервер\s+"([^"]+)"/i);
+    if (ruMatch?.[1]) return ruMatch[1];
+    const enMatch = message.match(/server\s+"([^"]+)"/i);
+    if (enMatch?.[1]) return enMatch[1];
+    return null;
+  }, []);
+
+  const formatRelativeTime = useCallback((dateString: string) => {
+    const date = new Date(dateString);
+    const diffMs = Date.now() - date.getTime();
+    const diffMinutes = Math.floor(diffMs / 60000);
+    if (diffMinutes < 1) return resolveTimeLabel('time.justNow', 'time.just_now', 'just now');
+    if (diffMinutes < 60) return resolveTimeLabel('time.minutesAgo', 'time.minutes_ago', `${diffMinutes} minutes ago`).replace('{count}', String(diffMinutes));
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return resolveTimeLabel('time.hoursAgo', 'time.hours_ago', `${diffHours} hours ago`).replace('{count}', String(diffHours));
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) return resolveTimeLabel('time.yesterday', 'time.yesterday', 'yesterday');
+    return resolveTimeLabel('time.daysAgo', 'time.days_ago', `${diffDays} days ago`).replace('{count}', String(diffDays));
+  }, [resolveLabel, resolveTimeLabel]);
+
+  const buildDefaultMessage = useCallback((notification: Notification) => {
+    const actorName = notification.actor_username || resolveLabel('notifications.someone', 'Someone');
+    const fallback = resolveLabel(`notifications.fallback.${notification.type}`, resolveLabel('notifications.new', 'New notification'));
+    return fallback.replace('{actor}', actorName);
+  }, [resolveLabel]);
+
+  const getNotificationMessage = useCallback((notification: Notification) => {
+    return notification.message || buildDefaultMessage(notification);
+  }, [buildDefaultMessage]);
+
+  const getActionLabel = useCallback((notification: Notification) => {
+    if (notification.type === 'server_invite') {
+      const serverName = extractServerName(notification.message);
+      const base = resolveLabel('notifications.action.server_invite', 'invited you to a server');
+      return serverName ? base.replace('{server}', serverName) : base;
     }
-  };
+
+    const actionKey = `notifications.action.${notification.type}`;
+    const fallback = resolveLabel('notifications.action.default', resolveLabel('notifications.new', 'New notification'));
+    return resolveLabel(actionKey, fallback);
+  }, [extractServerName, resolveLabel]);
+
+  const renderNotificationText = useCallback((notification: Notification & { groupCount?: number }) => {
+    if (notification.groupCount && notification.groupCount > 1) {
+      return getNotificationMessage(notification);
+    }
+
+    const actorLabel = notification.actor_username
+      || (typeof notification.actor_id === 'string' ? notification.actor_id : notification.actor_id ? String(notification.actor_id) : '')
+      || resolveLabel('notifications.someone', 'Someone');
+    const actionLabel = getActionLabel(notification);
+
+    if (!actionLabel || actionLabel === resolveLabel('notifications.new', 'New notification')) {
+      return getNotificationMessage(notification);
+    }
+
+    return (
+      <span className="inline-flex flex-wrap items-center gap-1">
+        <button
+          type="button"
+          className="text-white underline-offset-2 hover:underline"
+          onClick={(event) => handleActorClick(event, notification)}
+        >
+          {actorLabel}
+        </button>
+        <span>{actionLabel}</span>
+      </span>
+    );
+  }, [getActionLabel, getNotificationMessage, handleActorClick, resolveLabel]);
+
+  const groupedNotifications = useMemo(() => {
+    const groupableTypes = new Set<NotificationType>([
+      'reaction',
+      'post_resonance',
+      'post_comment',
+      'comment',
+      'follow',
+      'mention',
+      'reply',
+      'server_join_request',
+    ]);
+    const groups = new Map<string, Notification[]>();
+    notifications.forEach((notification) => {
+      const key = groupableTypes.has(notification.type)
+        ? `${notification.type}:${notification.target_id || ''}:${notification.url || ''}`
+        : `${notification.id}`;
+      const group = groups.get(key) || [];
+      group.push(notification);
+      groups.set(key, group);
+    });
+    return Array.from(groups.values()).map(group => {
+      const [first] = group;
+      if (group.length <= 1) return { ...first, groupCount: 1 };
+      const groupedLabel = resolveLabel(`notifications.grouped.${first.type}`, '');
+      const message = groupedLabel
+        ? `${group.length} ${resolveLabel('notifications.people', 'people')} ${groupedLabel}`
+        : `${group.length} ${resolveLabel('notifications.people', 'people')} ${resolveLabel('notifications.new', 'New notification')}`;
+      return {
+        ...first,
+        groupCount: group.length,
+        message,
+      };
+    });
+  }, [notifications, resolveLabel]);
 
   return (
     <AnimatePresence>
@@ -222,7 +325,7 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
                 <div className="flex items-center justify-center py-8">
                   <div className="h-6 w-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                 </div>
-              ) : notifications.length === 0 ? (
+              ) : groupedNotifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Bell className="h-12 w-12 text-white/20 mb-3" />
                   <p className="text-sm text-white/50">
@@ -231,7 +334,7 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
                 </div>
               ) : (
                 <div className="py-2">
-                  {notifications.map((notification) => (
+                  {groupedNotifications.map((notification: Notification & { groupCount?: number }) => (
                     <motion.button
                       key={notification.id}
                       initial={{ opacity: 0, y: -10 }}
@@ -241,29 +344,56 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
                         !notification.read ? 'bg-white/[0.02]' : ''
                       }`}
                     >
-                      <div
-                        className={`shrink-0 h-9 w-9 rounded-full flex items-center justify-center ${getNotificationColor(notification.type)}`}
-                      >
-                        {getNotificationIcon(notification.type)}
-                      </div>
+                      {notification.actor_id ? (
+                        <button
+                          type="button"
+                          onClick={(event) => handleActorClick(event, notification)}
+                          className="shrink-0"
+                          aria-label={notification.actor_username || 'user'}
+                        >
+                          <Avatar
+                            src={notification.actor_avatar ? normalizeImageUrl(notification.actor_avatar) : undefined}
+                            alt={notification.actor_username || 'user'}
+                            size="sm"
+                          />
+                        </button>
+                      ) : (
+                        <div className="shrink-0">
+                          <Avatar
+                            src={notification.actor_avatar ? normalizeImageUrl(notification.actor_avatar) : undefined}
+                            alt={notification.actor_username || 'user'}
+                            size="sm"
+                          />
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0 text-left">
                         <p className="text-sm font-medium text-white">
-                          {getNotificationText(notification.type)}
+                          {renderNotificationText(notification)}
                         </p>
                         <p className="text-xs text-white/50 mt-0.5">
-                          {new Date(notification.createdAt).toLocaleString('ru-RU', {
-                            day: 'numeric',
-                            month: 'long',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                          {formatRelativeTime(notification.created_at)}
                         </p>
                       </div>
+                      {notification.groupCount && notification.groupCount > 1 && (
+                        <div className="shrink-0 text-xs text-white/60">+{notification.groupCount - 1}</div>
+                      )}
                       {!notification.read && (
                         <div className="shrink-0 h-2 w-2 rounded-full bg-blue-500 mt-1.5" />
                       )}
                     </motion.button>
                   ))}
+                  {hasMore && (
+                    <div className="px-4 py-2">
+                      <Button
+                        variant="ghost"
+                        className="w-full text-xs"
+                        onClick={() => fetchNotifications(offset, true)}
+                        disabled={loading}
+                      >
+                        {loading ? t('common.loading') || 'Загрузка...' : t('notifications.load_more') || 'Показать ещё'}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </ScrollArea>

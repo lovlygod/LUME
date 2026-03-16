@@ -14,6 +14,7 @@ import DOMPurify from "dompurify";
 
 interface PostProps {
   id: string;
+  dataPostId?: string;
   userId: string;
   text?: string;
   imageUrl?: string;
@@ -28,7 +29,7 @@ interface PostProps {
   showPinAction?: boolean;
 }
 
-const Post = ({ id, userId, text, imageUrl, timestamp, replies, resonance, name, username, avatar, verified, isPinned, showPinAction }: PostProps) => {
+const Post = ({ id, dataPostId, userId, text, imageUrl, timestamp, replies, resonance, name, username, avatar, verified, isPinned, showPinAction }: PostProps) => {
   const [user, setUser] = useState<{ id: string; name?: string; username?: string; avatar?: string; verified?: boolean } | null>(null);
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
@@ -319,6 +320,7 @@ const Post = ({ id, userId, text, imageUrl, timestamp, replies, resonance, name,
   return (
     <LayoutGroup>
       <motion.article
+        data-post-id={dataPostId || id}
         className={`relative isolate rounded-[24px] border border-white/6 bg-white/5 px-5 py-5 backdrop-blur-[24px] shadow-[0_18px_50px_rgba(0,0,0,0.35)] transition-smooth hover:bg-white/6 ${
           showPostMenu ? "z-20" : "z-0"
         }`}

@@ -20,13 +20,62 @@
   "notifications": {
     "title": "Notifications",
     "empty": "No notifications",
+    "load_more": "Load more",
     "mark_all_read": "Mark all as read",
     "new_message": "New message",
     "reply": "Reply",
     "mention": "Mention",
     "reaction": "Reaction",
     "server_invite": "Server invite",
-    "new": "New notification"
+    "new": "New notification",
+    "people": "people",
+    "someone": "Someone",
+    "action": {
+      "message": "sent you a message",
+      "reaction": "reacted",
+      "post_resonance": "reacted",
+      "post_comment": "commented",
+      "comment": "commented",
+      "reply": "replied to your comment",
+      "mention": "mentioned you",
+      "follow": "followed you",
+      "server_invite": "invited you to {server}",
+      "server_join": "joined the server",
+      "server_join_request": "requested to join",
+      "default": "New notification"
+    },
+    "fallback": {
+      "message": "{actor} sent you a message",
+      "reaction": "{actor} reacted",
+      "post_resonance": "{actor} reacted",
+      "post_comment": "{actor} commented",
+      "comment": "{actor} commented",
+      "reply": "{actor} replied",
+      "mention": "{actor} mentioned you",
+      "follow": "{actor} followed you",
+      "server_invite": "{actor} invited you to a server",
+      "server_join": "{actor} joined the server",
+      "server_join_request": "{actor} requested to join"
+    },
+    "grouped": {
+      "reaction": "reacted",
+      "post_resonance": "reacted",
+      "comment": "commented",
+      "post_comment": "commented",
+      "follow": "followed you",
+      "mention": "mentioned you",
+      "reply": "replied",
+      "message": "sent messages",
+      "server_invite": "invited you to a server",
+      "server_join_request": "requested to join"
+    }
+  },
+  "time": {
+    "just_now": "just now",
+    "minutes_ago": "{count} minutes ago",
+    "hours_ago": "{count} hours ago",
+    "days_ago": "{count} days ago",
+    "yesterday": "yesterday"
   },
   "navigation": {
     "home": "Home",

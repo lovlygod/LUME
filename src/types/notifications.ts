@@ -1,13 +1,29 @@
 // Notification types
-export type NotificationType = 'message' | 'reply' | 'mention' | 'reaction' | 'server_invite';
+export type NotificationType =
+  | 'message'
+  | 'reaction'
+  | 'comment'
+  | 'follow'
+  | 'server_invite'
+  | 'server_join'
+  | 'server_join_request'
+  | 'mention'
+  | 'reply'
+  | 'post_resonance'
+  | 'post_comment';
 
 export interface Notification {
   id: string;
-  userId: string;
   type: NotificationType;
-  entityId: string;
+  actor_id: string | null;
+  actor_username: string | null;
+  actor_avatar: string | null;
+  target_id: string | null;
+  target_type: string | null;
+  message: string | null;
   read: boolean;
-  createdAt: string;
+  created_at: string;
+  url: string | null;
 }
 
 export interface NotificationsResponse {
@@ -22,6 +38,12 @@ export interface MarkAsReadRequest {
 export interface WebSocketNotificationData {
   userId: string;
   type: NotificationType;
-  entityId: string | null;
+  actor_id: string | null;
+  actor_username: string | null;
+  actor_avatar: string | null;
+  target_id: string | null;
+  target_type: string | null;
+  message: string | null;
+  url: string | null;
   timestamp: string;
 }
