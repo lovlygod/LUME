@@ -2,7 +2,7 @@
 
 中文 | [Русский](../../docs-ru/PROJECT_UI/FEED_UI.ru.md) | [English](../../docs/PROJECT_UI/FEED_UI.md)
 
-**最后更新：** 2026-03-11
+**最后更新：** 2026-03-16
 
 ---
 
@@ -81,6 +81,17 @@ Posts Feed
 - `new_post` → 增加 `newPostsCount`
 - `post_resonance_updated` → 更新缓存中的计数
 - `new_comment` → 更新评论缓存
+
+---
+
+## 深链（通知跳转）
+
+Feed 支持通过 query 参数从通知跳转并定位到指定帖子：
+
+- `/feed?post={postId}` → 滚动到帖子并短暂高亮。
+- `/feed?post={postId}&comment={commentId}` → 评论相关通知使用相同逻辑。
+
+**实现位置：** `src/pages/Index.tsx`（解析 query + 滚动/高亮）。
 
 ---
 

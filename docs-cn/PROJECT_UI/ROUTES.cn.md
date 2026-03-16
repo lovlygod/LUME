@@ -2,7 +2,7 @@
 
 中文 | [Русский](../../docs-ru/PROJECT_UI/ROUTES.ru.md) | [English](../../docs/PROJECT_UI/ROUTES.md)
 
-**最后更新：** 2026-03-11
+**最后更新：** 2026-03-16
 
 ---
 
@@ -40,7 +40,7 @@
 
 | 路径 | 组件 | 文件 | 说明 |
 |------|------|------|------|
-| `/feed` | Index | `src/pages/Index.tsx` | Feed |
+| `/feed` | Index | `src/pages/Index.tsx` | Feed（支持 `?post={id}` 深链） |
 | `/explore` | Explore | `src/pages/Explore.tsx` | Explore |
 | `/messages` | Messages | `src/pages/Messages.tsx` | 聊天列表 |
 | `/messages/:chatId` | Messages | `src/pages/Messages.tsx` | 聊天视图 |
