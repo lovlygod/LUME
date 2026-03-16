@@ -168,6 +168,11 @@
     "doubleClickAction": "Действие двойного клика",
     "doubleClickActionDescription": "Выберите действие при двойном клике",
     "doubleClickReply": "Ответить на сообщение",
+    "chatBackground": "Обои чата",
+    "chatBackgroundDescription": "Выберите фон для чатов",
+    "chatBackgroundDefault": "Default",
+    "chatBackgroundSilent": "Silent Doodle",
+    "chatBackgroundGame": "Game Doodle",
     "doubleClickHeart": "Реакция ❤️"
   },
   "sessions": {

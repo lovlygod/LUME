@@ -21,6 +21,7 @@ import { useSendMessage } from "./hooks/useSendMessage";
 import { useDeleteMessage } from "./hooks/useDeleteMessage";
 import { useMarkRead } from "./hooks/useMarkRead";
 import { useChatWs } from "./hooks/useChatWs";
+import { useChatBackground } from "@/hooks/useChatBackground";
 import ChatList from "./components/ChatList";
 import ChatPanel from "./components/ChatPanel";
 import MessageList from "./components/MessageList";
@@ -73,6 +74,7 @@ const MessagesPage = () => {
   const [activeSticker, setActiveSticker] = useState<Sticker | null>(null);
   const [activeStickerPack, setActiveStickerPack] = useState<StickerPack | null>(null);
   const [doubleClickAction, setDoubleClickAction] = useState<"reply" | "heart">("reply");
+  const { backgroundStyle } = useChatBackground();
   const [reactionMap, setReactionMap] = useState<Record<string, boolean>>({});
   const [contextMenuState, setContextMenuState] = useState<{
     message: Message;
@@ -542,7 +544,7 @@ const MessagesPage = () => {
                     t={t}
                   />
 
-                  <div className="flex-1 min-h-0 bg-white/5 backdrop-blur-[24px] overflow-hidden flex flex-col">
+                  <div className="flex-1 min-h-0 bg-white/5 backdrop-blur-[24px] overflow-hidden flex flex-col" style={backgroundStyle}>
                     {messagesLoading ? (
                       <div className="flex-1 flex items-center justify-center text-center px-6">
                         <p className="text-sm text-secondary">Загрузка...</p>

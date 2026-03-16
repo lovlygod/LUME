@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Moon, Sun, Globe, Lock, Users, MessageCircle, Save, Snowflake, AlertTriangle, Trash2, LogOut, MonitorSmartphone } from "lucide-react";
+import { Moon, Sun, Globe, Lock, Users, MessageCircle, Save, Snowflake, AlertTriangle, Trash2, LogOut, MonitorSmartphone, Check } from "lucide-react";
+import silentDoodle from "@/assets/Chat-Background/silent-doodle.png";
+import gameDoodle from "@/assets/Chat-Background/game-doodle.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { profileAPI } from "@/services/api";
@@ -23,6 +25,7 @@ const Settings = () => {
     postPrivacy: "public",
     messagePrivacy: "everyone",
     doubleClickAction: "reply" as "reply" | "heart",
+    chatBackground: "default" as "default" | "silent_doodle" | "game_doodle",
   });
 
   useEffect(() => {
@@ -46,12 +49,17 @@ const Settings = () => {
     const savedDoubleClickAction =
       (localStorage.getItem("doubleClickAction") as "reply" | "heart" | null) || "reply";
 
+    const savedChatBackground =
+      (localStorage.getItem("chat_background") as "default" | "silent_doodle" | "game_doodle" | null) ||
+      "default";
+
     setSettings(prev => ({
       ...prev,
       theme: savedTheme,
       snowEffect: savedSnow,
       snowVariant: savedSnowVariant,
       doubleClickAction: savedDoubleClickAction,
+      chatBackground: savedChatBackground,
     }));
   }, []);
 
@@ -95,6 +103,12 @@ const Settings = () => {
     setSettings((prev) => ({ ...prev, doubleClickAction: action }));
     localStorage.setItem("doubleClickAction", action);
     window.dispatchEvent(new Event("doubleClickActionChange"));
+  };
+
+  const handleChatBackgroundChange = (value: "default" | "silent_doodle" | "game_doodle") => {
+    setSettings((prev) => ({ ...prev, chatBackground: value }));
+    localStorage.setItem("chat_background", value);
+    window.dispatchEvent(new CustomEvent("chatBackgroundChange", { detail: value }));
   };
 
   const handleLanguageChange = (lang: "ru" | "en") => {
@@ -370,7 +384,7 @@ const Settings = () => {
             <h2 className="text-lg font-semibold">{t("settings.chat")}</h2>
           </div>
 
-          <div className="card-glass p-5 space-y-4 rounded-[24px]">
+          <div className="card-glass p-5 space-y-6 rounded-[24px]">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center">
@@ -404,6 +418,88 @@ const Settings = () => {
                   />
                   {t("settings.doubleClickHeart")}
                 </label>
+              </div>
+            </div>
+            <div className="border-t border-white/10 pt-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center">
+                  <MessageCircle className="h-5 w-5 text-white/60" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-white">{t("settings.chatBackground")}</p>
+                  <p className="text-xs text-secondary">{t("settings.chatBackgroundDescription")}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleChatBackgroundChange("default")}
+                  className={`group relative h-[120px] w-[160px] rounded-[16px] overflow-hidden border transition-smooth justify-self-start ${
+                    settings.chatBackground === "default"
+                      ? "border-[2px] border-white"
+                      : "border-white/10 hover:border-white/30"
+                  }`}
+                >
+                  <div className="h-full w-full bg-[#0E0E11]" />
+                  <span className="absolute bottom-3 left-3 text-xs font-medium text-white">{t("settings.chatBackgroundDefault")}</span>
+                  {settings.chatBackground === "default" && (
+                    <span className="absolute top-2 right-2 h-6 w-6 rounded-full bg-white text-black flex items-center justify-center">
+                      <Check className="h-4 w-4" />
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleChatBackgroundChange("silent_doodle")}
+                  className={`group relative h-[120px] w-[160px] rounded-[16px] overflow-hidden border transition-smooth justify-self-center ${
+                    settings.chatBackground === "silent_doodle"
+                      ? "border-[2px] border-white"
+                      : "border-white/10 hover:border-white/30"
+                  }`}
+                >
+                  <div
+                    className="h-full w-full"
+                    style={{
+                      backgroundImage: `url(${silentDoodle})`,
+                      backgroundRepeat: "repeat",
+                      backgroundSize: "600px",
+                      backgroundPosition: "center",
+                      backgroundColor: "#0E0E11",
+                    }}
+                  />
+                  <span className="absolute bottom-3 left-3 text-xs font-medium text-white">{t("settings.chatBackgroundSilent")}</span>
+                  {settings.chatBackground === "silent_doodle" && (
+                    <span className="absolute top-2 right-2 h-6 w-6 rounded-full bg-white text-black flex items-center justify-center">
+                      <Check className="h-4 w-4" />
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleChatBackgroundChange("game_doodle")}
+                  className={`group relative h-[120px] w-[160px] rounded-[16px] overflow-hidden border transition-smooth justify-self-end ${
+                    settings.chatBackground === "game_doodle"
+                      ? "border-[2px] border-white"
+                      : "border-white/10 hover:border-white/30"
+                  }`}
+                >
+                  <div
+                    className="h-full w-full"
+                    style={{
+                      backgroundImage: `url(${gameDoodle})`,
+                      backgroundRepeat: "repeat",
+                      backgroundSize: "600px",
+                      backgroundPosition: "center",
+                      backgroundColor: "#0E0E11",
+                    }}
+                  />
+                  <span className="absolute bottom-3 left-3 text-xs font-medium text-white">{t("settings.chatBackgroundGame")}</span>
+                  {settings.chatBackground === "game_doodle" && (
+                    <span className="absolute top-2 right-2 h-6 w-6 rounded-full bg-white text-black flex items-center justify-center">
+                      <Check className="h-4 w-4" />
+                    </span>
+                  )}
+                </button>
               </div>
             </div>
           </div>

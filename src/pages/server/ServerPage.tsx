@@ -12,6 +12,7 @@ import { ImageViewer } from "@/components/media/ImageViewer";
 import { errorHandler } from "@/services/errorHandler";
 import { ServerLayout } from "./components/ServerLayout";
 import { ChannelHeader } from "./components/ChannelHeader";
+import { useChatBackground } from "@/hooks/useChatBackground";
 import { ChannelMessageList } from "./components/ChannelMessageList";
 import { ChannelComposer } from "./components/ChannelComposer";
 import { useQueryClient } from "@tanstack/react-query";
@@ -33,6 +34,7 @@ const ServerPage = () => {
 
   const [currentChannel, setCurrentChannel] = useState<Channel | null>(null);
   const [msgText, setMsgText] = useState("");
+  const { backgroundStyle } = useChatBackground();
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [replyTo, setReplyTo] = useState<ReplyPreview | null>(null);
   const [showDeleteMenu, setShowDeleteMenu] = useState<{ msgId: string; x: number; y: number } | null>(null);
@@ -293,7 +295,7 @@ const ServerPage = () => {
         <div className="flex h-full flex-col p-4">
             <div className="flex h-full flex-col overflow-hidden rounded-[28px] border border-white/10 bg-transparent">
             <ChannelHeader channelName={currentChannel?.name || channelName || "general"} />
-            <div className="flex-1 min-h-0 bg-white/5 backdrop-blur-[24px] overflow-hidden flex flex-col">
+            <div className="flex-1 min-h-0 bg-white/5 backdrop-blur-[24px] overflow-hidden flex flex-col" style={backgroundStyle}>
               <ChannelMessageList
                 messages={messages}
                 currentUser={currentUser}

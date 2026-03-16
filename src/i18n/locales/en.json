@@ -168,6 +168,11 @@
     "doubleClickAction": "Double Click Action",
     "doubleClickActionDescription": "Select what happens on double click",
     "doubleClickReply": "Reply to message",
+    "chatBackground": "Chat Background",
+    "chatBackgroundDescription": "Choose a background for your chats",
+    "chatBackgroundDefault": "Default",
+    "chatBackgroundSilent": "Silent Doodle",
+    "chatBackgroundGame": "Game Doodle",
     "doubleClickHeart": "React with ❤️"
   },
   "stickers": {
