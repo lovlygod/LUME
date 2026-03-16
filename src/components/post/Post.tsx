@@ -29,6 +29,19 @@ interface PostProps {
   showPinAction?: boolean;
 }
 
+type ApiComment = {
+  id: string | number;
+  text: string;
+  created_at?: string;
+  createdAt?: string;
+  user_id?: string | number;
+  userId?: string | number;
+  name?: string;
+  username?: string;
+  avatar?: string;
+  verified?: boolean | number;
+};
+
 const Post = ({ id, dataPostId, userId, text, imageUrl, timestamp, replies, resonance, name, username, avatar, verified, isPinned, showPinAction }: PostProps) => {
   const [user, setUser] = useState<{ id: string; name?: string; username?: string; avatar?: string; verified?: boolean } | null>(null);
   const navigate = useNavigate();
@@ -39,7 +52,7 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, timestamp, replies, reso
   const [replyCount, setReplyCount] = useState(replies || 0);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
-  const [comments, setComments] = useState<Array<{ id: string | number; text: string; createdAt: string; name?: string; username?: string; avatar?: string; verified?: boolean }>>([]);
+  const [comments, setComments] = useState<Array<{ id: string | number; userId?: string | number; user_id?: string | number; text: string; createdAt: string; name?: string; username?: string; avatar?: string; verified?: boolean }>>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [commentsLoaded, setCommentsLoaded] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
@@ -76,13 +89,13 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, timestamp, replies, reso
 
   useEffect(() => {
     if (name !== undefined && username !== undefined) {
-      setUser({
-        id: userId,
-        name,
-        username,
-        avatar,
-        verified: verified || false
-      });
+        setUser({
+          id: userId,
+          name,
+          username,
+          avatar,
+          verified: Boolean(verified)
+        });
     } else {
       const fetchUser = async () => {
         try {
@@ -204,9 +217,16 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, timestamp, replies, reso
   const handleReply = async () => {
     if (!showComments && !commentsLoaded) {
       try {
-        const response = await postsAPI.getComments(id.toString());
-        setComments(response.comments);
-        setCommentsLoaded(true);
+          const response = await postsAPI.getComments(id.toString());
+          setComments(
+            response.comments.map((comment: ApiComment) => ({
+              ...comment,
+              createdAt: comment.createdAt ?? comment.created_at ?? new Date().toISOString(),
+              userId: comment.userId ?? comment.user_id,
+              verified: Boolean(comment.verified)
+            }))
+          );
+          setCommentsLoaded(true);
       } catch (error) {
         console.error('Failed to load comments:', error);
         setComments([]);
@@ -225,10 +245,11 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, timestamp, replies, reso
           id: response.commentId,
           text: commentText,
           createdAt: new Date().toISOString(),
-          name: user?.name || 'Current User',
-          username: user?.username || '@current',
-          avatar: user?.avatar,
-          verified: user?.verified || false
+          userId: currentUser?.id,
+          name: currentUser?.name || currentUser?.username || 'Current User',
+          username: currentUser?.username || '@current',
+          avatar: currentUser?.avatar,
+          verified: Boolean(currentUser?.verified)
         };
 
         setComments([...comments, newComment]);
@@ -604,7 +625,10 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, timestamp, replies, reso
                           animate={{ opacity: 1, x: 0 }}
                           className="flex gap-2"
                         >
-                          <div className="flex-shrink-0">
+                          <div
+                            className="flex-shrink-0 cursor-pointer"
+                            onClick={() => (comment.userId ?? comment.user_id) && navigate(`/profile/${String(comment.userId ?? comment.user_id)}`)}
+                          >
                             {comment.avatar ? (
                               <img
                                 src={normalizeImageUrl(comment.avatar) || ''}
@@ -620,7 +644,12 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, timestamp, replies, reso
                           <div className="flex-1">
                             <div className="bg-white/5 rounded-2xl px-3 py-2">
                               <div className="flex items-center gap-2">
-                                <span className="font-medium text-sm text-white">{comment.name}</span>
+                                <span
+                                  className="font-medium text-sm text-white cursor-pointer hover:text-white/80 transition-smooth"
+                                  onClick={() => (comment.userId ?? comment.user_id) && navigate(`/profile/${String(comment.userId ?? comment.user_id)}`)}
+                                >
+                                  {comment.name}
+                                </span>
                                 {comment.verified && (
                                   <VerifiedBadge className="h-3.5 w-3.5" />
                                 )}
