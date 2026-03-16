@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AlertTriangle, Bug, ShieldCheck, Upload, Send, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -9,6 +9,17 @@ const SupportPage = () => {
   const [topic, setTopic] = useState("bug");
   const [description, setDescription] = useState("");
   const [topicOpen, setTopicOpen] = useState(false);
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleAttachClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const [file] = event.target.files ?? [];
+    setAttachment(file ?? null);
+  };
 
   const topics = [
     { key: "bug", icon: Bug },
@@ -100,13 +111,33 @@ const SupportPage = () => {
                 />
               </div>
               <div className="flex flex-wrap items-center gap-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
                 <button
                   type="button"
+                  onClick={handleAttachClick}
                   className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/70"
                 >
                   <Upload className="h-3.5 w-3.5" />
                   {t("help.support.form.attach")}
                 </button>
+                {attachment && (
+                  <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/70">
+                    {attachment.name}
+                    <button
+                      type="button"
+                      onClick={() => setAttachment(null)}
+                      className="text-white/50 hover:text-white"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
                 <a
                   href="https://t.me/"
                   className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-xs font-semibold text-black"
