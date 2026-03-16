@@ -40,7 +40,7 @@ English | [Русский](../../docs-ru/PROJECT_UI/ROUTES.ru.md) | [中文](../
 
 | Path | Component | File | Description |
 |------|-----------|------|-------------|
-| `/feed` | Index | `src/pages/Index.tsx` | Feed |
+| `/feed` | Index | `src/pages/Index.tsx` | Feed (supports `?post={id}` deep link) |
 | `/explore` | Explore | `src/pages/Explore.tsx` | Explore |
 | `/messages` | Messages | `src/pages/Messages.tsx` | Chat list |
 | `/messages/:chatId` | Messages | `src/pages/Messages.tsx` | Chat view |

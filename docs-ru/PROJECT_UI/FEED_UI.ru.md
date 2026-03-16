@@ -2,7 +2,7 @@
 
 [English](../../docs/PROJECT_UI/FEED_UI.md) | Русский | [中文](../../docs-cn/PROJECT_UI/FEED_UI.cn.md)
 
-**Последнее обновление:** 2026-03-11
+**Последнее обновление:** 2026-03-16
 
 ---
 
@@ -38,6 +38,17 @@
 - `new_post`
 - `post_resonance_updated`
 - `new_comment`
+
+---
+
+## Deep links (уведомления)
+
+Лента поддерживает query-параметры для переходов из уведомлений с автопрокруткой и подсветкой поста:
+
+- `/feed?post={postId}` → скролл к посту + короткая подсветка.
+- `/feed?post={postId}&comment={commentId}` → то же поведение для комментариев.
+
+**Реализация:** `src/pages/Index.tsx` (парсинг query + scroll/highlight).
 
 ---
 

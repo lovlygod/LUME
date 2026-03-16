@@ -2,7 +2,7 @@
 
 English | [Русский](../../docs-ru/PROJECT_UI/FEED_UI.ru.md) | [中文](../../docs-cn/PROJECT_UI/FEED_UI.cn.md)
 
-**Last updated:** 2026-03-11
+**Last updated:** 2026-03-16
 
 ---
 
@@ -81,6 +81,17 @@ Posts Feed
 - `new_post` → increment `newPostsCount`
 - `post_resonance_updated` → update counts in cache
 - `new_comment` → update comments cache
+
+---
+
+## Deep links (notifications)
+
+The feed supports URL query params to scroll and highlight a specific post when opened from notifications:
+
+- `/feed?post={postId}` → scroll to the post and apply a short highlight ring.
+- `/feed?post={postId}&comment={commentId}` → same behavior, used for comment-related notifications.
+
+**Implementation:** `src/pages/Index.tsx` (query parsing + scroll/highlight).
 
 ---
 

@@ -16,7 +16,7 @@ Legal: `/privacy-policy`, `/terms-of-service`, `/cookie-policy`.
 
 ## Защищённые маршруты
 
-`/feed`, `/explore`, `/messages`, `/messages?userId=...`, `/servers`, `/server/:identifier/...`, `/profile`, `/settings`, `/settings/sessions`, `/verified`, `/admin`.
+`/feed` (поддерживает `?post={id}`), `/explore`, `/messages`, `/messages?userId=...`, `/servers`, `/server/:identifier/...`, `/profile`, `/settings`, `/settings/sessions`, `/verified`, `/admin`.
 
 ---
 
