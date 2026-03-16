@@ -1,6 +1,7 @@
 import { API_BASE_PATH } from "@/lib/config";
 import type { User, VerificationRequest, VerificationStatus, Post, Comment } from "@/types";
 import type { Chat, Attachment, Message } from "@/types/messages";
+import type { StickerPack, StickerPackWithStickers } from "@/types/stickers";
 
 const API_BASE_URL = API_BASE_PATH;
 
@@ -382,7 +383,7 @@ export const messagesAPI = {
     }, true, signal);
   },
 
-  sendMessage: async (messageData: { receiverId: string; text?: string; attachmentIds?: string[]; replyToMessageId?: string | null }) => {
+  sendMessage: async (messageData: { receiverId: string; text?: string; attachmentIds?: string[]; replyToMessageId?: string | null; stickerId?: string | null }) => {
     return apiRequest('/messages', {
       method: 'POST',
       body: JSON.stringify(messageData),
@@ -483,6 +484,30 @@ export const messagesAPI = {
     if (limit) params.append('limit', String(limit));
     return apiRequest(`/messages/search?${params}`, {
       method: 'GET',
+    });
+  },
+};
+
+export const stickersAPI = {
+  getPacks: async (): Promise<{ packs: StickerPack[] }> => {
+    return apiRequest('/stickers/packs', {
+      method: 'GET',
+    });
+  },
+  getPack: async (packId: string): Promise<StickerPackWithStickers> => {
+    return apiRequest(`/stickers/packs/${packId}`, {
+      method: 'GET',
+    });
+  },
+  getMyPacks: async (): Promise<{ packs: StickerPack[] }> => {
+    return apiRequest('/stickers/mine', {
+      method: 'GET',
+    });
+  },
+  addPack: async (packId: string): Promise<{ message: string }> => {
+    return apiRequest('/stickers/add-pack', {
+      method: 'POST',
+      body: JSON.stringify({ packId }),
     });
   },
 };

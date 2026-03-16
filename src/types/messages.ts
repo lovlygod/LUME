@@ -37,7 +37,14 @@ export interface Message {
   id: string;
   senderId: string;
   text: string;
-  type?: "text" | "moment_image" | "voice";
+  type?: "text" | "moment_image" | "voice" | "sticker";
+  sticker?: {
+    id: string;
+    packId?: string | null;
+    name?: string | null;
+    filePath?: string | null;
+    url?: string | null;
+  } | null;
   moment?: {
     id: string;
     thumbDataUrl?: string | null;

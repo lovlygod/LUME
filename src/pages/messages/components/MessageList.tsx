@@ -3,6 +3,8 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import type { User } from "@/types";
 import type { Attachment, Message } from "@/types/messages";
 import { ImageThumb } from "@/components/media/ImageViewer";
+import StickerMessage from "@/components/stickers/StickerMessage";
+import type { Sticker } from "@/types/stickers";
 import { Paperclip, CheckCheck } from "lucide-react";
 import LinkPreview from "@/components/LinkPreview";
 import VoiceMessagePlayer from "@/components/chat/VoiceMessagePlayer";
@@ -24,6 +26,7 @@ interface MessageListProps {
   onReplyJump: (messageId: string) => void;
   onDeleteRequest: (messageId: string, x: number, y: number) => void;
   onOpenMoment: (msg: Message) => void;
+  onOpenSticker: (sticker: Sticker) => void;
   momentOpenMap: Record<string, string>;
   momentLoadingMap: Record<string, boolean>;
   momentBlockedMap: Record<string, boolean>;
@@ -44,6 +47,7 @@ const MessageList = ({
   onReplyJump,
   onDeleteRequest,
   onOpenMoment,
+  onOpenSticker,
   momentOpenMap,
   momentLoadingMap,
   momentBlockedMap,
@@ -129,6 +133,7 @@ const MessageList = ({
             : replyTarget?.attachments?.find((att) => att.type === "image")?.url;
           const hasVoiceAttachment = Boolean(msg.attachments?.some((att) => att.type === "voice"));
           const isVoiceMessage = msg.type === "voice" || hasVoiceAttachment;
+          const isStickerMessage = msg.type === "sticker" && !!msg.sticker?.url;
 
           return (
             <div
@@ -152,7 +157,11 @@ const MessageList = ({
               }}
             >
               <div
-                className={`relative w-fit break-words rounded-[20px] border border-white/10 bg-white/5 ${
+                className={`relative w-fit break-words ${
+                  isStickerMessage
+                    ? "bg-transparent border-0 shadow-none"
+                    : "rounded-[20px] border border-white/10 bg-white/5"
+                } ${
                   highlightedMessageId === msg.id
                     ? "ring-1 ring-white/30 shadow-[0_0_0_1px_rgba(255,255,255,0.12)]"
                     : ""
@@ -161,10 +170,12 @@ const MessageList = ({
                     ? "min-w-[240px] max-w-[min(420px,65%)]"
                     : "max-w-[min(560px,65%)]"
                 } ${
-                  msg.type === "moment_image" ||
-                  (msg.attachments && msg.attachments.some((a) => a.type === "image"))
-                    ? "p-1.5"
-                    : "px-3 py-1.5"
+                  isStickerMessage
+                    ? "p-0"
+                    : msg.type === "moment_image" ||
+                      (msg.attachments && msg.attachments.some((a) => a.type === "image"))
+                      ? "p-1.5"
+                      : "px-3 py-1.5"
                 }`}
               >
                 {replyTarget && (
@@ -196,6 +207,11 @@ const MessageList = ({
                   </button>
                 )}
                 <div className="text-sm text-white/90">
+                  {isStickerMessage ? (
+                    <div className="p-2">
+                      <StickerMessage sticker={msg.sticker || undefined} onOpen={onOpenSticker} />
+                    </div>
+                  ) : null}
                   {msg.type === "moment_image" && msg.moment ? (
                     <div className="rounded-[18px] border border-white/10 bg-white/5 p-3">
                       <button
@@ -279,7 +295,7 @@ const MessageList = ({
                       ))}
                     </div>
                   ) : null}
-                  {msg.text && msg.text.trim() && msg.type !== "moment_image" && !isVoiceMessage && (
+                  {msg.text && msg.text.trim() && msg.type !== "moment_image" && !isVoiceMessage && !isStickerMessage && (
                     <div className={`${msg.attachments && msg.attachments.some((a) => a.type === "image") ? "px-3 pt-2" : ""}`}>
                       <p className="break-words whitespace-pre-wrap leading-[1.25]">
                         {renderSafeTextWithLinks(msg.text)}
@@ -295,9 +311,11 @@ const MessageList = ({
                 {!isVoiceMessage && (
                   <div
                     className={`mt-1 flex items-center justify-end gap-1.5 text-[10px] leading-none text-white/45 ${
-                      msg.attachments && msg.attachments.some((a) => a.type === "image")
-                        ? "px-3 pb-2"
-                        : ""
+                      isStickerMessage
+                        ? "px-0"
+                        : msg.attachments && msg.attachments.some((a) => a.type === "image")
+                          ? "px-3 pb-2"
+                          : ""
                     }`}
                   >
                     <span>

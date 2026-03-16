@@ -11,16 +11,18 @@ const ensureMessageShape = (data: {
   receiverId: string | number;
   text: string;
   timestamp: string;
-  type?: "text" | "moment_image";
+  type?: "text" | "moment_image" | "sticker";
   moment?: Message["moment"];
   attachments?: Attachment[];
   replyToMessageId?: string | null;
+  sticker?: Message["sticker"] | null;
 }): Message => ({
   id: data.id.toString(),
   senderId: String(data.senderId),
   text: data.text,
   type: data.type || "text",
   moment: data.moment || null,
+  sticker: data.sticker || null,
   timestamp: data.timestamp,
   own: false,
   attachments: data.attachments || [],
@@ -45,10 +47,11 @@ export const useChatWs = (params: {
         receiverId: string | number;
         text: string;
         timestamp: string;
-        type?: "text" | "moment_image";
+        type?: "text" | "moment_image" | "sticker";
         moment?: Message["moment"];
         attachments?: Attachment[];
         replyToMessageId?: string | null;
+        sticker?: Message["sticker"] | null;
       }) => {
         const message = ensureMessageShape(data);
         const isIncoming = String(data.senderId) !== String(params.currentUserId);

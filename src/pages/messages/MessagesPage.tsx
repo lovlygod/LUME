@@ -6,10 +6,11 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import type { User } from "@/types";
 import type { Attachment, Message } from "@/types/messages";
+import type { Sticker, StickerPack } from "@/types/stickers";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { messagesAPI, profileAPI, uploadsAPI, usersAPI } from "@/services/api";
+import { messagesAPI, profileAPI, uploadsAPI, usersAPI, stickersAPI } from "@/services/api";
 import { messageSounds } from "@/services/messageSounds";
 import { wsService } from "@/services/websocket";
 import { messageQueryKeys } from "./hooks/queryKeys";
@@ -26,6 +27,7 @@ import MessageList from "./components/MessageList";
 import MessageComposer from "./components/MessageComposer";
 import { MessageSearch } from "./components/MessageSearch";
 import { ImageViewer } from "@/components/media/ImageViewer";
+import StickerModal from "@/components/stickers/StickerModal";
 
 interface ReplyPreview {
   id: string;
@@ -59,6 +61,14 @@ const MessagesPage = () => {
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
   const [activeImageSrc, setActiveImageSrc] = useState<string | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [stickersOpen, setStickersOpen] = useState(false);
+  const [myStickerPacks, setMyStickerPacks] = useState<StickerPack[]>([]);
+  const [lumeStickerPacks, setLumeStickerPacks] = useState<StickerPack[]>([]);
+  const [stickersByPack, setStickersByPack] = useState<Record<string, Sticker[]>>({});
+  const [activeStickerPackId, setActiveStickerPackId] = useState<string | null>(null);
+  const [stickerModalOpen, setStickerModalOpen] = useState(false);
+  const [activeSticker, setActiveSticker] = useState<Sticker | null>(null);
+  const [activeStickerPack, setActiveStickerPack] = useState<StickerPack | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -139,6 +149,29 @@ const MessagesPage = () => {
   }, [msgText, selectedChatId]);
 
   useEffect(() => {
+    let mounted = true;
+    stickersAPI.getPacks().then((res) => {
+      if (!mounted) return;
+      setLumeStickerPacks(res.packs || []);
+    }).catch(() => null);
+    stickersAPI.getMyPacks().then((res) => {
+      if (!mounted) return;
+      setMyStickerPacks(res.packs || []);
+    }).catch(() => null);
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!stickersOpen) return;
+    const pickDefault = myStickerPacks[0]?.id || lumeStickerPacks[0]?.id || null;
+    if (pickDefault && !activeStickerPackId) {
+      loadPackStickers(pickDefault);
+    }
+  }, [stickersOpen, myStickerPacks, lumeStickerPacks, activeStickerPackId]);
+
+  useEffect(() => {
     if (selectedChatId && messages.length > 0) {
       const lastMsg = messages[messages.length - 1];
       if (lastMsg && !lastMsg.own) {
@@ -206,6 +239,57 @@ const MessagesPage = () => {
     setMsgText("");
     setAttachments([]);
     setReplyTo(null);
+  };
+
+  const handleSendSticker = async (sticker: Sticker) => {
+    if (!selectedChatId) return;
+    sendMessage.mutate({
+      receiverId: selectedChatId,
+      stickerId: sticker.id,
+      ...(replyTo?.id ? { replyToMessageId: replyTo.id } : {}),
+    });
+    setStickersOpen(false);
+  };
+
+  const handleOpenStickerModal = (sticker: Sticker) => {
+    setActiveSticker(sticker);
+    const pack = [...myStickerPacks, ...lumeStickerPacks].find((p) => p.id === sticker.packId) || null;
+    setActiveStickerPack(pack);
+    setStickerModalOpen(true);
+  };
+
+  const handleAddStickerPack = async () => {
+    if (!activeStickerPack?.id) return;
+    try {
+      await stickersAPI.addPack(activeStickerPack.id);
+      toast.success("Sticker pack added");
+    } catch (_error) {
+      console.error("Sticker pack add failed", _error);
+      toast.error("Failed to add sticker pack");
+      return;
+    }
+
+    try {
+      const refreshed = await stickersAPI.getMyPacks();
+      setMyStickerPacks(refreshed.packs || []);
+    } catch (_error) {
+      console.error("Sticker pack refresh failed", _error);
+      toast.error("Failed to refresh sticker packs");
+    }
+  };
+
+  const loadPackStickers = async (packId: string) => {
+    if (stickersByPack[packId]) {
+      setActiveStickerPackId(packId);
+      return;
+    }
+    try {
+      const res = await stickersAPI.getPack(packId);
+      setStickersByPack((prev) => ({ ...prev, [packId]: res.stickers || [] }));
+      setActiveStickerPackId(packId);
+    } catch (_error) {
+      toast.error("Failed to load sticker pack");
+    }
   };
 
   const handleSendVoice = async (blob: Blob, duration: number): Promise<void> => {
@@ -373,6 +457,7 @@ const MessagesPage = () => {
                         onReplyJump={handleReplyJump}
                         onDeleteRequest={(msgId, x, y) => setShowDeleteMenu({ msgId, x, y })}
                         onOpenMoment={handleOpenMoment}
+                        onOpenSticker={handleOpenStickerModal}
                         momentOpenMap={momentOpenMap}
                         momentLoadingMap={momentLoadingMap}
                         momentBlockedMap={momentBlockedMap}
@@ -412,6 +497,11 @@ const MessagesPage = () => {
                   momentPreview={momentPreview}
                   attachments={attachments}
                   replyTo={replyTo ? { author: replyTo.author, text: replyTo.text, imageUrl: replyTo.imageUrl } : null}
+                  stickersOpen={stickersOpen}
+                  myStickerPacks={myStickerPacks}
+                  lumeStickerPacks={lumeStickerPacks}
+                  stickersByPack={stickersByPack}
+                  activeStickerPackId={activeStickerPackId}
                   onFileSelect={handleFileSelect}
                   onRemoveAttachment={(index) =>
                     setAttachments((prev) => prev.filter((_, i) => i !== index))
@@ -434,6 +524,10 @@ const MessagesPage = () => {
                   onSetMsgText={setMsgText}
                   onSend={handleSendMessage}
                   onSendVoice={handleSendVoice}
+                  onToggleStickers={() => setStickersOpen((prev) => !prev)}
+                  onSelectSticker={handleSendSticker}
+                  onPickStickerPack={loadPackStickers}
+                  onBrowseStickerPacks={() => setStickersOpen(true)}
                   t={t}
                 />
               </div>
@@ -445,6 +539,14 @@ const MessagesPage = () => {
                   setActiveImageId(null);
                   setActiveImageSrc(null);
                 }}
+              />
+
+              <StickerModal
+                open={stickerModalOpen}
+                onOpenChange={setStickerModalOpen}
+                sticker={activeSticker}
+                pack={activeStickerPack}
+                onAddPack={handleAddStickerPack}
               />
 
               <AnimatePresence>

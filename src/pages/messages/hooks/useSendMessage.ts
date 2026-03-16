@@ -13,6 +13,7 @@ export const useSendMessage = (currentUserId?: string) => {
       text?: string;
       attachmentIds?: string[];
       replyToMessageId?: string | null;
+      stickerId?: string | null;
     }) => messagesAPI.sendMessage(payload),
     onSuccess: (data, variables) => {
       messageSounds.playSend();
@@ -26,6 +27,8 @@ export const useSendMessage = (currentUserId?: string) => {
           id: (data as { messageId?: string | number }).messageId?.toString() || `temp-${Date.now()}`,
           senderId: currentUserId ? String(currentUserId) : "self",
           text: variables.text || "",
+          type: (data as { type?: Message["type"] }).type ?? (variables.stickerId ? "sticker" : "text"),
+          sticker: (data as { sticker?: Message["sticker"] }).sticker ?? (variables.stickerId ? { id: variables.stickerId, url: "" } : null),
           timestamp: now,
           own: true,
           attachments: (data as { attachments?: Message["attachments"] }).attachments,
@@ -40,10 +43,12 @@ export const useSendMessage = (currentUserId?: string) => {
         if (!prev?.chats) return prev;
         const exists = prev.chats.find((chat) => String(chat.userId) === String(variables.receiverId));
         const lastMessage =
-          variables.text ||
-          (variables.attachmentIds?.length
-            ? `[${variables.attachmentIds.length} attachment]`
-            : exists?.lastMessage || "");
+          variables.stickerId
+            ? "[sticker]"
+            : variables.text ||
+              (variables.attachmentIds?.length
+                ? `[${variables.attachmentIds.length} attachment]`
+                : exists?.lastMessage || "");
 
         if (!exists) {
           const userData = queryClient.getQueryData<{ user: { id: string; name?: string; username?: string; avatar?: string; verified?: boolean } }>(

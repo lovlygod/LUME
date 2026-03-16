@@ -1,6 +1,8 @@
 import { useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Paperclip, Send, X, FileImage, File, Mic } from "lucide-react";
+import { Paperclip, Send, X, FileImage, File, Mic, Smile } from "lucide-react";
+import StickerPicker from "@/components/stickers/StickerPicker";
+import type { Sticker, StickerPack } from "@/types/stickers";
 import { useDropzone, type FileRejection } from "react-dropzone";
 import { toast } from "sonner";
 import { ReplyBar } from "@/components/chat/ReplyBar";
@@ -21,6 +23,11 @@ interface MessageComposerProps {
   momentPreview: string | null;
   attachments: Attachment[];
   replyTo: ReplyPreview | null;
+  stickersOpen: boolean;
+  myStickerPacks: StickerPack[];
+  lumeStickerPacks: StickerPack[];
+  stickersByPack: Record<string, Sticker[]>;
+  activeStickerPackId: string | null;
   onFileSelect: (files: File[]) => void;
   onRemoveAttachment: (index: number) => void;
   onOpenImage: (imageId: string, src: string) => void;
@@ -29,6 +36,10 @@ interface MessageComposerProps {
   onSetMsgText: (text: string) => void;
   onSend: () => void;
   onSendVoice: (blob: Blob, duration: number) => void;
+  onToggleStickers: () => void;
+  onSelectSticker: (sticker: Sticker) => void;
+  onPickStickerPack: (packId: string) => void;
+  onBrowseStickerPacks: () => void;
   t: (key: string) => string;
 }
 
@@ -64,6 +75,11 @@ const MessageComposer = ({
   momentPreview,
   attachments,
   replyTo,
+  stickersOpen,
+  myStickerPacks,
+  lumeStickerPacks,
+  stickersByPack,
+  activeStickerPackId,
   onFileSelect,
   onRemoveAttachment,
   onOpenImage,
@@ -72,6 +88,10 @@ const MessageComposer = ({
   onSetMsgText,
   onSend,
   onSendVoice,
+  onToggleStickers,
+  onSelectSticker,
+  onPickStickerPack,
+  onBrowseStickerPacks,
   t,
 }: MessageComposerProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -183,6 +203,17 @@ const MessageComposer = ({
     >
       <input {...getInputProps()} />
 
+        <StickerPicker
+          isOpen={stickersOpen}
+          activePackId={activeStickerPackId}
+          myPacks={myStickerPacks}
+          lumePacks={lumeStickerPacks}
+          stickersByPack={stickersByPack}
+          onSelect={onSelectSticker}
+          onPickPack={onPickStickerPack}
+          onBrowsePacks={onBrowseStickerPacks}
+        />
+
       {/* Drag Overlay */}
       <AnimatePresence>
         {isDragActive && (
@@ -278,6 +309,15 @@ const MessageComposer = ({
 
       {/* Composer Input */}
       <div className="flex items-center gap-3">
+        <motion.button
+          type="button"
+          onClick={onToggleStickers}
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-white/6 text-white/80 hover:bg-white/12 transition-smooth"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <Smile className="h-5 w-5" />
+        </motion.button>
         <input
           ref={fileInputRef}
           type="file"
