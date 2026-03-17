@@ -173,6 +173,13 @@
     "chatBackgroundDefault": "Default",
     "chatBackgroundSilent": "Silent Doodle",
     "chatBackgroundGame": "Game Doodle",
+    "chatBackgroundCustom": "Custom",
+    "chatBackgroundCustomDescription": "Upload an image and preview it before applying",
+    "chatBackgroundUpload": "Upload image",
+    "chatBackgroundApply": "Apply",
+    "chatBackgroundZoom": "Zoom",
+    "chatBackgroundCustomApplied": "Custom background applied",
+    "chatBackgroundCustomError": "Failed to upload custom background",
     "doubleClickHeart": "React with ❤️"
   },
   "stickers": {

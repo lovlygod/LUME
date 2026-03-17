@@ -173,6 +173,13 @@
     "chatBackgroundDefault": "Default",
     "chatBackgroundSilent": "Silent Doodle",
     "chatBackgroundGame": "Game Doodle",
+    "chatBackgroundCustom": "Свой фон",
+    "chatBackgroundCustomDescription": "Загрузите изображение и посмотрите предпросмотр перед применением",
+    "chatBackgroundUpload": "Загрузить изображение",
+    "chatBackgroundApply": "Применить",
+    "chatBackgroundZoom": "Масштаб",
+    "chatBackgroundCustomApplied": "Пользовательский фон применён",
+    "chatBackgroundCustomError": "Не удалось загрузить пользовательский фон",
     "doubleClickHeart": "Реакция ❤️"
   },
   "sessions": {

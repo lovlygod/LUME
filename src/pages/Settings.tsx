@@ -1,23 +1,34 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Moon, Sun, Globe, Lock, Users, MessageCircle, Save, Snowflake, AlertTriangle, Trash2, LogOut, MonitorSmartphone, Check } from "lucide-react";
+import { Moon, Sun, Globe, Lock, Users, MessageCircle, Save, Snowflake, AlertTriangle, Trash2, LogOut, MonitorSmartphone, Check, Upload } from "lucide-react";
 import silentDoodle from "@/assets/Chat-Background/silent-doodle.png";
 import gameDoodle from "@/assets/Chat-Background/game-doodle.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { profileAPI } from "@/services/api";
+import { profileAPI, uploadsAPI } from "@/services/api";
 import { toast } from 'sonner';
 import { useNavigate } from "react-router-dom";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useChatBackground } from "@/hooks/useChatBackground";
 
 const Settings = () => {
   const { user: authUser, logout } = useAuth();
   const { language, setLanguage, t } = useLanguage();
+  const { customScale, customPos } = useChatBackground();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showCustomBgModal, setShowCustomBgModal] = useState(false);
+  const [customBgPreview, setCustomBgPreview] = useState<string | null>(null);
+  const [customBgFile, setCustomBgFile] = useState<File | null>(null);
+  const [customBgUploading, setCustomBgUploading] = useState(false);
+  const [customBgScale, setCustomBgScale] = useState(1);
+  const [customBgOffset, setCustomBgOffset] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [settings, setSettings] = useState({
     theme: "dark",
     snowEffect: false,
@@ -25,7 +36,8 @@ const Settings = () => {
     postPrivacy: "public",
     messagePrivacy: "everyone",
     doubleClickAction: "reply" as "reply" | "heart",
-    chatBackground: "default" as "default" | "silent_doodle" | "game_doodle",
+    chatBackground: "default" as "default" | "silent_doodle" | "game_doodle" | "custom",
+    chatBackgroundCustomUrl: null as string | null,
   });
 
   useEffect(() => {
@@ -50,8 +62,9 @@ const Settings = () => {
       (localStorage.getItem("doubleClickAction") as "reply" | "heart" | null) || "reply";
 
     const savedChatBackground =
-      (localStorage.getItem("chat_background") as "default" | "silent_doodle" | "game_doodle" | null) ||
+      (localStorage.getItem("chat_background") as "default" | "silent_doodle" | "game_doodle" | "custom" | null) ||
       "default";
+    const savedCustomUrl = localStorage.getItem("chat_background_custom_url");
 
     setSettings(prev => ({
       ...prev,
@@ -60,8 +73,18 @@ const Settings = () => {
       snowVariant: savedSnowVariant,
       doubleClickAction: savedDoubleClickAction,
       chatBackground: savedChatBackground,
+      chatBackgroundCustomUrl: savedCustomUrl,
     }));
   }, []);
+
+  useEffect(() => {
+    if (showCustomBgModal) {
+      setCustomBgPreview(settings.chatBackgroundCustomUrl);
+      setCustomBgFile(null);
+      setCustomBgScale(customScale || 1);
+      setCustomBgOffset(customPos || { x: 0, y: 0 });
+    }
+  }, [showCustomBgModal, settings.chatBackgroundCustomUrl, customScale, customPos]);
 
   const handleSave = async () => {
     setLoading(true);
@@ -105,10 +128,41 @@ const Settings = () => {
     window.dispatchEvent(new Event("doubleClickActionChange"));
   };
 
-  const handleChatBackgroundChange = (value: "default" | "silent_doodle" | "game_doodle") => {
+  const handleChatBackgroundChange = (value: "default" | "silent_doodle" | "game_doodle" | "custom") => {
     setSettings((prev) => ({ ...prev, chatBackground: value }));
     localStorage.setItem("chat_background", value);
     window.dispatchEvent(new CustomEvent("chatBackgroundChange", { detail: value }));
+  };
+
+  const handleCustomBackgroundApply = async () => {
+    if (!customBgFile && !settings.chatBackgroundCustomUrl) return;
+    setCustomBgUploading(true);
+    try {
+      let url = settings.chatBackgroundCustomUrl;
+      if (customBgFile) {
+        const uploaded = await uploadsAPI.uploadFile(customBgFile);
+        url = uploaded.url;
+        localStorage.setItem("chat_background_custom_url", uploaded.url);
+      }
+      if (!url) return;
+      localStorage.setItem("chat_background_custom_scale", String(customBgScale));
+      localStorage.setItem("chat_background_custom_pos_x", String(customBgOffset.x));
+      localStorage.setItem("chat_background_custom_pos_y", String(customBgOffset.y));
+      localStorage.setItem("chat_background", "custom");
+      setSettings((prev) => ({
+        ...prev,
+        chatBackground: "custom",
+        chatBackgroundCustomUrl: url,
+      }));
+      window.dispatchEvent(new CustomEvent("chatBackgroundChange", { detail: "custom" }));
+      toast.success(t("settings.chatBackgroundCustomApplied"));
+      setShowCustomBgModal(false);
+    } catch (error) {
+      console.error("Custom background upload failed", error);
+      toast.error(t("settings.chatBackgroundCustomError"));
+    } finally {
+      setCustomBgUploading(false);
+    }
   };
 
   const handleLanguageChange = (lang: "ru" | "en") => {
@@ -500,6 +554,41 @@ const Settings = () => {
                     </span>
                   )}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCustomBgModal(true)}
+                  className={`group relative h-[120px] w-[160px] rounded-[16px] overflow-hidden border transition-smooth col-span-3 justify-self-start ${
+                    settings.chatBackground === "custom"
+                      ? "border-[2px] border-white"
+                      : "border-white/10 hover:border-white/30"
+                  }`}
+                >
+                  {settings.chatBackgroundCustomUrl ? (
+                    <div
+                      className="h-full w-full"
+                      style={{
+                        backgroundImage: `url(${settings.chatBackgroundCustomUrl})`,
+                        backgroundRepeat: "repeat",
+                        backgroundSize: "600px",
+                        backgroundPosition: "center",
+                        backgroundColor: "#0E0E11",
+                      }}
+                    />
+                  ) : (
+                    <div className="h-full w-full bg-white/5 flex flex-col items-center justify-center gap-2">
+                      <Upload className="h-5 w-5 text-white/60" />
+                      <span className="text-[11px] text-white/70">{t("settings.chatBackgroundCustom")}</span>
+                    </div>
+                  )}
+                  <span className="absolute bottom-3 left-3 text-xs font-medium text-white">
+                    {t("settings.chatBackgroundCustom")}
+                  </span>
+                  {settings.chatBackground === "custom" && (
+                    <span className="absolute top-2 right-2 h-6 w-6 rounded-full bg-white text-black flex items-center justify-center">
+                      <Check className="h-4 w-4" />
+                    </span>
+                  )}
+                </button>
               </div>
             </div>
           </div>
@@ -687,6 +776,128 @@ const Settings = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <Dialog open={showCustomBgModal} onOpenChange={setShowCustomBgModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-white">{t("settings.chatBackgroundCustom")}</DialogTitle>
+            <DialogDescription className="text-white/60">
+              {t("settings.chatBackgroundCustomDescription")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-[18px] border border-white/10 bg-white/5 p-4">
+              <div
+                className="h-[180px] w-full rounded-[16px] border border-white/10"
+                style={
+                  customBgPreview
+                    ? {
+                        backgroundImage: `url(${customBgPreview})`,
+                        backgroundRepeat: "no-repeat",
+                        backgroundSize:
+                          customBgScale === 1
+                            ? "cover"
+                            : `${Math.round(customBgScale * 100)}%`,
+                        backgroundPosition: `calc(50% + ${customBgOffset.x}px) calc(50% + ${customBgOffset.y}px)`,
+                        backgroundColor: "#0E0E11",
+                      }
+                    : {
+                        backgroundColor: "#0E0E11",
+                      }
+                }
+                onMouseDown={(event) => {
+                  if (!customBgPreview) return;
+                  setDragging(true);
+                  setDragStart({ x: event.clientX - customBgOffset.x, y: event.clientY - customBgOffset.y });
+                }}
+                onMouseMove={(event) => {
+                  if (!dragging || !dragStart) return;
+                  setCustomBgOffset({
+                    x: event.clientX - dragStart.x,
+                    y: event.clientY - dragStart.y,
+                  });
+                }}
+                onMouseUp={() => {
+                  setDragging(false);
+                  setDragStart(null);
+                }}
+                onMouseLeave={() => {
+                  setDragging(false);
+                  setDragStart(null);
+                }}
+                onTouchStart={(event) => {
+                  const touch = event.touches[0];
+                  if (!touch || !customBgPreview) return;
+                  setDragging(true);
+                  setDragStart({ x: touch.clientX - customBgOffset.x, y: touch.clientY - customBgOffset.y });
+                }}
+                onTouchMove={(event) => {
+                  const touch = event.touches[0];
+                  if (!touch || !dragging || !dragStart) return;
+                  setCustomBgOffset({
+                    x: touch.clientX - dragStart.x,
+                    y: touch.clientY - dragStart.y,
+                  });
+                }}
+                onTouchEnd={() => {
+                  setDragging(false);
+                  setDragStart(null);
+                }}
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-white/70">{t("settings.chatBackgroundZoom")}</span>
+              <input
+                type="range"
+                min={0.5}
+                max={2}
+                step={0.05}
+                value={customBgScale}
+                onChange={(event) => setCustomBgScale(Number(event.target.value))}
+                className="flex-1 accent-white"
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <label className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 text-sm text-white/80 hover:bg-white/5 transition-smooth cursor-pointer">
+                <Upload className="h-4 w-4" />
+                <span>{t("settings.chatBackgroundUpload")}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    setCustomBgFile(file);
+                    setCustomBgOffset({ x: 0, y: 0 });
+                    setCustomBgScale(1);
+                    const reader = new FileReader();
+                    reader.onload = () => setCustomBgPreview(reader.result as string);
+                    reader.readAsDataURL(file);
+                  }}
+                />
+              </label>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCustomBgModal(false)}
+                  className="px-4 py-2 rounded-full text-sm text-white/70 border border-white/10 hover:bg-white/5 transition-smooth"
+                >
+                  {t("common.cancel")}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCustomBackgroundApply}
+                  disabled={customBgUploading || !customBgPreview}
+                  className="px-4 py-2 rounded-full text-sm font-semibold text-black bg-white/90 hover:bg-white transition-smooth disabled:opacity-60"
+                >
+                  {customBgUploading ? t("common.loading") : t("settings.chatBackgroundApply")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
