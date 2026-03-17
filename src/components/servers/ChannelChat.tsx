@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { parseMentions } from "@/utils/parseMentions";
 import { useServer } from '@/contexts/ServerContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -106,15 +106,7 @@ export const ChannelChat: React.FC<{ serverId: number; channelId: number; channe
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadMessages();
-  }, [channelId]);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages.length]);
-
-  const loadMessages = async () => {
+  const loadMessages = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await apiRequest<{
@@ -161,7 +153,15 @@ setMessages(messagesWithDeleteStatus);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [channelId, serverId, t]);
+
+  useEffect(() => {
+    loadMessages();
+  }, [channelId, loadMessages]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages.length]);
 
   const scrollToBottom = () => {
     if (messagesEndRef.current) {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LayoutGroup, AnimatePresence, motion } from "framer-motion";
 import { MessageCircle } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -95,7 +95,7 @@ const MessagesPage = () => {
   const deleteMessage = useDeleteMessage(selectedChatId);
   const markRead = useMarkRead(selectedChatId);
 
-  const messages = messagesData?.messages || [];
+  const messages = useMemo(() => messagesData?.messages || [], [messagesData?.messages]);
   const selectedChatUser = chatUserData?.user || null;
 
   useEffect(() => {
@@ -242,14 +242,6 @@ const MessagesPage = () => {
   }, []);
 
   useEffect(() => {
-    if (!stickersOpen) return;
-    const pickDefault = myStickerPacks[0]?.id || lumeStickerPacks[0]?.id || null;
-    if (pickDefault && !activeStickerPackId) {
-      loadPackStickers(pickDefault);
-    }
-  }, [stickersOpen, myStickerPacks, lumeStickerPacks, activeStickerPackId]);
-
-  useEffect(() => {
     if (selectedChatId && messages.length > 0) {
       const lastMsg = messages[messages.length - 1];
       if (lastMsg && !lastMsg.own) {
@@ -357,7 +349,7 @@ const MessagesPage = () => {
     }
   };
 
-  const loadPackStickers = async (packId: string) => {
+  const loadPackStickers = useCallback(async (packId: string) => {
     if (stickersByPack[packId]) {
       setActiveStickerPackId(packId);
       return;
@@ -369,7 +361,15 @@ const MessagesPage = () => {
     } catch (_error) {
       toast.error(t("stickers.packLoadError"));
     }
-  };
+  }, [stickersByPack, t]);
+
+  useEffect(() => {
+    if (!stickersOpen) return;
+    const pickDefault = myStickerPacks[0]?.id || lumeStickerPacks[0]?.id || null;
+    if (pickDefault && !activeStickerPackId) {
+      loadPackStickers(pickDefault);
+    }
+  }, [stickersOpen, myStickerPacks, lumeStickerPacks, activeStickerPackId, loadPackStickers]);
 
   const handleSendVoice = async (blob: Blob, duration: number): Promise<void> => {
     if (!selectedChatId) {
@@ -443,7 +443,7 @@ const MessagesPage = () => {
     }
   };
 
-  const closeMomentViewer = (messageId: string) => {
+  const closeMomentViewer = useCallback((messageId: string) => {
     setMomentOpenMap((prev) => {
       const copy = { ...prev };
       delete copy[messageId];
@@ -453,7 +453,7 @@ const MessagesPage = () => {
     if (target?.moment?.id) {
       messagesAPI.markMomentViewed(target.moment.id).catch(() => null);
     }
-  };
+  }, [messages]);
 
   const setReplyFromMessage = (msg: Message) => {
     const firstAttachment = msg.attachments?.find((att) => att.type === "image");
@@ -512,7 +512,7 @@ const MessagesPage = () => {
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [momentOpenMap, messages]);
+  }, [momentOpenMap, closeMomentViewer]);
 
   const chats = useMemo(() => chatsData?.chats || [], [chatsData]);
 

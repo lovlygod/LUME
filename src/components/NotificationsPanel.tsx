@@ -97,12 +97,12 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
     onOpenChange(false);
   };
 
-  const handleActorClick = (event: React.MouseEvent, notification: Notification) => {
+  const handleActorClick = useCallback((event: React.MouseEvent, notification: Notification) => {
     event.stopPropagation();
     if (!notification.actor_id && !notification.actor_username) return;
     navigate(getProfileRoute({ id: notification.actor_id || undefined, username: notification.actor_username || undefined }));
     onOpenChange(false);
-  };
+  }, [navigate, onOpenChange]);
 
   // Fetch on mount and when panel opens
   useEffect(() => {
@@ -185,7 +185,7 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
     const diffDays = Math.floor(diffHours / 24);
     if (diffDays === 1) return resolveTimeLabel('time.yesterday', 'time.yesterday', 'yesterday');
     return resolveTimeLabel('time.daysAgo', 'time.days_ago', `${diffDays} days ago`).replace('{count}', String(diffDays));
-  }, [resolveLabel, resolveTimeLabel]);
+  }, [resolveTimeLabel]);
 
   const buildDefaultMessage = useCallback((notification: Notification) => {
     const actorName = notification.actor_username || resolveLabel('notifications.someone', 'Someone');
