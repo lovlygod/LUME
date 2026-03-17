@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { isVerifiedUser, VerifiedBadge } from "@/contexts/AuthContext";
 import { normalizeImageUrl } from "@/lib/utils";
+import { getProfileRoute } from "@/lib/profileRoute";
 import type { User } from "@/types/api";
 
 interface FollowModalProps {
@@ -78,7 +79,7 @@ const FollowModal = ({ open, tab, onTabChange, followers, following, onClose }: 
                     className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-smooth border-b border-white/10 last:border-0 text-left"
                     onClick={() => {
                       onClose();
-                      navigate(`/profile/${user.id}`);
+                      navigate(getProfileRoute(user));
                     }}
                   >
                     <div className="flex-shrink-0">

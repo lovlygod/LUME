@@ -10,6 +10,7 @@ import type { Sticker, StickerPack } from "@/types/stickers";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { getProfileRoute } from "@/lib/profileRoute";
 import { messagesAPI, profileAPI, uploadsAPI, usersAPI, stickersAPI } from "@/services/api";
 import { messageSounds } from "@/services/messageSounds";
 import { wsService } from "@/services/websocket";
@@ -544,7 +545,7 @@ const MessagesPage = () => {
                     isOnline={isOnline}
                     isTyping={isTyping}
                     lastSeen={lastSeen}
-                    onOpenProfile={(userId) => navigate(`/profile/${userId}`)}
+                    onOpenProfile={() => navigate(getProfileRoute(selectedChatUser))}
                     t={t}
                   />
 

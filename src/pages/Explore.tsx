@@ -7,6 +7,7 @@ import { searchAPI, postsAPI, apiRequest } from "@/services/api";
 import type { User } from "@/types/api";
 import { isVerifiedUser, isDeveloper, isDeveloperCrown, VerifiedBadge, DeveloperBadge, DeveloperCrownBadge } from "@/contexts/AuthContext";
 import { normalizeImageUrl } from "@/lib/utils";
+import { getProfileRoute } from "@/lib/profileRoute";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { errorHandler } from "@/services/errorHandler";
 
@@ -264,7 +265,7 @@ const Explore = () => {
                       transition={{ delay: index * 0.05 }}
                     >
                       <Link
-                        to={`/profile/${String(user.id)}`}
+                        to={getProfileRoute(user)}
                         className="flex items-start gap-3 px-4 py-3 rounded-[22px] transition-smooth hover:bg-white/5"
                       >
                         {/* Avatar */}
@@ -435,7 +436,7 @@ const Explore = () => {
                     transition={{ delay: index * 0.05 }}
                   >
                     <Link
-                      to={`/profile/${String(user.id)}`}
+                      to={getProfileRoute(user)}
                       className="flex items-center gap-3 px-4 py-3 rounded-[22px] transition-smooth hover:bg-white/5"
                     >
                       <div className="relative">

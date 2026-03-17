@@ -10,6 +10,7 @@ import { wsService } from '@/services/websocket';
 import { apiRequest } from '@/services/api';
 import Avatar from '@/components/Avatar';
 import { normalizeImageUrl } from '@/lib/utils';
+import { getProfileRoute } from '@/lib/profileRoute';
 import { useNavigate } from 'react-router-dom';
 
 interface NotificationsPanelProps {
@@ -98,8 +99,8 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
 
   const handleActorClick = (event: React.MouseEvent, notification: Notification) => {
     event.stopPropagation();
-    if (!notification.actor_id) return;
-    navigate(`/profile/${notification.actor_id}`);
+    if (!notification.actor_id && !notification.actor_username) return;
+    navigate(getProfileRoute({ id: notification.actor_id || undefined, username: notification.actor_username || undefined }));
     onOpenChange(false);
   };
 

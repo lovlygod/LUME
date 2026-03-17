@@ -1,4 +1,5 @@
 import { sanitizePlainText } from "./sanitize";
+import { parseMentions } from "@/utils/parseMentions";
 
 const linkRegex = /(https?:\/\/[^\s]+)/g;
 
@@ -22,6 +23,6 @@ export const renderSafeTextWithLinks = (text: string) => {
       );
     }
 
-    return <span key={`text-${index}`}>{part}</span>;
+    return <span key={`text-${index}`}>{parseMentions(part)}</span>;
   });
 };

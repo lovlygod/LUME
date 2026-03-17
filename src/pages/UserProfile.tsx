@@ -59,17 +59,18 @@ const UserProfile = () => {
         // Fetch user by ID
         const response = await profileAPI.getUserById(userId);
         setUser(response.user);
+        const resolvedUserId = response.user?.id || userId;
 
         // Check if we're following this user
         try {
-          const followStatus = await onboardingAPI.checkFollowing(userId);
+          const followStatus = await onboardingAPI.checkFollowing(resolvedUserId);
           setIsFollowing(followStatus.following);
         } catch (e) {
           console.error('Failed to load follow status:', e);
         }
 
         // Load user's posts
-        const postsResponse = await postsAPI.getUserPosts(userId);
+        const postsResponse = await postsAPI.getUserPosts(resolvedUserId);
         setPosts(postsResponse.posts);
       } catch (err: unknown) {
         console.error('Failed to load profile:', err);
@@ -366,4 +367,3 @@ const UserProfile = () => {
 };
 
 export default UserProfile;
-

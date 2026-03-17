@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { parseMentions } from "@/utils/parseMentions";
 import { useServer } from '@/contexts/ServerContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -47,7 +48,7 @@ const renderTextWithLinks = (text: string) => {
       );
     }
 
-    return <span key={`text-${index}`}>{part}</span>;
+    return <span key={`text-${index}`}>{parseMentions(part)}</span>;
   });
 };
 

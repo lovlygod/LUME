@@ -207,6 +207,17 @@
     transform: translateY(-2px);
   }
 
+  .mention {
+    color: #60a5fa;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .mention:hover {
+    text-decoration: underline;
+    filter: brightness(1.2);
+  }
+
   .card-glass {
     @apply p-6;
     background: var(--glass-surface);

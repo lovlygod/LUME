@@ -8,7 +8,7 @@ interface ChatPanelProps {
   isOnline: boolean;
   isTyping: boolean;
   lastSeen: string | null;
-  onOpenProfile: (userId: string) => void;
+  onOpenProfile: () => void;
   t: (key: string, options?: Record<string, string>) => string;
 }
 
@@ -37,7 +37,7 @@ const ChatPanel = ({
   return (
     <div
       className="flex items-center gap-4 px-6 py-4 border-b border-white/10 cursor-pointer transition-smooth bg-white/3 backdrop-blur-[18px]"
-      onClick={() => onOpenProfile(user.id)}
+      onClick={() => onOpenProfile()}
     >
       <div className="relative">
         {user.avatar ? (

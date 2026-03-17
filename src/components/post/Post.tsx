@@ -7,10 +7,12 @@ import Picker, { Theme } from "emoji-picker-react";
 import { useNavigate } from 'react-router-dom';
 import { useAuth, isVerifiedUser, isDeveloper, isDeveloperCrown, VerifiedBadge, DeveloperBadge, DeveloperCrownBadge } from "@/contexts/AuthContext";
 import { normalizeImageUrl } from "@/lib/utils";
+import { getProfileRoute } from "@/lib/profileRoute";
 import { toast } from 'sonner';
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ImageThumb, ImageViewer } from "@/components/media/ImageViewer";
 import DOMPurify from "dompurify";
+import { RichText } from "@/components/common/RichText";
 
 interface PostProps {
   id: string;
@@ -351,7 +353,7 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, timestamp, replies, reso
       >
         <div className="flex gap-3">
           {/* Avatar */}
-          <div className="flex-shrink-0 cursor-pointer" onClick={() => navigate(`/profile/${String(userId)}`)}>
+          <div className="flex-shrink-0 cursor-pointer" onClick={() => navigate(getProfileRoute(user))}>
             {user?.avatar ? (
               <img
                 src={normalizeImageUrl(user.avatar) || ''}
@@ -375,7 +377,7 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, timestamp, replies, reso
             <div className="flex items-center gap-2 flex-wrap">
               <span
                 className="text-sm font-medium text-white hover:text-white/80 transition-smooth cursor-pointer"
-                onClick={() => navigate(`/profile/${String(userId)}`)}
+                onClick={() => navigate(getProfileRoute(user))}
               >
                 {user?.name || 'Loading...'}
               </span>
@@ -399,7 +401,7 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, timestamp, replies, reso
             {/* Post Text */}
             {displayText && (
               <p className="mt-2 text-[15px] leading-relaxed text-white/90 whitespace-pre-wrap">
-                {displayText}
+                <RichText text={displayText} />
               </p>
             )}
 
@@ -627,7 +629,7 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, timestamp, replies, reso
                         >
                           <div
                             className="flex-shrink-0 cursor-pointer"
-                            onClick={() => (comment.userId ?? comment.user_id) && navigate(`/profile/${String(comment.userId ?? comment.user_id)}`)}
+                            onClick={() => navigate(getProfileRoute({ id: comment.userId ?? comment.user_id, username: comment.username }))}
                           >
                             {comment.avatar ? (
                               <img
@@ -646,7 +648,7 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, timestamp, replies, reso
                               <div className="flex items-center gap-2">
                                 <span
                                   className="font-medium text-sm text-white cursor-pointer hover:text-white/80 transition-smooth"
-                                  onClick={() => (comment.userId ?? comment.user_id) && navigate(`/profile/${String(comment.userId ?? comment.user_id)}`)}
+                                  onClick={() => navigate(getProfileRoute({ id: comment.userId ?? comment.user_id, username: comment.username }))}
                                 >
                                   {comment.name}
                                 </span>
@@ -659,7 +661,9 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, timestamp, replies, reso
                                     : isDeveloper(comment.username) && <DeveloperBadge className="h-3.5 w-3.5" />
                                 )}
                               </div>
-                              <p className="text-sm mt-0.5 text-white/80">{comment.text}</p>
+                              <p className="text-sm mt-0.5 text-white/80">
+                                <RichText text={comment.text} />
+                              </p>
                             </div>
                             <div className="text-xs text-secondary mt-1 px-2">
                               {comment.createdAt && comment.createdAt !== '0' ? formatTimestamp(comment.createdAt) : ''}
