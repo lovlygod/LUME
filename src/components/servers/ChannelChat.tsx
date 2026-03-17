@@ -403,7 +403,6 @@ setMessages(messagesWithDeleteStatus);
                   const showAuthor = !grouped;
                   const replyTarget = resolveReplyTarget(msg.replyToMessageId);
                   const replyThumb = replyTarget?.attachments?.find(att => att.type === 'image')?.url;
-
                   return (
                     <motion.div
                       key={msg.id}

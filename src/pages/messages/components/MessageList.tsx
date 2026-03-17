@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { User } from "@/types";
 import type { Attachment, Message } from "@/types/messages";
@@ -9,6 +9,8 @@ import { Paperclip, CheckCheck } from "lucide-react";
 import LinkPreview from "@/components/LinkPreview";
 import VoiceMessagePlayer from "@/components/chat/VoiceMessagePlayer";
 import { renderSafeTextWithLinks } from "../lib/messageText";
+import { ReplySwipeIndicator } from "@/components/chat/ReplySwipeIndicator";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ReplyPreview {
   id: string;
@@ -73,6 +75,19 @@ const MessageList = ({
   const parentRef = useRef<HTMLDivElement | null>(null);
   const lastMessageIdRef = useRef<string | null>(null);
   const stickToBottomRef = useRef(true);
+  const [replyFlashMessageId, setReplyFlashMessageId] = useState<string | null>(null);
+  const [dragState, setDragState] = useState<{
+    messageId: string | null;
+    isDragging: boolean;
+    startX: number;
+    startY: number;
+    currentX: number;
+    dragX: number;
+  } | null>(null);
+  const [dragTransition, setDragTransition] = useState<string>("");
+  const isMobile = useIsMobile();
+  const dragThreshold = isMobile ? 40 : 60;
+  const dragMax = 120;
 
   const visibleMessages = useMemo(
     () => messages.filter((msg) => !msg.deletedForAll && !msg.deletedForMe),
@@ -140,6 +155,60 @@ const MessageList = ({
   const totalSize = rowVirtualizer.getTotalSize();
   const virtualItems = rowVirtualizer.getVirtualItems();
 
+  const beginDrag = (messageId: string, clientX: number, clientY: number) => {
+    const selection = window.getSelection();
+    if (selection && selection.type === "Range" && selection.toString().length > 0) {
+      return;
+    }
+    setDragTransition("");
+    setDragState({
+      messageId,
+      isDragging: true,
+      startX: clientX,
+      startY: clientY,
+      currentX: clientX,
+      dragX: 0,
+    });
+  };
+
+  const updateDrag = (clientX: number, clientY: number) => {
+    if (!dragState?.isDragging) return;
+    const deltaX = clientX - dragState.startX;
+    const deltaY = clientY - dragState.startY;
+    if (Math.abs(deltaY) > Math.abs(deltaX)) {
+      setDragState(null);
+      return;
+    }
+
+    const clampedX = Math.min(Math.max(deltaX, 0), dragMax);
+    setDragState({
+      ...dragState,
+      currentX: clientX,
+      dragX: clampedX,
+    });
+  };
+
+  const endDrag = (msg: Message) => {
+    if (!dragState?.isDragging || dragState.messageId !== msg.id) return;
+    const shouldTrigger = dragState.dragX >= dragThreshold;
+    setDragTransition("transform 0.2s ease");
+
+    if (shouldTrigger) {
+      setDragState((prev) => (prev ? { ...prev, isDragging: false, dragX: dragMax } : prev));
+      onReply(msg);
+      setReplyFlashMessageId(msg.id);
+      setTimeout(() => setReplyFlashMessageId(null), 320);
+      setTimeout(() => {
+        setDragState((prev) =>
+          prev && prev.messageId === msg.id ? { ...prev, dragX: 0, messageId: null } : prev
+        );
+      }, 140);
+      return;
+    }
+
+    setDragState((prev) => (prev ? { ...prev, isDragging: false, dragX: 0, messageId: null } : prev));
+  };
+
   return (
     <div ref={parentRef} className="flex-1 h-full overflow-y-auto px-5 py-6 md:px-8 min-h-0 space-y-4 mb-3">
       <div style={{ height: totalSize, position: "relative" }}>
@@ -160,6 +229,9 @@ const MessageList = ({
           const hasVoiceAttachment = Boolean(msg.attachments?.some((att) => att.type === "voice"));
           const isVoiceMessage = msg.type === "voice" || hasVoiceAttachment;
           const isStickerMessage = msg.type === "sticker" && !!msg.sticker?.url;
+          const isOwnMessage = msg.own;
+          const isDragging = dragState?.messageId === msg.id && dragState.isDragging;
+          const dragX = dragState?.messageId === msg.id ? dragState.dragX : 0;
 
           const hasHeart = Boolean(reactionMap[msg.id]);
 
@@ -228,7 +300,7 @@ const MessageList = ({
                     ? "bg-transparent border-0 shadow-none"
                     : "rounded-[20px] border border-white/10 bg-white/5"
                 } ${
-                  highlightedMessageId === msg.id
+                  highlightedMessageId === msg.id || replyFlashMessageId === msg.id
                     ? "ring-1 ring-white/30 shadow-[0_0_0_1px_rgba(255,255,255,0.12)]"
                     : ""
                 } ${
@@ -242,8 +314,45 @@ const MessageList = ({
                       (msg.attachments && msg.attachments.some((a) => a.type === "image"))
                       ? "p-1.5"
                       : "px-3 py-1.5"
-                }`}
+                } ${isOwnMessage ? "" : "cursor-grab active:cursor-grabbing"}`}
+                style={{
+                  transform: `translateX(${dragX}px)`,
+                  transition: isDragging ? "none" : dragTransition || "transform 0.2s ease",
+                }}
+                onMouseDown={(event) => {
+                  if (isOwnMessage || event.button !== 0) return;
+                  beginDrag(msg.id, event.clientX, event.clientY);
+                }}
+                onMouseMove={(event) => {
+                  if (isOwnMessage) return;
+                  updateDrag(event.clientX, event.clientY);
+                }}
+                onMouseUp={() => {
+                  if (isOwnMessage) return;
+                  endDrag(msg);
+                }}
+                onMouseLeave={() => {
+                  if (isOwnMessage) return;
+                  endDrag(msg);
+                }}
+                onTouchStart={(event) => {
+                  if (isOwnMessage || event.touches.length !== 1) return;
+                  const touch = event.touches[0];
+                  beginDrag(msg.id, touch.clientX, touch.clientY);
+                }}
+                onTouchMove={(event) => {
+                  if (isOwnMessage || event.touches.length !== 1) return;
+                  const touch = event.touches[0];
+                  updateDrag(touch.clientX, touch.clientY);
+                }}
+                onTouchEnd={() => {
+                  if (isOwnMessage) return;
+                  endDrag(msg);
+                }}
               >
+                {!isOwnMessage && (
+                  <ReplySwipeIndicator dragX={dragX} threshold={dragThreshold} />
+                )}
                 {replyTarget && (
                   <button
                     type="button"
