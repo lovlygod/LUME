@@ -44,15 +44,9 @@ const LogoutModal = ({ open, onOpenChange }: LogoutModalProps) => {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            style={{
-              position: 'fixed',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 51
-            }}
-            className="w-full max-w-md mx-4"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
+            <div className="w-full max-w-md">
             <div className="bg-background border border-border rounded-2xl shadow-2xl overflow-hidden">
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-border">
@@ -103,6 +97,7 @@ const LogoutModal = ({ open, onOpenChange }: LogoutModalProps) => {
                   )}
                 </button>
               </div>
+            </div>
             </div>
           </motion.div>
         </>
