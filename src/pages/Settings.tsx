@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Moon, Sun, Globe, Lock, Users, MessageCircle, Save, Snowflake, AlertTriangle, Trash2, LogOut, MonitorSmartphone, Check, Upload } from "lucide-react";
 import silentDoodle from "@/assets/Chat-Background/silent-doodle.png";
 import gameDoodle from "@/assets/Chat-Background/game-doodle.png";
+import cosmicDoodle from "@/assets/Chat-Background/Cosmic Doodle.png";
+import codeDoodle from "@/assets/Chat-Background/Code Doodle.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { profileAPI, uploadsAPI } from "@/services/api";
@@ -36,7 +38,7 @@ const Settings = () => {
     postPrivacy: "public",
     messagePrivacy: "everyone",
     doubleClickAction: "reply" as "reply" | "heart",
-    chatBackground: "default" as "default" | "silent_doodle" | "game_doodle" | "custom",
+    chatBackground: "default" as "default" | "silent_doodle" | "game_doodle" | "cosmic_doodle" | "code_doodle" | "custom",
     chatBackgroundCustomUrl: null as string | null,
   });
 
@@ -62,7 +64,7 @@ const Settings = () => {
       (localStorage.getItem("doubleClickAction") as "reply" | "heart" | null) || "reply";
 
     const savedChatBackground =
-      (localStorage.getItem("chat_background") as "default" | "silent_doodle" | "game_doodle" | "custom" | null) ||
+      (localStorage.getItem("chat_background") as "default" | "silent_doodle" | "game_doodle" | "cosmic_doodle" | "code_doodle" | "custom" | null) ||
       "default";
     const savedCustomUrl = localStorage.getItem("chat_background_custom_url");
 
@@ -128,7 +130,7 @@ const Settings = () => {
     window.dispatchEvent(new Event("doubleClickActionChange"));
   };
 
-  const handleChatBackgroundChange = (value: "default" | "silent_doodle" | "game_doodle" | "custom") => {
+  const handleChatBackgroundChange = (value: "default" | "silent_doodle" | "game_doodle" | "cosmic_doodle" | "code_doodle" | "custom") => {
     setSettings((prev) => ({ ...prev, chatBackground: value }));
     localStorage.setItem("chat_background", value);
     window.dispatchEvent(new CustomEvent("chatBackgroundChange", { detail: value }));
@@ -556,8 +558,60 @@ const Settings = () => {
                 </button>
                 <button
                   type="button"
+                  onClick={() => handleChatBackgroundChange("cosmic_doodle")}
+                  className={`group relative h-[120px] w-[160px] rounded-[16px] overflow-hidden border transition-smooth justify-self-start ${
+                    settings.chatBackground === "cosmic_doodle"
+                      ? "border-[2px] border-white"
+                      : "border-white/10 hover:border-white/30"
+                  }`}
+                >
+                  <div
+                    className="h-full w-full"
+                    style={{
+                      backgroundImage: `url(${cosmicDoodle})`,
+                      backgroundRepeat: "repeat",
+                      backgroundSize: "600px",
+                      backgroundPosition: "center",
+                      backgroundColor: "#0E0E11",
+                    }}
+                  />
+                  <span className="absolute bottom-3 left-3 text-xs font-medium text-white">{t("settings.chatBackgroundCosmic")}</span>
+                  {settings.chatBackground === "cosmic_doodle" && (
+                    <span className="absolute top-2 right-2 h-6 w-6 rounded-full bg-white text-black flex items-center justify-center">
+                      <Check className="h-4 w-4" />
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleChatBackgroundChange("code_doodle")}
+                  className={`group relative h-[120px] w-[160px] rounded-[16px] overflow-hidden border transition-smooth justify-self-center ${
+                    settings.chatBackground === "code_doodle"
+                      ? "border-[2px] border-white"
+                      : "border-white/10 hover:border-white/30"
+                  }`}
+                >
+                  <div
+                    className="h-full w-full"
+                    style={{
+                      backgroundImage: `url(${codeDoodle})`,
+                      backgroundRepeat: "repeat",
+                      backgroundSize: "600px",
+                      backgroundPosition: "center",
+                      backgroundColor: "#0E0E11",
+                    }}
+                  />
+                  <span className="absolute bottom-3 left-3 text-xs font-medium text-white">{t("settings.chatBackgroundCode")}</span>
+                  {settings.chatBackground === "code_doodle" && (
+                    <span className="absolute top-2 right-2 h-6 w-6 rounded-full bg-white text-black flex items-center justify-center">
+                      <Check className="h-4 w-4" />
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
                   onClick={() => setShowCustomBgModal(true)}
-                  className={`group relative h-[120px] w-[160px] rounded-[16px] overflow-hidden border transition-smooth col-span-3 justify-self-start ${
+                  className={`group relative h-[120px] w-[160px] rounded-[16px] overflow-hidden border transition-smooth justify-self-end ${
                     settings.chatBackground === "custom"
                       ? "border-[2px] border-white"
                       : "border-white/10 hover:border-white/30"

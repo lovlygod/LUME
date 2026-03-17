@@ -173,6 +173,8 @@
     "chatBackgroundDefault": "Default",
     "chatBackgroundSilent": "Silent Doodle",
     "chatBackgroundGame": "Game Doodle",
+    "chatBackgroundCosmic": "Cosmic Doodle",
+    "chatBackgroundCode": "Code Doodle",
     "chatBackgroundCustom": "Custom",
     "chatBackgroundCustomDescription": "Upload an image and preview it before applying",
     "chatBackgroundUpload": "Upload image",

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import silentDoodle from "@/assets/Chat-Background/silent-doodle.png";
 import gameDoodle from "@/assets/Chat-Background/game-doodle.png";
+import cosmicDoodle from "@/assets/Chat-Background/Cosmic Doodle.png";
+import codeDoodle from "@/assets/Chat-Background/Code Doodle.png";
 
-export type ChatBackground = "default" | "silent_doodle" | "game_doodle" | "custom";
+export type ChatBackground = "default" | "silent_doodle" | "game_doodle" | "cosmic_doodle" | "code_doodle" | "custom";
 
 const STORAGE_KEY = "chat_background";
 const CUSTOM_URL_KEY = "chat_background_custom_url";
@@ -11,7 +13,14 @@ const CUSTOM_POS_X_KEY = "chat_background_custom_pos_x";
 const CUSTOM_POS_Y_KEY = "chat_background_custom_pos_y";
 
 const normalizeBackground = (value: string | null): ChatBackground => {
-  if (value === "silent_doodle" || value === "game_doodle" || value === "custom" || value === "default") {
+  if (
+    value === "silent_doodle" ||
+    value === "game_doodle" ||
+    value === "cosmic_doodle" ||
+    value === "code_doodle" ||
+    value === "custom" ||
+    value === "default"
+  ) {
     return value;
   }
   return "default";
@@ -96,7 +105,11 @@ export const useChatBackground = () => {
       ? silentDoodle
       : background === "game_doodle"
         ? gameDoodle
-        : customUrl;
+        : background === "cosmic_doodle"
+          ? cosmicDoodle
+          : background === "code_doodle"
+            ? codeDoodle
+            : customUrl;
 
     if (!imageUrl) {
       return {
