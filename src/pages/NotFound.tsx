@@ -1,35 +1,30 @@
-import { useLocation, Link } from "react-router-dom";
-import { useEffect } from "react";
-import { motion } from "framer-motion";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useNavigate } from "react-router-dom";
+import yeti from "@/assets/not-found/404.png";
 
 const NotFound = () => {
-  const location = useLocation();
-  const { t } = useLanguage();
-
-  useEffect(() => {
-    console.error("404 Error: User attempted to access non-existent route:", location.pathname);
-  }, [location.pathname]);
+  const navigate = useNavigate();
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4">
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="text-center"
-      >
-        <h1 className="font-orbitron mb-2 text-6xl font-bold tracking-wider text-foreground">
-          {t("notFound.title")}
-        </h1>
-        <p className="mb-8 text-lg text-foreground">{t("notFound.subtitle")}</p>
-        <Link
-          to="/feed"
-          className="inline-flex items-center gap-2 rounded-xl bg-secondary px-6 py-3 text-sm font-medium text-foreground transition-colors hover:bg-secondary/80"
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="flex flex-col items-center gap-6 text-center">
+        <img
+          src={yeti}
+          className="w-[20rem] select-none pointer-events-none"
+          alt="404"
+          draggable={false}
+          onContextMenu={(event) => event.preventDefault()}
+        />
+
+        <h1 className="text-2xl text-white font-semibold">Страница не найдена</h1>
+
+        <button
+          type="button"
+          onClick={() => navigate("/feed")}
+          className="px-6 py-3 rounded-2xl bg-white/10 hover:bg-white/20 transition text-white"
         >
-          {t("notFound.returnHome")}
-        </Link>
-      </motion.div>
+          На главную
+        </button>
+      </div>
     </div>
   );
 };
