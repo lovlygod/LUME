@@ -1,0 +1,39 @@
+{
+  "name": "LUME-backend",
+  "version": "1.0.0",
+  "description": "Backend for LUME with SQLite and authentication",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "db:init": "node scripts/db-init.js"
+  },
+  "dependencies": {
+    "axios": "^1.13.5",
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.20.2",
+    "cheerio": "^1.2.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.18.2",
+    "express-async-handler": "^1.2.0",
+    "image-size": "^2.0.2",
+    "ioredis": "^5.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "meilisearch": "^0.55.0",
+    "multer": "^1.4.5-lts.1",
+    "openai": "^4.93.0",
+    "pg": "^8.13.1",
+    "sanitize-html": "^2.17.1",
+    "ua-parser-js": "^1.0.41",
+    "uuid": "^9.0.1",
+    "ws": "^8.19.0",
+    "yt-dlp-wrap": "^2.3.12",
+    "yaml": "^2.8.2",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

@@ -8,9 +8,6 @@ tools/
 developer-platform/
 
 # backend
-backend/
-!backend/README.md
-!backend/API.md
 backend/node_modules
 backend/.env
 backend/.env.*
