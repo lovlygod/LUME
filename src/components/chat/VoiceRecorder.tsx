@@ -9,7 +9,7 @@ interface VoiceRecorderProps {
 }
 
 const MAX_RECORDING_DURATION = 60; // СЃРµРєСѓРЅРґ
-const WAVEFORM_BARS = 60; // РєРѕР»РёС‡РµСЃС‚РІРѕ РїРѕР»РѕСЃ РІРѕР»РЅС‹
+const WAVEFORM_BARS = 36; // РєРѕР»РёС‡РµСЃС‚РІРѕ РїРѕР»РѕСЃ РІРѕР»РЅС‹
 
 const VoiceRecorder = ({ onSendVoice, t }: VoiceRecorderProps) => {
   const [isRecording, setIsRecording] = useState(false);
@@ -33,7 +33,7 @@ const VoiceRecorder = ({ onSendVoice, t }: VoiceRecorderProps) => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const dataArrayRef = useRef<Uint8Array | null>(null);
+  const dataArrayRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
 
   // РћС‡РёСЃС‚РєР° СЂРµСЃСѓСЂСЃРѕРІ
   const cleanup = useCallback(() => {
@@ -91,7 +91,7 @@ const VoiceRecorder = ({ onSendVoice, t }: VoiceRecorderProps) => {
   const analyzeAudio = useCallback(() => {
     if (!analyserRef.current || !dataArrayRef.current) return;
 
-    analyserRef.current.getByteTimeDomainData(dataArrayRef.current);
+    analyserRef.current.getByteTimeDomainData(dataArrayRef.current as Uint8Array<ArrayBuffer>);
 
     // RMS по time-domain заметно лучше реагирует на реальный голос.
     let sumSquares = 0;
@@ -197,7 +197,8 @@ const VoiceRecorder = ({ onSendVoice, t }: VoiceRecorderProps) => {
       sourceRef.current = audioContextRef.current.createMediaStreamSource(stream);
       sourceRef.current.connect(analyserRef.current);
       
-      dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount);
+      const buffer = new ArrayBuffer(analyserRef.current.frequencyBinCount);
+      dataArrayRef.current = new Uint8Array<ArrayBuffer>(buffer);
 
       mediaRecorder.start(100);
       setIsRecording(true);
@@ -351,7 +352,7 @@ const VoiceRecorder = ({ onSendVoice, t }: VoiceRecorderProps) => {
             className="flex h-11 w-11 items-center justify-center rounded-full bg-white/6 text-white/80 hover:bg-white/12 transition-smooth"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            title={t("voice.record") || "Р—Р°РїРёСЃР°С‚СЊ РіРѕР»РѕСЃРѕРІРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ"}
+            title={t("voice.record") || "Записать голосовое сообщение"}
           >
             <Mic className="h-5 w-5" />
           </motion.button>
@@ -365,40 +366,22 @@ const VoiceRecorder = ({ onSendVoice, t }: VoiceRecorderProps) => {
             className="flex items-center gap-2 flex-1"
           >
             {/* Р’РёР·СѓР°Р»РёР·Р°С†РёСЏ Р·Р°РїРёСЃРё */}
-            <div className="flex items-center gap-1 flex-1">
-              <motion.div
-                animate={{ scale: [1, 1.15, 1] }}
-                transition={{ repeat: Infinity, duration: 1.5 }}
-                className="h-8 w-8 rounded-full bg-purple-500/80 flex items-center justify-center shadow-[0_0_20px_rgba(168,85,247,0.5)]"
-              >
-                <div className="h-3 w-3 rounded-full bg-white" />
-              </motion.div>
-
+            <div className="flex flex-1 items-center gap-2">
               {/* Р’РѕР»РЅС‹ Р·Р°РїРёСЃРё - СЂРµР°РіРёСЂСѓСЋС‚ РЅР° СЂРµР°Р»СЊРЅС‹Р№ РіРѕР»РѕСЃ */}
-              <div className="flex items-center gap-0.5 flex-1 h-8 overflow-hidden">
+              <div className="flex h-6 flex-1 items-end gap-[2px] overflow-hidden">
                 {Array.from({ length: WAVEFORM_BARS }).map((_, i) => {
-                  // Р‘РµСЂРµРј Р°РјРїР»РёС‚СѓРґСѓ РёР· РјР°СЃСЃРёРІР° (РїРѕСЃР»РµРґРЅРёРµ Р·РЅР°С‡РµРЅРёСЏ)
                   const amplitudeIndex = i - (WAVEFORM_BARS - amplitudes.length);
                   const amplitude = amplitudeIndex >= 0 && amplitudeIndex < amplitudes.length
                     ? amplitudes[amplitudeIndex]
-                    : 0;
-                  
-                  // Р’С‹С‡РёСЃР»СЏРµРј РІС‹СЃРѕС‚Сѓ РЅР° РѕСЃРЅРѕРІРµ Р°РјРїР»РёС‚СѓРґС‹
-                  const minHeight = 4;
-                  const maxHeight = 28;
-                  const height = minHeight + (amplitude * (maxHeight - minHeight));
-                  
-                  // Р“СЂР°РґРёРµРЅС‚ РѕС‚ С„РёРѕР»РµС‚РѕРІРѕРіРѕ Рє СЂРѕР·РѕРІРѕРјСѓ
-                  const opacity = 0.4 + (amplitude * 0.6);
-                  
+                    : 0.05;
+
+                  const height = 4 + amplitude * 20; // 4..24px
+
                   return (
-                    <motion.div
+                    <motion.span
                       key={i}
-                      className="w-1 rounded-full bg-gradient-to-t from-purple-600 to-pink-400"
-                      style={{ 
-                        height: `${height}px`,
-                        opacity 
-                      }}
+                      className="w-[2px] rounded-full bg-white/80"
+                      style={{ height: `${height}px`, opacity: 0.5 + amplitude * 0.5 }}
                       transition={{ duration: 0.1 }}
                     />
                   );
@@ -406,11 +389,7 @@ const VoiceRecorder = ({ onSendVoice, t }: VoiceRecorderProps) => {
               </div>
 
               {/* РўР°Р№РјРµСЂ */}
-              <span className={`text-sm font-mono w-12 text-right ${
-                recordingTime >= MAX_RECORDING_DURATION - 10
-                  ? 'text-pink-400'
-                  : 'text-white/70'
-              }`}>
+              <span className="w-9 text-right text-[11px] font-medium tabular-nums text-white/65">
                 {formatTime(recordingTime)}
               </span>
             </div>
@@ -419,7 +398,7 @@ const VoiceRecorder = ({ onSendVoice, t }: VoiceRecorderProps) => {
             <motion.button
               onClick={stopRecording}
               disabled={isStopping}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-purple-500/80 text-white hover:bg-purple-400 transition-smooth shadow-[0_0_15px_rgba(168,85,247,0.4)]"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/90 transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -452,7 +431,7 @@ const VoiceRecorder = ({ onSendVoice, t }: VoiceRecorderProps) => {
             {/* РљРЅРѕРїРєР° play/pause */}
             <motion.button
               onClick={togglePlayback}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-white/6 text-white/80 hover:bg-white/12 transition-smooth"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/90 transition-colors hover:bg-white/20"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -464,28 +443,26 @@ const VoiceRecorder = ({ onSendVoice, t }: VoiceRecorderProps) => {
             </motion.button>
 
             {/* Waveform РїСЂРµРІСЊСЋ - РЅР° РѕСЃРЅРѕРІРµ Р·Р°РїРёСЃР°РЅРЅС‹С… Р°РјРїР»РёС‚СѓРґ */}
-            <div className="flex items-center gap-0.5 flex-1 h-8 overflow-hidden">
+            <div className="flex h-6 flex-1 items-end gap-[2px] overflow-hidden">
               {Array.from({ length: WAVEFORM_BARS }).map((_, i) => {
                 const amplitudeIndex = i - (WAVEFORM_BARS - amplitudes.length);
                 const amplitude = amplitudeIndex >= 0 && amplitudeIndex < amplitudes.length
                   ? amplitudes[amplitudeIndex]
                   : Math.sin(i * 0.3) * 0.3 + 0.3; // fallback РІРѕР»РЅР°
                 
-                const minHeight = 4;
-                const maxHeight = 28;
-                const height = minHeight + (amplitude * (maxHeight - minHeight));
+                const height = 6 + amplitude * 10; // 6..16px
                 
                 // РџСЂРѕРіСЂРµСЃСЃ РІРѕСЃРїСЂРѕРёР·РІРµРґРµРЅРёСЏ
                 const progress = audioDuration > 0 ? recordingTime / audioDuration : 0;
                 const isPast = (i / WAVEFORM_BARS) <= progress;
                 
                 return (
-                  <motion.div
+                  <motion.span
                     key={i}
-                    className={`w-1 rounded-full transition-colors ${
+                    className={`w-[2px] rounded-full transition-colors ${
                       isPast 
-                        ? 'bg-gradient-to-t from-purple-500 to-pink-400' 
-                        : 'bg-white/20'
+                        ? 'bg-white/85' 
+                        : 'bg-white/30'
                     }`}
                     style={{ height: `${height}px` }}
                     animate={isPlaying && isPast ? {
@@ -510,27 +487,27 @@ const VoiceRecorder = ({ onSendVoice, t }: VoiceRecorderProps) => {
             <motion.button
               onClick={handleSend}
               disabled={isSending}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-400 hover:to-pink-400 transition-smooth shadow-[0_0_15px_rgba(168,85,247,0.4)] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/90 transition-colors hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
               whileHover={isSending ? {} : { scale: 1.05 }}
               whileTap={isSending ? {} : { scale: 0.95 }}
-              title={t("voice.send") || "РћС‚РїСЂР°РІРёС‚СЊ"}
+              title={t("voice.send") || "Отправить"}
             >
               {isSending ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
               ) : (
-                <Send className="h-5 w-5" />
+                <Send className="h-4 w-4" />
               )}
             </motion.button>
 
             {/* РљРЅРѕРїРєР° СѓРґР°Р»РµРЅРёСЏ */}
             <motion.button
               onClick={handleCancel}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-white/6 text-white/60 hover:bg-white/12 transition-smooth"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/70 transition-colors hover:bg-white/20"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              title={t("voice.delete") || "РЈРґР°Р»РёС‚СЊ"}
+              title={t("voice.delete") || "Удалить"}
             >
-              <Trash2 className="h-5 w-5" />
+              <Trash2 className="h-4 w-4" />
             </motion.button>
           </motion.div>
         )}
