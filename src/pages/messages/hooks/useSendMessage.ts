@@ -9,7 +9,7 @@ export const useSendMessage = (currentUserId?: string) => {
 
   return useMutation({
     mutationFn: async (payload: {
-      receiverId: string;
+      chatId: string;
       text?: string;
       attachmentIds?: string[];
       replyToMessageId?: string | null;
@@ -18,7 +18,7 @@ export const useSendMessage = (currentUserId?: string) => {
     onSuccess: (data, variables) => {
       messageSounds.playSend();
       const now = new Date().toISOString();
-      const chatKey = messageQueryKeys.chatMessages(variables.receiverId);
+      const chatKey = messageQueryKeys.chatMessages(variables.chatId);
       const chatsKey = messageQueryKeys.chatList();
 
       queryClient.setQueryData<{ messages: Message[] }>(chatKey, (prev) => {
@@ -26,6 +26,15 @@ export const useSendMessage = (currentUserId?: string) => {
         const optimistic: Message = {
           id: (data as { messageId?: string | number }).messageId?.toString() || `temp-${Date.now()}`,
           senderId: currentUserId ? String(currentUserId) : "self",
+          sender: currentUserId
+            ? {
+                id: String(currentUserId),
+                name: undefined,
+                username: undefined,
+                avatar: undefined,
+                verified: false,
+              }
+            : null,
           text: variables.text || "",
           type: (data as { type?: Message["type"] }).type ?? (variables.stickerId ? "sticker" : "text"),
           sticker: (data as { sticker?: Message["sticker"] }).sticker ?? (variables.stickerId ? { id: variables.stickerId, url: "" } : null),
@@ -41,7 +50,7 @@ export const useSendMessage = (currentUserId?: string) => {
 
       queryClient.setQueryData<{ chats: Chat[] }>(chatsKey, (prev) => {
         if (!prev?.chats) return prev;
-        const exists = prev.chats.find((chat) => String(chat.userId) === String(variables.receiverId));
+        const exists = prev.chats.find((chat) => String(chat.id) === String(variables.chatId));
         const lastMessage =
           variables.stickerId
             ? "[sticker]"
@@ -52,15 +61,13 @@ export const useSendMessage = (currentUserId?: string) => {
 
         if (!exists) {
           const userData = queryClient.getQueryData<{ user: { id: string; name?: string; username?: string; avatar?: string; verified?: boolean } }>(
-            messageQueryKeys.chatUser(variables.receiverId)
+            messageQueryKeys.chatUser(variables.chatId)
           );
           const newChat: Chat = {
             id: `${Date.now()}`,
-            userId: String(variables.receiverId),
-            name: userData?.user?.name,
-            username: userData?.user?.username,
+            type: "private",
+            title: userData?.user?.name || userData?.user?.username,
             avatar: userData?.user?.avatar,
-            verified: userData?.user?.verified,
             lastMessage,
             timestamp: now,
             unread: 0,
@@ -69,7 +76,7 @@ export const useSendMessage = (currentUserId?: string) => {
         }
 
         const updated = prev.chats.map((chat) =>
-          String(chat.userId) === String(variables.receiverId)
+          String(chat.id) === String(variables.chatId)
             ? {
                 ...chat,
                 lastMessage,

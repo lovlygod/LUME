@@ -1,13 +1,29 @@
 export interface Chat {
   id: string;
-  userId: string;
-  name?: string;
-  username?: string;
-  avatar?: string;
+  type: "private" | "group" | "channel";
+  title?: string | null;
+  avatar?: string | null;
+  ownerId?: string | null;
+  isPublic?: boolean;
+  isPrivate?: boolean;
+  username?: string | null;
+  inviteToken?: string | null;
+  publicNumber?: string | null;
+  routeId?: string | null;
+  role?: "owner" | "admin" | "member";
+  members?: Array<{
+    id: string;
+    role: "owner" | "admin" | "member";
+    name?: string | null;
+    username?: string | null;
+    avatar?: string | null;
+    verified?: boolean;
+  }>;
   verified?: boolean;
   lastMessage: string;
+  lastMessageType?: "text" | "image" | "sticker" | "voice" | "moment_image";
   timestamp: string;
-  unread: number;
+  unread?: number;
 }
 
 export interface Attachment {
@@ -36,6 +52,13 @@ export interface LinkPreview {
 export interface Message {
   id: string;
   senderId: string;
+  sender?: {
+    id?: string;
+    name?: string | null;
+    username?: string | null;
+    avatar?: string | null;
+    verified?: boolean;
+  } | null;
   text: string;
   type?: "text" | "moment_image" | "voice" | "sticker";
   sticker?: {

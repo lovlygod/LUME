@@ -2,6 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { User } from "@/types";
 import type { Attachment, Message } from "@/types/messages";
+import Avatar from "@/components/Avatar";
+import { normalizeImageUrl } from "@/lib/utils";
+import { getProfileRoute } from "@/lib/profileRoute";
+import { useNavigate } from "react-router-dom";
 import { ImageThumb } from "@/components/media/ImageViewer";
 import StickerMessage from "@/components/stickers/StickerMessage";
 import type { Sticker } from "@/types/stickers";
@@ -23,6 +27,7 @@ interface MessageListProps {
   messages: Message[];
   currentUser: User | null;
   selectedChatUser: User | null;
+  chatType?: "private" | "group" | "channel";
   highlightedMessageId: string | null;
   scrollToMessageId?: string | null;
   scrollToMessageNonce?: number;
@@ -50,6 +55,7 @@ const MessageList = ({
   messages,
   currentUser,
   selectedChatUser,
+  chatType = "private",
   highlightedMessageId,
   scrollToMessageId,
   scrollToMessageNonce,
@@ -101,6 +107,8 @@ const MessageList = ({
     overscan: 8,
     getItemKey: (index) => visibleMessages[index]?.id ?? index,
   });
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const scrollEl = parentRef.current;
@@ -221,7 +229,7 @@ const MessageList = ({
           const replyAuthor = replyTarget
             ? replyTarget.own
               ? currentUser?.name || "You"
-              : selectedChatUser?.name || "User"
+              : replyTarget.sender?.name || selectedChatUser?.name || "User"
             : "";
           const replyThumb = replyTarget?.type === "moment_image"
             ? replyTarget?.moment?.thumbDataUrl || undefined
@@ -230,6 +238,7 @@ const MessageList = ({
           const isVoiceMessage = msg.type === "voice" || hasVoiceAttachment;
           const isStickerMessage = msg.type === "sticker" && !!msg.sticker?.url;
           const isOwnMessage = msg.own;
+          const showAuthorAvatar = !isOwnMessage && chatType === "group";
           const isDragging = dragState?.messageId === msg.id && dragState.isDragging;
           const dragX = dragState?.messageId === msg.id ? dragState.dragX : 0;
 
@@ -294,6 +303,25 @@ const MessageList = ({
                 }
               }}
             >
+              {showAuthorAvatar && (
+                <button
+                  type="button"
+                  className="mr-3 mt-1 hidden sm:flex"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    const senderId = msg.sender?.id || msg.senderId;
+                    if (senderId && senderId !== "self") {
+                      navigate(getProfileRoute({ id: senderId }));
+                    }
+                  }}
+                >
+                  <Avatar
+                    src={msg.sender?.avatar ? normalizeImageUrl(msg.sender.avatar) : undefined}
+                    alt={msg.sender?.name || msg.sender?.username || "User"}
+                    size="sm"
+                  />
+                </button>
+              )}
               <div
                 className={`relative w-fit break-words ${
                   isStickerMessage

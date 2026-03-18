@@ -8,7 +8,7 @@ import { messageQueryKeys } from "./queryKeys";
 const ensureMessageShape = (data: {
   id: string | number;
   senderId: string | number;
-  receiverId: string | number;
+  chatId: string | number;
   text: string;
   timestamp: string;
   type?: "text" | "moment_image" | "sticker";
@@ -17,9 +17,11 @@ const ensureMessageShape = (data: {
   replyToMessageId?: string | null;
   sticker?: Message["sticker"] | null;
   linkPreview?: Message["linkPreview"] | null;
+  sender?: Message["sender"] | null;
 }): Message => ({
   id: data.id.toString(),
   senderId: String(data.senderId),
+  sender: data.sender || null,
   text: data.text,
   type: data.type || "text",
   moment: data.moment || null,
@@ -41,12 +43,18 @@ export const useChatWs = (params: {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    if (!params.selectedChatId) return;
+    wsService.subscribeChat(params.selectedChatId);
+    return () => wsService.unsubscribeChat(params.selectedChatId as string);
+  }, [params.selectedChatId]);
+
+  useEffect(() => {
     const newMessageUnsub = wsService.on(
       "new_message",
       (data: {
         id: string | number;
         senderId: string | number;
-        receiverId: string | number;
+        chatId: string | number;
         text: string;
         timestamp: string;
         type?: "text" | "moment_image" | "sticker";
@@ -55,17 +63,14 @@ export const useChatWs = (params: {
         replyToMessageId?: string | null;
         sticker?: Message["sticker"] | null;
         linkPreview?: Message["linkPreview"] | null;
+        sender?: Message["sender"] | null;
       }) => {
         const message = ensureMessageShape(data);
         const isIncoming = String(data.senderId) !== String(params.currentUserId);
         if (isIncoming) {
           messageSounds.playReceive();
         }
-        const otherUserId =
-          String(data.senderId) === String(params.currentUserId)
-            ? String(data.receiverId)
-            : String(data.senderId);
-        const chatKey = messageQueryKeys.chatMessages(otherUserId);
+        const chatKey = messageQueryKeys.chatMessages(String(data.chatId));
         const chatsKey = messageQueryKeys.chatList();
 
         queryClient.setQueryData<{ messages: Message[] }>(chatKey, (prev) => {
@@ -85,13 +90,15 @@ export const useChatWs = (params: {
 
         queryClient.setQueryData<{ chats: Chat[] }>(chatsKey, (prev) => {
           if (!prev?.chats) return prev;
-          const exists = prev.chats.find((chat) => String(chat.userId) === String(otherUserId));
+          const exists = prev.chats.find((chat) => String(chat.id) === String(data.chatId));
           if (!exists) {
             return {
               chats: [
                 {
                   id: `${Date.now()}`,
-                  userId: otherUserId,
+                  type: "private",
+                  title: undefined,
+                  avatar: undefined,
                   lastMessage: data.type === "moment_image" ? "Исчезающее фото" : data.text,
                   timestamp: data.timestamp,
                   unread: String(data.senderId) === String(params.currentUserId) ? 0 : 1,
@@ -101,7 +108,7 @@ export const useChatWs = (params: {
             };
           }
           const updated = prev.chats.map((chat) =>
-            String(chat.userId) === String(otherUserId)
+            String(chat.id) === String(data.chatId)
               ? {
                   ...chat,
                   lastMessage: data.type === "moment_image" ? "Исчезающее фото" : data.text,
@@ -115,10 +122,6 @@ export const useChatWs = (params: {
           );
           return { chats: updated.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()) };
         });
-
-        if (String(data.receiverId) === String(params.currentUserId)) {
-          wsService.sendMessageDelivered(data.id.toString());
-        }
       }
     );
 

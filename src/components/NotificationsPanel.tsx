@@ -24,7 +24,7 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const limit = 20;
@@ -45,9 +45,6 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
       const data = await apiRequest<{ notifications: Notification[]; limit?: number; offset?: number }>('/notifications?limit=20&offset=' + nextOffset, {
         method: 'GET',
       });
-      const newUnreadCount = data.notifications.filter((n: Notification) => !n.read).length;
-      setUnreadCount(newUnreadCount);
-      window.dispatchEvent(new CustomEvent('notifications:updated', { detail: { count: newUnreadCount } }));
       setNotifications(prev => append ? [...prev, ...data.notifications] : data.notifications);
       setOffset(nextOffset + data.notifications.length);
       setHasMore(data.notifications.length >= limit);
@@ -75,12 +72,9 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
         setNotifications(prev =>
           prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
         );
-        setUnreadCount(prev => Math.max(0, prev - 1));
       } else {
         setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-        setUnreadCount(0);
       }
-      window.dispatchEvent(new CustomEvent('notifications:updated', { detail: { count: 0 } }));
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
@@ -135,11 +129,6 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
       };
 
       setNotifications(prev => [newNotification, ...prev]);
-      setUnreadCount(prev => {
-        const next = prev + 1;
-        window.dispatchEvent(new CustomEvent('notifications:updated', { detail: { count: next } }));
-        return next;
-      });
     };
 
     // Subscribe via wsService
@@ -149,6 +138,10 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
       unsubscribe();
     };
   }, [user]);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('notifications:updated', { detail: { count: unreadCount } }));
+  }, [unreadCount]);
 
 
   const resolveLabel = useCallback((key: string, fallback: string) => {
@@ -165,14 +158,6 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
     return resolveLabel(snakeKey, fallback);
   }, [resolveLabel]);
 
-  const extractServerName = useCallback((message?: string | null) => {
-    if (!message) return null;
-    const ruMatch = message.match(/сервер\s+"([^"]+)"/i);
-    if (ruMatch?.[1]) return ruMatch[1];
-    const enMatch = message.match(/server\s+"([^"]+)"/i);
-    if (enMatch?.[1]) return enMatch[1];
-    return null;
-  }, []);
 
   const formatRelativeTime = useCallback((dateString: string) => {
     const date = new Date(dateString);
@@ -198,16 +183,10 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
   }, [buildDefaultMessage]);
 
   const getActionLabel = useCallback((notification: Notification) => {
-    if (notification.type === 'server_invite') {
-      const serverName = extractServerName(notification.message);
-      const base = resolveLabel('notifications.action.server_invite', 'invited you to a server');
-      return serverName ? base.replace('{server}', serverName) : base;
-    }
-
     const actionKey = `notifications.action.${notification.type}`;
     const fallback = resolveLabel('notifications.action.default', resolveLabel('notifications.new', 'New notification'));
     return resolveLabel(actionKey, fallback);
-  }, [extractServerName, resolveLabel]);
+  }, [resolveLabel]);
 
   const renderNotificationText = useCallback((notification: Notification & { groupCount?: number }) => {
     if (notification.groupCount && notification.groupCount > 1) {
@@ -225,13 +204,19 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
 
     return (
       <span className="inline-flex flex-wrap items-center gap-1">
-        <button
-          type="button"
+        <span
+          role="button"
+          tabIndex={0}
           className="text-white underline-offset-2 hover:underline"
           onClick={(event) => handleActorClick(event, notification)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              handleActorClick(event as unknown as React.MouseEvent, notification);
+            }
+          }}
         >
           {actorLabel}
-        </button>
+        </span>
         <span>{actionLabel}</span>
       </span>
     );
@@ -246,7 +231,6 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
       'follow',
       'mention',
       'reply',
-      'server_join_request',
     ]);
     const groups = new Map<string, Notification[]>();
     notifications.forEach((notification) => {
@@ -346,9 +330,15 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
                       }`}
                     >
                       {notification.actor_id ? (
-                        <button
-                          type="button"
+                        <span
+                          role="button"
+                          tabIndex={0}
                           onClick={(event) => handleActorClick(event, notification)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              handleActorClick(event as unknown as React.MouseEvent, notification);
+                            }
+                          }}
                           className="shrink-0"
                           aria-label={notification.actor_username || 'user'}
                         >
@@ -357,7 +347,7 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
                             alt={notification.actor_username || 'user'}
                             size="sm"
                           />
-                        </button>
+                        </span>
                       ) : (
                         <div className="shrink-0">
                           <Avatar

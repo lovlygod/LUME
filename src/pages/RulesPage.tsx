@@ -1,4 +1,4 @@
-import { Shield, AlertTriangle, Lock, Flag } from "lucide-react";
+import { Shield, AlertTriangle, Lock } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
 import HelpShell from "@/components/help/HelpShell";
@@ -9,7 +9,6 @@ const RulesPage = () => {
   const sections = [
     { key: "safety", icon: Shield },
     { key: "content", icon: AlertTriangle },
-    { key: "servers", icon: Flag },
     { key: "privacy", icon: Lock },
   ];
 

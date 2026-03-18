@@ -42,7 +42,6 @@ const typingTimers = new Map(); // `${chatId}-${userId}` -> timeoutId
 const wsRateLimits = new Map(); // userId -> { messages: number, lastReset: number }
 const WS_RATE_LIMIT = {
   messagesPerMinute: 30, // Максимум сообщений в минуту
-  subscriptionsPerUser: 50, // Максимум подписок на серверы
 };
 
 // Cookie options for httpOnly tokens
@@ -142,6 +141,8 @@ app.use((req, res, next) => {
 
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/sticker-uploads', express.static(path.join(__dirname, '../sticker-uploads')));
+app.use('/assets', express.static(path.join(__dirname, '../../src/assets')));
 
 // Update user online status in DB
 function updateUserOnlineStatus(userId, online) {
@@ -285,38 +286,18 @@ wss.on('connection', (ws, req) => {
           clearTimeout(typingTimers.get(timerKey));
         }
 
-        // Broadcast typing event to other chat participants
-        const event = JSON.stringify({
+        // Broadcast typing event to chat subscribers
+        broadcastToChat(chatId, {
           type: 'typing:update',
           data: { chatId, userId: userId.toString(), isTyping: true }
-        });
-
-        // Send to all clients except the typing user
-        clients.forEach((userClients, otherUserId) => {
-          if (String(otherUserId) !== String(userId)) {
-            userClients.forEach((client) => {
-              if (client.readyState === WebSocket.OPEN) {
-                client.send(event);
-              }
-            });
-          }
         });
 
         // Set TTL timer (3 seconds)
         const timer = setTimeout(() => {
           typingTimers.delete(timerKey);
-          const stopEvent = JSON.stringify({
+          broadcastToChat(chatId, {
             type: 'typing:update',
             data: { chatId, userId: userId.toString(), isTyping: false }
-          });
-          clients.forEach((userClients, otherUserId) => {
-            if (String(otherUserId) !== String(userId)) {
-              userClients.forEach((client) => {
-                if (client.readyState === WebSocket.OPEN) {
-                  client.send(stopEvent);
-                }
-              });
-            }
           });
         }, 3000);
 
@@ -334,19 +315,9 @@ wss.on('connection', (ws, req) => {
           typingTimers.delete(timerKey);
         }
 
-        const event = JSON.stringify({
+        broadcastToChat(chatId, {
           type: 'typing:update',
           data: { chatId, userId: userId.toString(), isTyping: false }
-        });
-
-        clients.forEach((userClients, otherUserId) => {
-          if (String(otherUserId) !== String(userId)) {
-            userClients.forEach((client) => {
-              if (client.readyState === WebSocket.OPEN) {
-                client.send(event);
-              }
-            });
-          }
         });
       }
 
@@ -357,30 +328,22 @@ wss.on('connection', (ws, req) => {
 
         // Update message as delivered (we'll use read_status for simplicity)
         db.run(
-          'UPDATE messages SET read_status = 1 WHERE id = $1 AND receiver_id = $2',
-          [messageId, userId],
+          'UPDATE messages SET read_status = 1 WHERE id = $1',
+          [messageId],
           (err) => {
             if (err) console.error('Error updating message delivered:', err);
           }
         );
 
         // Notify sender that message was delivered
-        const event = JSON.stringify({
+        const event = {
           type: 'message:delivered',
           data: { messageId: messageId.toString(), userId: userId.toString() }
-        });
+        };
 
-        // Find the sender and notify them
         db.get('SELECT sender_id FROM messages WHERE id = $1', [messageId], (err, msg) => {
           if (err || !msg) return;
-          const senderClients = clients.get(msg.sender_id);
-          if (senderClients) {
-            senderClients.forEach((client) => {
-              if (client.readyState === WebSocket.OPEN) {
-                client.send(event);
-              }
-            });
-          }
+          sendToUser(msg.sender_id, event);
         });
       }
 
@@ -405,44 +368,27 @@ wss.on('connection', (ws, req) => {
         });
 
         // Broadcast read update to other chat participants
-        const event = JSON.stringify({
+        broadcastToChat(chatId, {
           type: 'chat:read_update',
           data: { chatId, userId: userId.toString(), lastReadMessageId: lastReadMessageId.toString() }
         });
-
-        clients.forEach((userClients, otherUserId) => {
-          if (String(otherUserId) !== String(userId)) {
-            userClients.forEach((client) => {
-              if (client.readyState === WebSocket.OPEN) {
-                client.send(event);
-              }
-            });
-          }
-        });
       }
 
-      // ========== SERVERS (COMMUNITIES) EVENTS ==========
+      // ========== CHAT EVENTS ==========
 
-      // Subscribe to server updates
-      if (data.type === 'server:subscribe' && data.serverId && ws.userId) {
-        if (!ws.subscribedServers) {
-          ws.subscribedServers = new Set();
+      if (data.type === 'chat:subscribe' && data.chatId && ws.userId) {
+        if (!ws.subscribedChats) {
+          ws.subscribedChats = new Set();
         }
-        ws.subscribedServers.add(parseInt(data.serverId));
-        console.info('[WS] server:subscribe', { userId: ws.userId, serverId: data.serverId });
+        ws.subscribedChats.add(parseInt(data.chatId));
+        console.info('[WS] chat:subscribe', { userId: ws.userId, chatId: data.chatId });
       }
 
-      // Unsubscribe from server
-      if (data.type === 'server:unsubscribe' && data.serverId && ws.userId) {
-        if (ws.subscribedServers) {
-          ws.subscribedServers.delete(parseInt(data.serverId));
+      if (data.type === 'chat:unsubscribe' && data.chatId && ws.userId) {
+        if (ws.subscribedChats) {
+          ws.subscribedChats.delete(parseInt(data.chatId));
         }
-        console.info('[WS] server:unsubscribe', { userId: ws.userId, serverId: data.serverId });
-      }
-
-      // Server message read receipt
-      if (data.type === 'server:message_read' && data.channelId && data.messageId && ws.userId) {
-        // Can be extended for read receipts in channels
+        console.info('[WS] chat:unsubscribe', { userId: ws.userId, chatId: data.chatId });
       }
     } catch (error) {
       console.error('WebSocket message error:', error);
@@ -510,12 +456,12 @@ const broadcast = (event) => {
   });
 };
 
-// Функция для отправки событий подписанным пользователям сервера
-const broadcastToServer = (serverId, event) => {
+// Функция для отправки событий подписанным пользователям чата
+const broadcastToChat = (chatId, event) => {
   const message = JSON.stringify(event);
   wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN && client.subscribedServers) {
-      if (client.subscribedServers.has(parseInt(serverId))) {
+    if (client.readyState === WebSocket.OPEN && client.subscribedChats) {
+      if (client.subscribedChats.has(parseInt(chatId))) {
         client.send(message);
       }
     }
@@ -671,15 +617,17 @@ const createNotification = async ({
 /**
  * Отправляет событие сервера с синхронизацией Redis
  */
-const sendServerMessage = async (data) => {
+const sendChatMessage = async (data) => {
   // Публикуем в Redis для синхронизации с другими нодами
-  await wsRedisAdapter.publishServerMessage(data);
-  
-  // Локальная рассылка подписчикам сервера
-  const { serverId } = data;
-  if (serverId) {
-    broadcastToServer(serverId, {
-      type: data.type || 'channel:new_message',
+  await wsRedisAdapter.publishChatMessage(data);
+
+  // Локальная рассылка подписчикам чата
+  const { chatId } = data;
+  if (chatId) {
+    const contentTypes = new Set(['text', 'moment_image', 'sticker', 'voice']);
+    const eventType = data.eventType || (contentTypes.has(data.type) ? 'new_message' : data.type || 'new_message');
+    broadcastToChat(chatId, {
+      type: eventType,
       data,
     });
   }
@@ -688,12 +636,12 @@ const sendServerMessage = async (data) => {
 // Экспортируем функции для использования в API роутах
 app.set('sendToUser', sendToUser);
 app.set('broadcast', broadcast);
-app.set('broadcastToServer', broadcastToServer);
+app.set('broadcastToChat', broadcastToChat);
 // Экспортируем Redis-synced функции
 app.set('sendNewMessage', sendNewMessage);
 app.set('sendPostCreated', sendPostCreated);
 app.set('sendNotification', sendNotification);
-app.set('sendServerMessage', sendServerMessage);
+app.set('sendChatMessage', sendChatMessage);
 app.set('createNotification', createNotification);
 app.set('clients', clients);
 app.set('onlineUsers', onlineUsers);
@@ -833,7 +781,7 @@ server.listen(PORT, () => {
   wsRedisAdapter.initWsRedisAdapter({
     sendToUser,
     broadcast,
-    broadcastToServer,
+    broadcastToChat,
     clients,
   }).then(() => {
     console.info('[Server] WebSocket Redis Adapter initialized');
@@ -842,7 +790,7 @@ server.listen(PORT, () => {
   });
 });
 
-module.exports = { app, server, wss, sendToUser, broadcast };
+module.exports = { app, server, wss, sendToUser, broadcast, broadcastToChat };
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {

@@ -16,10 +16,7 @@ import SessionsPage from "./pages/settings/SessionsPage";
 import NotFound from "./pages/NotFound";
 import Register from "./pages/auth/Register";
 import Login from "./pages/auth/Login";
-import ServerPage from "./pages/server/ServerPage";
-import ServersPage from "./pages/ServersPage";
-import ServerSettingsPage from "./pages/ServerSettingsPage";
-import ServerMembersPage from "./pages/ServerMembersPage";
+import AddStickerPackPage from "./pages/stickers/AddStickerPackPage";
 import LandingLayout from "@/layouts/LandingLayout";
 import LandingPage from "@/pages/LandingPage";
 import FAQPage from "@/pages/FAQPage";
@@ -64,17 +61,13 @@ const AppContent = () => {
       </Route>
 
       <Route element={<ProtectedRoute />}>
-        {/* Server routes - левый сайдбар остается, правый убирается */}
-        <Route path="/server/:identifier/channel/:channelName" element={<ServerPage />} />
-        <Route path="/server/:identifier/settings" element={<ServerSettingsPage />} />
-        <Route path="/server/:identifier/members" element={<ServerMembersPage />} />
-        <Route path="/server/:identifier" element={<ServerPage />} />
-
         <Route element={<MainLayout />}>
           <Route path="/feed" element={<Index />} />
-          <Route path="/servers" element={<ServersPage />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/messages/:chatId" element={<Messages />} />
+          <Route path="/messages/:chatId/:rest" element={<Messages />} />
+          <Route path="/invite/:token" element={<Messages />} />
+          <Route path="/addstickers/:packSlug" element={<AddStickerPackPage />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/:userId" element={<UserProfile />} />
           <Route path="/explore" element={<Explore />} />

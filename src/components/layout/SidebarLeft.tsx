@@ -8,7 +8,6 @@ import {
   LogOut,
   Settings,
   ChevronUp,
-  Users,
   Bell,
 } from "lucide-react";
 import { useAuth, isVerifiedUser, isDeveloper, isDeveloperCrown, VerifiedBadge, DeveloperBadge, DeveloperCrownBadge } from "@/contexts/AuthContext";
@@ -55,7 +54,6 @@ const SidebarLeft = () => {
     { to: "/feed", icon: Home, label: t("home") },
     { to: "/messages", icon: MessageCircle, label: t("messages") },
     { to: "/explore", icon: Compass, label: t("explore") },
-    { to: "/servers", icon: Users, label: t("servers.title") },
   ];
 
   const unauthNavItems = [

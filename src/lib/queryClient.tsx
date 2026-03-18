@@ -60,27 +60,9 @@ export const QueryProvider = ({ children }: QueryProviderProps) => {
 
 /**
  * Централизованные ключи для query кэша
- * Использование: queryKeys.servers.all() -> ['servers']
+ * Использование: queryKeys.chats.all() -> ['chats']
  */
 export const queryKeys = {
-  // Серверы
-  servers: {
-    all: () => ['servers'] as const,
-    lists: () => [...queryKeys.servers.all(), 'list'] as const,
-    list: (type: 'my' | 'public') => [...queryKeys.servers.lists(), type] as const,
-    details: () => [...queryKeys.servers.all(), 'detail'] as const,
-    detail: (identifier: string | number) => [...queryKeys.servers.details(), identifier] as const,
-    channels: (serverId: number) => [...queryKeys.servers.detail(serverId), 'channels'] as const,
-    members: (serverId: number) => [...queryKeys.servers.detail(serverId), 'members'] as const,
-    joinRequests: (serverId: number) => [...queryKeys.servers.detail(serverId), 'joinRequests'] as const,
-  },
-  
-  // Сообщения
-  messages: {
-    all: () => ['messages'] as const,
-    channel: (serverId: number, channelId: number) => 
-      [...queryKeys.messages.all(), serverId, channelId] as const,
-  },
   
   // Чаты (личные сообщения)
   chats: {
@@ -114,26 +96,6 @@ export const queryKeys = {
 };
 
 // ==================== Helpers ====================
-
-/**
- * Инвалидировать кэш серверов
- */
-export const invalidateServers = (serverId?: number) => {
-  if (serverId) {
-    queryClient.invalidateQueries({ queryKey: queryKeys.servers.detail(serverId) });
-  } else {
-    queryClient.invalidateQueries({ queryKey: queryKeys.servers.all() });
-  }
-};
-
-/**
- * Инвалидировать кэш сообщений канала
- */
-export const invalidateChannelMessages = (serverId: number, channelId: number) => {
-  queryClient.invalidateQueries({ 
-    queryKey: queryKeys.messages.channel(serverId, channelId) 
-  });
-};
 
 /**
  * Инвалидировать кэш чатов

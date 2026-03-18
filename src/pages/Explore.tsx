@@ -1,15 +1,14 @@
 import { useState, useMemo, useEffect } from "react";
-import { Search, TrendingUp, Users, Server as ServerIcon } from "lucide-react";
+import { Search, TrendingUp, Users, Radio } from "lucide-react";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
-import { searchAPI, postsAPI, apiRequest } from "@/services/api";
+import { messagesAPI, searchAPI, postsAPI } from "@/services/api";
 import type { User } from "@/types/api";
 import { isVerifiedUser, isDeveloper, isDeveloperCrown, VerifiedBadge, DeveloperBadge, DeveloperCrownBadge } from "@/contexts/AuthContext";
 import { normalizeImageUrl } from "@/lib/utils";
 import { getProfileRoute } from "@/lib/profileRoute";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { errorHandler } from "@/services/errorHandler";
 
 interface Trend {
   tag: string;
@@ -21,27 +20,20 @@ interface TrendPost {
   text?: string;
 }
 
-interface PublicServer {
-  id: number;
-  username: string | null;
-  name: string;
-  description: string | null;
-  iconUrl: string | null;
-  type: 'public' | 'private';
+interface PublicChannel {
+  id: string;
+  title?: string | null;
+  username?: string | null;
+  avatar?: string | null;
+  membersCount?: number;
 }
+
 
 const Explore = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchMode, setSearchMode] = useState<'users' | 'servers'>('users');
+  const [searchMode, setSearchMode] = useState<'users' | 'channels'>('users');
   const [searchResults, setSearchResults] = useState<User[]>([]);
-  const [serverResults, setServerResults] = useState<Array<{
-    id: number;
-    username: string | null;
-    name: string;
-    description: string | null;
-    iconUrl: string | null;
-    type: 'public' | 'private';
-  }>>([]);
+  const [channelResults, setChannelResults] = useState<PublicChannel[]>([]);
   const [loading, setLoading] = useState(false);
   const [trends, setTrends] = useState<Trend[]>([]);
   const [suggestedUsers, setSuggestedUsers] = useState<User[]>([]);
@@ -113,64 +105,38 @@ const Explore = () => {
     loadSuggestedUsers();
   }, []);
 
-  // Поиск пользователей
+  // Поиск пользователей / каналов
   useEffect(() => {
-    const searchUsers = async () => {
-      if (searchMode !== 'users') return;
-
+    const runSearch = async () => {
       if (!searchQuery.trim()) {
         setSearchResults([]);
+        setChannelResults([]);
         return;
       }
 
       setLoading(true);
       try {
-        const response = await searchAPI.searchUsers(searchQuery);
-        setSearchResults(response.users);
+        if (searchMode === 'users') {
+          const response = await searchAPI.searchUsers(searchQuery);
+          setSearchResults(response.users);
+          setChannelResults([]);
+        } else {
+          const response = await messagesAPI.getPublicChannels(searchQuery);
+          setChannelResults(response.channels || []);
+          setSearchResults([]);
+        }
       } catch (error) {
-        console.error('Failed to search users:', error);
+        console.error('Failed to search:', error);
         setSearchResults([]);
+        setChannelResults([]);
       } finally {
         setLoading(false);
       }
     };
 
-    searchUsers();
+    runSearch();
   }, [searchQuery, searchMode]);
 
-  // Поиск серверов
-  useEffect(() => {
-    const searchServers = async () => {
-      if (searchMode !== 'servers') return;
-
-      if (!searchQuery.trim()) {
-        setServerResults([]);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const data = await apiRequest<{ servers?: PublicServer[] }>("/servers/public", {
-          method: "GET",
-        });
-
-        const filtered = (data.servers || []).filter((server) => {
-          const name = String(server.name || '').toLowerCase();
-          const username = String(server.username || '').toLowerCase();
-          const query = searchQuery.toLowerCase();
-          return name.includes(query) || username.includes(query);
-        });
-        setServerResults(filtered);
-      } catch (error) {
-        errorHandler.handleApiError(error, { showToast: false });
-        setServerResults([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    searchServers();
-  }, [searchQuery, searchMode]);
 
   return (
     <div className="min-h-screen">
@@ -185,16 +151,16 @@ const Explore = () => {
       {/* Search */}
       <div className="px-6 pb-6">
         <div className="flex flex-col gap-3">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
-            <Input
-              type="text"
-              placeholder={searchMode === 'users' ? t("explore.searchUsers") : t("explore.searchServers")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 rounded-full"
-            />
-          </div>
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
+                <Input
+                  type="text"
+                  placeholder={searchMode === 'channels' ? t("explore.searchChannels") : t("explore.searchUsers")}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 rounded-full"
+                />
+              </div>
 
           <div className="flex justify-center">
             <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1.5">
@@ -202,7 +168,7 @@ const Explore = () => {
                 type="button"
                 onClick={() => setSearchMode('users')}
                 className={`relative z-10 flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition-smooth ${
-                  searchMode === 'users' ? 'bg-white/10 text-white' : 'text-secondary hover:text-white'
+                  searchMode === 'users' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'
                 }`}
               >
                 <Users className="h-3.5 w-3.5" />
@@ -210,13 +176,13 @@ const Explore = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setSearchMode('servers')}
+                onClick={() => setSearchMode('channels')}
                 className={`relative z-10 flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition-smooth ${
-                  searchMode === 'servers' ? 'bg-white/10 text-white' : 'text-secondary hover:text-white'
+                  searchMode === 'channels' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'
                 }`}
               >
-                <ServerIcon className="h-3.5 w-3.5" />
-                {t('explore.servers')}
+                <Radio className="h-3.5 w-3.5" />
+                {t('explore.channels')}
               </button>
             </div>
           </div>
@@ -235,148 +201,129 @@ const Explore = () => {
                 </p>
               </div>
             ) : null}
-
-            {searchMode === 'servers' && serverResults.length === 0 && !loading ? (
+            {searchMode === 'channels' && channelResults.length === 0 && !loading ? (
               <div className="px-4 py-8 text-center">
                 <p className="text-sm text-muted-foreground">
-                  {t("explore.noServersFound")} "{searchQuery}"
+                  {t("explore.noChannelsFound")} "{searchQuery}"
                 </p>
               </div>
             ) : null}
-
-            {searchMode === 'users' ? (
-              <div className="rounded-[28px] border border-white/10 bg-white/5 py-2 backdrop-blur-[24px]">
-                <div className="px-4 py-2">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                    <Users className="h-3.5 w-3.5" />
-                    {t("explore.users")}
-                  </h3>
+            <div className="rounded-[28px] border border-white/10 bg-white/5 py-2 backdrop-blur-[24px]">
+              <div className="px-4 py-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  {searchMode === 'channels' ? <Radio className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}
+                  {searchMode === 'channels' ? t("explore.channels") : t("explore.users")}
+                </h3>
+              </div>
+              {loading ? (
+                <div className="px-4 py-8 text-center">
+                  <p className="text-sm text-muted-foreground">{t("explore.searching")}</p>
                 </div>
-                {loading ? (
-                  <div className="px-4 py-8 text-center">
-                    <p className="text-sm text-muted-foreground">{t("explore.searching")}</p>
-                  </div>
-                ) : (
-                    searchResults.map((user, index) => (
-                    <motion.div
-                      key={user.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
+              ) : (
+                  searchMode === 'users'
+                    ? searchResults.map((user, index) => (
+                  <motion.div
+                    key={user.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <Link
+                      to={getProfileRoute(user)}
+                      className="flex items-start gap-3 px-4 py-3 rounded-[22px] transition-smooth hover:bg-white/5"
                     >
-                      <Link
-                        to={getProfileRoute(user)}
-                        className="flex items-start gap-3 px-4 py-3 rounded-[22px] transition-smooth hover:bg-white/5"
-                      >
-                        {/* Avatar */}
-                        <div className="relative">
-                          {user.avatar ? (
-                            <img
-                              src={normalizeImageUrl(user.avatar) || ''}
-                              alt={user.name}
-                              className="h-12 w-12 rounded-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = '';
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
-                            />
-                          ) : null}
-                          {!user.avatar && (
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/10 text-lg font-semibold text-white">
-                              {user.name.charAt(0)}
-                            </div>
-                          )}
+                      {/* Avatar */}
+                      <div className="relative">
+                        {user.avatar ? (
+                          <img
+                            src={normalizeImageUrl(user.avatar) || ''}
+                            alt={user.name}
+                            className="h-12 w-12 rounded-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '';
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        ) : null}
+                        {!user.avatar && (
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/10 text-lg font-semibold text-white">
+                            {user.name.charAt(0)}
+                          </div>
+                        )}
+                        {Boolean(user.verified) && (
+                          <div className="absolute -bottom-0.5 -right-0.5">
+                            <VerifiedBadge className="h-4 w-4" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* User Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-white truncate">
+                            {user.name}
+                          </span>
                           {Boolean(user.verified) && (
-                            <div className="absolute -bottom-0.5 -right-0.5">
-                              <VerifiedBadge className="h-4 w-4" />
-                            </div>
+                            <VerifiedBadge className="h-4 w-4" />
                           )}
+                          {isDeveloperCrown(user.username)
+                            ? <DeveloperCrownBadge className="h-4 w-4" />
+                            : isDeveloper(user.username) && <DeveloperBadge className="h-4 w-4" />
+                          }
                         </div>
-
-                        {/* User Info */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-semibold text-white truncate">
-                              {user.name}
-                            </span>
-                            {Boolean(user.verified) && (
-                              <VerifiedBadge className="h-4 w-4" />
-                            )}
-                            {isDeveloperCrown(user.username)
-                              ? <DeveloperCrownBadge className="h-4 w-4" />
-                              : isDeveloper(user.username) && <DeveloperBadge className="h-4 w-4" />
-                            }
-                          </div>
-                          <p className="text-sm text-secondary">{user.username}</p>
-                          <p className="mt-1 text-sm text-white/80 line-clamp-2">
-                            {user.bio}
-                          </p>
-                        </div>
-                      </Link>
-                    </motion.div>
-                  ))
-                )}
-              </div>
-            ) : (
-              <div className="rounded-[28px] border border-white/10 bg-white/5 py-2 backdrop-blur-[24px]">
-                <div className="px-4 py-2">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                    <ServerIcon className="h-3.5 w-3.5" />
-                    {t("explore.servers")}
-                  </h3>
-                </div>
-                {loading ? (
-                  <div className="px-4 py-8 text-center">
-                    <p className="text-sm text-muted-foreground">{t("explore.searching")}</p>
-                  </div>
-                ) : (
-                  serverResults.map((server, index) => (
-                    <motion.div
-                      key={server.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
+                        <p className="text-sm text-secondary">{user.username}</p>
+                        <p className="mt-1 text-sm text-white/80 line-clamp-2">
+                          {user.bio}
+                        </p>
+                      </div>
+                    </Link>
+                  </motion.div>
+                ))
+                : channelResults.map((channel, index) => (
+                  <motion.div
+                    key={channel.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <Link
+                      to={`/messages/${channel.id}`}
+                      className="flex items-start gap-3 px-4 py-3 rounded-[22px] transition-smooth hover:bg-white/5"
                     >
-                      <Link
-                        to={`/server/${server.username || server.id}/channel/general`}
-                        className="flex items-start gap-3 px-4 py-3 rounded-[22px] transition-colors hover:bg-white/5"
-                      >
-                        <div className="relative">
-                          {server.iconUrl ? (
-                            <img
-                              src={server.iconUrl}
-                              alt={server.name}
-                              className="h-12 w-12 rounded-[20px] object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = '';
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
-                            />
-                          ) : (
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[20px] bg-white/10 text-lg font-bold text-white">
-                              {server.name.charAt(0)}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-white truncate">
-                              {server.name}
-                            </span>
-                            {server.username && (
-                              <span className="text-xs text-secondary">@{server.username}</span>
-                            )}
+                      <div className="relative">
+                        {channel.avatar ? (
+                          <img
+                            src={normalizeImageUrl(channel.avatar) || ''}
+                            alt={channel.title || channel.username || 'channel'}
+                            className="h-12 w-12 rounded-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '';
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        ) : null}
+                        {!channel.avatar && (
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/10 text-lg font-semibold text-white">
+                            {(channel.title || channel.username || 'C').charAt(0)}
                           </div>
-                          <p className="mt-1 text-sm text-secondary line-clamp-2">
-                            {server.description || t('servers.descriptionEmpty')}
-                          </p>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-white truncate">
+                            {channel.title || channel.username || `Channel ${channel.id}`}
+                          </span>
                         </div>
-                      </Link>
-                    </motion.div>
-                  ))
-                )}
-              </div>
-            )}
+                        <p className="text-sm text-secondary">@{channel.username || channel.id}</p>
+                        <p className="mt-1 text-sm text-white/60">
+                          {t("explore.members", { count: String(channel.membersCount || 0) })}
+                        </p>
+                      </div>
+                    </Link>
+                  </motion.div>
+                ))
+              )}
+            </div>
           </>
         ) : (
           // Default Explore Content

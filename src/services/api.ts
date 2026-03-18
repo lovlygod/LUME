@@ -372,28 +372,133 @@ export const postsAPI = {
 
 export const messagesAPI = {
   getChats: async (signal?: AbortSignal): Promise<{ chats: Chat[] }> => {
-    return apiRequest('/messages', {
+    return apiRequest('/chats', {
       method: 'GET',
     }, true, signal);
   },
 
-  getMessages: async (userId: string, signal?: AbortSignal): Promise<{ messages: Message[] }> => {
-    return apiRequest(`/messages/${userId}`, {
+  createChat: async (payload: {
+    type: 'private' | 'group' | 'channel';
+    userId?: string;
+    userIds?: string[];
+    title?: string;
+    avatar?: string | null;
+    isPublic?: boolean;
+    isPrivate?: boolean;
+    username?: string | null;
+  }): Promise<{ chatId: string; existing?: boolean }> => {
+    const { userId, userIds, ...rest } = payload;
+    return apiRequest('/chats', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...rest,
+        ...(userId ? { userIds: [userId] } : {}),
+        ...(userIds && userIds.length ? { userIds } : {}),
+      }),
+    });
+  },
+
+  updateChat: async (
+    chatId: string,
+    payload: {
+      title?: string | null;
+      avatar?: string | null;
+      isPublic?: boolean;
+      isPrivate?: boolean;
+      username?: string | null;
+      regenerateInvite?: boolean;
+    }
+  ): Promise<{ chat: Chat | null }> => {
+    return apiRequest(`/chats/${chatId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  addChatMember: async (chatId: string, payload: { userId?: string; username?: string; role?: 'owner' | 'admin' | 'member' }) => {
+    return apiRequest(`/chats/${chatId}/members`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  removeChatMember: async (chatId: string, userId: string) => {
+    return apiRequest(`/chats/${chatId}/members/${userId}`, {
+      method: 'DELETE',
+    });
+  },
+  deleteChat: async (chatId: string): Promise<{ message: string }> => {
+    return apiRequest(`/chats/${chatId}`, {
+      method: 'DELETE',
+    });
+  },
+  leaveChat: async (chatId: string, userId: string) => {
+    return apiRequest(`/chats/${chatId}/members/${userId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  getPublicChannels: async (query: string): Promise<{ channels: Array<{ id: string; title?: string | null; username?: string | null; avatar?: string | null; membersCount?: number }> }> => {
+    const endpoint = `/chats/public?q=${encodeURIComponent(query || '')}`;
+    return apiRequest(endpoint, { method: 'GET' });
+  },
+
+  getPublicChannel: async (chatId: string): Promise<{ channel: { id: string; title?: string | null; username?: string | null; avatar?: string | null; isPublic?: boolean; membersCount?: number; role?: string | null } }> => {
+    return apiRequest(`/chats/${chatId}/public`, { method: 'GET' });
+  },
+
+  getChatByUsername: async (username: string): Promise<{ chat: Chat & { membersCount?: number; joinStatus?: string | null } }> => {
+    return apiRequest(`/chats/username/${encodeURIComponent(username)}`, { method: 'GET' });
+  },
+
+  getChatByPublicNumber: async (publicNumber: string): Promise<{ chat: Chat & { membersCount?: number; joinStatus?: string | null } }> => {
+    return apiRequest(`/chats/public-number/${encodeURIComponent(publicNumber)}`, { method: 'GET' });
+  },
+
+  getChatInvite: async (token: string): Promise<{ chat: Chat & { membersCount?: number; joinStatus?: string | null } }> => {
+    return apiRequest(`/chats/invite/${encodeURIComponent(token)}`, { method: 'GET' });
+  },
+
+  requestJoin: async (chatId: string): Promise<{ status: string }> => {
+    return apiRequest(`/chats/${chatId}/join-requests`, { method: 'POST' });
+  },
+
+  listJoinRequests: async (chatId: string): Promise<{ requests: Array<{ id: string; userId: string; status: string; createdAt: string; user: User }> }> => {
+    return apiRequest(`/chats/${chatId}/join-requests`, { method: 'GET' });
+  },
+
+  reviewJoinRequest: async (chatId: string, requestId: string, action: 'approve' | 'reject'): Promise<{ status: string }> => {
+    return apiRequest(`/chats/${chatId}/join-requests/${requestId}`, {
+      method: 'POST',
+      body: JSON.stringify({ action }),
+    });
+  },
+
+  subscribeChannel: async (chatId: string) => {
+    return apiRequest(`/chats/${chatId}/subscribe`, { method: 'POST' });
+  },
+
+  unsubscribeChannel: async (chatId: string) => {
+    return apiRequest(`/chats/${chatId}/subscribe`, { method: 'DELETE' });
+  },
+
+  getMessages: async (chatId: string, signal?: AbortSignal): Promise<{ messages: Message[] }> => {
+    return apiRequest(`/chats/${chatId}/messages`, {
       method: 'GET',
     }, true, signal);
   },
 
-  sendMessage: async (messageData: { receiverId: string; text?: string; attachmentIds?: string[]; replyToMessageId?: string | null; stickerId?: string | null }) => {
+  sendMessage: async (messageData: { chatId: string; text?: string; attachmentIds?: string[]; replyToMessageId?: string | null; stickerId?: string | null }) => {
     return apiRequest('/messages', {
       method: 'POST',
       body: JSON.stringify(messageData),
     });
   },
 
-  sendVoice: async (data: { receiverId: string; audio: Blob; duration: number; replyToMessageId?: string | null }) => {
+  sendVoice: async (data: { chatId: string; audio: Blob; duration: number; replyToMessageId?: string | null }) => {
     const formData = new FormData();
     formData.append('audio', data.audio, `voice-${Date.now()}.webm`);
-    formData.append('receiverId', data.receiverId);
+    formData.append('chatId', data.chatId);
     formData.append('duration', String(data.duration));
     if (data.replyToMessageId) {
       formData.append('replyToMessageId', data.replyToMessageId);
@@ -423,10 +528,10 @@ export const messagesAPI = {
     return response.json() as Promise<{ message: string; messageId: string; attachment: Attachment }>;
   },
 
-  sendMoment: async (data: { receiverId: string; file: File; ttlSeconds?: number }) => {
+  sendMoment: async (data: { chatId: string; file: File; ttlSeconds?: number }) => {
     const formData = new FormData();
     formData.append('file', data.file);
-    formData.append('receiverId', data.receiverId);
+    formData.append('chatId', data.chatId);
     if (data.ttlSeconds) {
       formData.append('ttlSeconds', String(data.ttlSeconds));
     }
@@ -499,6 +604,16 @@ export const stickersAPI = {
       method: 'GET',
     });
   },
+  getPackBySlug: async (slug: string): Promise<StickerPackWithStickers> => {
+    return apiRequest(`/stickers/slug/${slug}`, {
+      method: 'GET',
+    });
+  },
+  getPublicPackBySlug: async (slug: string): Promise<StickerPackWithStickers> => {
+    return apiRequest(`/stickers/public/slug/${slug}`, {
+      method: 'GET',
+    });
+  },
   getMyPacks: async (): Promise<{ packs: StickerPack[] }> => {
     return apiRequest('/stickers/mine', {
       method: 'GET',
@@ -509,6 +624,35 @@ export const stickersAPI = {
       method: 'POST',
       body: JSON.stringify({ packId }),
     });
+  },
+  startBot: async (): Promise<{ message: string }> => {
+    return apiRequest('/stickers/bot/start', {
+      method: 'POST',
+    });
+  },
+  getBotSession: async (): Promise<{ step: string; packName: string | null; stickers: Array<{ name: string; url?: string | null }>; limits: { maxStickers: number; maxFileSize: number } }> => {
+    return apiRequest('/stickers/bot/session', {
+      method: 'GET',
+    });
+  },
+  uploadBotStickers: async (files: File[]): Promise<{ stickers: Array<{ name: string; url?: string | null }>; count: number; max: number }> => {
+    const formData = new FormData();
+    files.forEach((file) => formData.append('stickers', file));
+    const response = await fetch(`${API_BASE_URL}/stickers/bot/upload`, {
+      method: 'POST',
+      body: formData,
+      credentials: 'include',
+      headers: {
+        ...(getCsrfToken() ? { 'X-CSRF-Token': getCsrfToken() as string } : {}),
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
   },
 };
 

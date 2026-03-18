@@ -58,11 +58,16 @@ CREATE TABLE IF NOT EXISTS followers (
 
 CREATE TABLE IF NOT EXISTS chats (
   id BIGSERIAL PRIMARY KEY,
-  user1_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  user2_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  last_message TEXT,
-  last_message_time TIMESTAMPTZ DEFAULT NOW(),
-  unread_count INTEGER DEFAULT 0
+  type TEXT NOT NULL CHECK (type IN ('private', 'group', 'channel')),
+  title TEXT,
+  avatar TEXT,
+  owner_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  is_public BOOLEAN DEFAULT false,
+  is_private BOOLEAN DEFAULT false,
+  username TEXT UNIQUE,
+  invite_token TEXT UNIQUE,
+  public_number BIGINT UNIQUE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS messages (
@@ -85,6 +90,33 @@ CREATE TABLE IF NOT EXISTS message_deletions (
   user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   deleted_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(message_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS chat_members (
+  chat_id BIGINT NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role TEXT NOT NULL CHECK (role IN ('owner', 'admin', 'member')),
+  joined_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (chat_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS chat_reads (
+  chat_id BIGINT NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  last_read_message_id BIGINT REFERENCES messages(id) ON DELETE SET NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (chat_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS chat_join_requests (
+  id BIGSERIAL PRIMARY KEY,
+  chat_id BIGINT NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'rejected')) DEFAULT 'pending',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  reviewed_at TIMESTAMPTZ,
+  reviewed_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  UNIQUE(chat_id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS attachments (

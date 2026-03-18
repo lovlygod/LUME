@@ -10,7 +10,7 @@ const MainLayout = () => {
     pathname === "/privacy-policy" ||
     pathname === "/terms-of-service" ||
     pathname === "/cookie-policy";
-  const hideRightSidebar = pathname.startsWith("/messages");
+  const hideRightSidebar = pathname.startsWith("/messages") || pathname.startsWith("/invite");
 
   return (
     <AppLayout>

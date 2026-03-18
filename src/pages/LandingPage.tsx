@@ -1,7 +1,7 @@
 import { useNavigate, Link } from "react-router-dom";
 import CookieSettingsButton from "@/components/ui/CookieSettingsButton";
 import { Loader } from "@/components/ui/Loader";
-import { ArrowRight, MessageCircle, Search, ShieldCheck, Users, User, Radio } from "lucide-react";
+import { ArrowRight, MessageCircle, Search, ShieldCheck, User, Radio } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const LandingPage = () => {
@@ -23,14 +23,6 @@ const LandingPage = () => {
       description: t("landing.features.messages.description"),
       icon: MessageCircle,
       route: "/messages",
-      status: "active",
-    },
-    {
-      key: "servers",
-      title: t("landing.features.servers.title"),
-      description: t("landing.features.servers.description"),
-      icon: Users,
-      route: "/servers",
       status: "active",
     },
     {

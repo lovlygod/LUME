@@ -15,7 +15,6 @@ const FAQPage = () => {
       { key: "account", label: t("help.faq.categories.account") },
       { key: "feed", label: t("help.faq.categories.feed") },
       { key: "messages", label: t("help.faq.categories.messages") },
-      { key: "servers", label: t("help.faq.categories.servers") },
       { key: "privacy", label: t("help.faq.categories.privacy") },
     ]
   ), [t]);

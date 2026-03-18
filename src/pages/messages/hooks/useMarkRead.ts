@@ -14,7 +14,7 @@ export const useMarkRead = (chatId?: string | null) => {
         if (!prev?.chats || !chatId) return prev;
         return {
           chats: prev.chats.map((chat) =>
-            String(chat.userId) === String(chatId) ? { ...chat, unread: 0 } : chat
+            String(chat.id) === String(chatId) ? { ...chat, unread: 0 } : chat
           ),
         };
       });

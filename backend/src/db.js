@@ -30,6 +30,12 @@ const ensureReturningId = (text) => {
   if (normalized.includes('insert into message_deletions')) {
     return text;
   }
+  if (normalized.includes('insert into chat_reads')) {
+    return text;
+  }
+  if (normalized.includes('insert into chat_members')) {
+    return text;
+  }
   if (normalized.includes('insert into server_message_deletions')) {
     return text;
   }

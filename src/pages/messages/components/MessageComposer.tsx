@@ -1,4 +1,5 @@
 import { useRef, useCallback } from "react";
+import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Paperclip, Send, X, FileImage, File, Mic, Smile } from "lucide-react";
 import StickerPicker from "@/components/stickers/StickerPicker";
@@ -19,6 +20,8 @@ interface ReplyPreview {
 interface MessageComposerProps {
   msgText: string;
   isSending: boolean;
+  canSend?: boolean;
+  readOnlyMessage?: ReactNode;
   momentToggle: boolean;
   momentPreview: string | null;
   attachments: Attachment[];
@@ -71,6 +74,8 @@ const ALLOWED_FILE_TYPES = [
 const MessageComposer = ({
   msgText,
   isSending,
+  canSend = true,
+  readOnlyMessage,
   momentToggle,
   momentPreview,
   attachments,
@@ -196,8 +201,18 @@ const MessageComposer = ({
     return <File className="h-6 w-6 text-white/60" />;
   };
 
+  if (!canSend) {
+    return (
+      <div className="mt-3 px-6 pb-6 bg-transparent border-0 shadow-none backdrop-blur-0 relative">
+        <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70">
+          {readOnlyMessage ?? (t("messages.channelReadOnly") || "Только админы могут писать в канале.")}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div 
+    <div
       className="mt-3 px-6 pb-6 bg-transparent border-0 shadow-none backdrop-blur-0 relative"
       {...getRootProps()}
     >

@@ -3,6 +3,7 @@ import type { User } from "@/types";
 import type { Chat } from "@/types/messages";
 import { normalizeImageUrl } from "@/lib/utils";
 import { VerifiedBadge, isVerifiedUser } from "@/contexts/AuthContext";
+import { Plus } from "lucide-react";
 import { MessageSearch } from "./MessageSearch";
 import { Loader } from "@/components/ui/Loader";
 
@@ -10,18 +11,19 @@ interface ChatListProps {
   chats: Chat[];
   loading: boolean;
   selectedChatId: string | null;
-  onSelectChat: (userId: string) => void;
+  onSelectChat: (chatId: string) => void;
   onCloseChat: () => void;
+  onCreateChat: () => void;
   t: (key: string) => string;
 }
 
 const toUser = (chat: Chat): User => ({
-  id: chat.userId,
+  id: chat.id,
   email: "",
-  name: chat.name || `User ${chat.userId}`,
+  name: chat.title || `Chat ${chat.id}`,
   username: chat.username || "",
   verified: Boolean(chat.verified),
-  avatar: chat.avatar,
+  avatar: chat.avatar || undefined,
 });
 
 const formatTime = (timestamp: string) => {
@@ -42,6 +44,7 @@ const ChatList = ({
   selectedChatId,
   onSelectChat,
   onCloseChat,
+  onCreateChat,
   t,
 }: ChatListProps) => (
   <motion.div
@@ -59,17 +62,31 @@ const ChatList = ({
         >
           {t("messages.title")}
         </motion.h2>
-        {selectedChatId && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            onClick={onCloseChat}
-            className="p-2 rounded-full hover:bg-white/5 transition-smooth"
-          >
-            ✕
-          </motion.button>
-        )}
+        <div className="flex items-center gap-2">
+          {!selectedChatId && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              onClick={onCreateChat}
+              className="p-2 rounded-full hover:bg-white/5 transition-smooth"
+              aria-label={t("messages.createChatTitle") || "Создать чат"}
+            >
+              <Plus className="h-4 w-4" />
+            </motion.button>
+          )}
+          {selectedChatId && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              onClick={onCloseChat}
+              className="p-2 rounded-full hover:bg-white/5 transition-smooth"
+            >
+              ✕
+            </motion.button>
+          )}
+        </div>
       </div>
     </div>
 
@@ -90,9 +107,9 @@ const ChatList = ({
           return (
             <motion.div
               key={chat.id}
-              onClick={() => onSelectChat(chat.userId)}
+            onClick={() => onSelectChat(chat.routeId || chat.id)}
               className={`cursor-pointer rounded-[22px] px-3 py-3 transition-smooth ${
-                selectedChatId === chat.userId ? "bg-white/10" : "hover:bg-white/6"
+                selectedChatId === chat.id ? "bg-white/10" : "hover:bg-white/6"
               }`}
               whileHover={{ x: 2 }}
             >
@@ -127,7 +144,7 @@ const ChatList = ({
                     >
                       <div className="flex items-center justify-between mb-1">
                         <p className="text-sm font-medium text-white truncate">
-                          {user.name || `User ${chat.userId}`}
+                          {user.name || `Chat ${chat.id}`}
                         </p>
                         <span className="text-xs text-secondary flex-shrink-0">
                           {formatTime(chat.timestamp)}

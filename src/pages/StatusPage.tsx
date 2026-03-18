@@ -123,7 +123,6 @@ const StatusPage = () => {
       { key: "auth", label: t("status.grid.auth"), latency: baseLatency, uptime: uptimePercent, status: baseStatus },
       { key: "feed", label: t("status.grid.feed"), latency: baseLatency, uptime: uptimePercent, status: baseStatus },
       { key: "messages", label: t("status.grid.messages"), latency: data.websocket.latencyMs ?? baseLatency, uptime: uptimePercent, status: baseStatus },
-      { key: "servers", label: t("status.grid.servers"), latency: baseLatency, uptime: uptimePercent, status: baseStatus },
       { key: "media", label: t("status.grid.media"), latency: data.media.latencyMs ?? baseLatency, uptime: uptimePercent, status: baseStatus }
     ];
   }, [data, t]);

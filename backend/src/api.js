@@ -87,6 +87,42 @@ const router = express.Router();
 const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || '').trim().toLowerCase();
 
 const STICKERS_BASE_DIR = path.resolve(__dirname, '../../src/assets/stickers');
+const STICKER_BOT_ID = 999;
+const STICKER_BOT_USERNAME = 'stickers';
+const STICKER_BOT_STEPS = {
+  IDLE: 'idle',
+  CREATING_PACK: 'creating_pack',
+  UPLOADING: 'uploading',
+  READY_TO_PUBLISH: 'ready_to_publish'
+};
+const STICKER_BOT_LIMITS = {
+  maxStickers: 60,
+  maxFileSize: 512 * 1024
+};
+
+const INVITE_TOKEN_LENGTH = 16;
+const INVITE_TOKEN_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+const PUBLIC_NUMBER_LENGTH = 7;
+const PUBLIC_NUMBER_MAX = Math.pow(10, PUBLIC_NUMBER_LENGTH) - 1;
+
+const generateInviteToken = () => {
+  let token = '';
+  while (token.length < INVITE_TOKEN_LENGTH) {
+    const bytes = crypto.randomBytes(INVITE_TOKEN_LENGTH);
+    for (let i = 0; i < bytes.length && token.length < INVITE_TOKEN_LENGTH; i += 1) {
+      token += INVITE_TOKEN_CHARS[bytes[i] % INVITE_TOKEN_CHARS.length];
+    }
+  }
+  return token;
+};
+
+const generatePublicNumber = () => {
+  const value = crypto.randomInt(0, PUBLIC_NUMBER_MAX + 1);
+  return String(value).padStart(PUBLIC_NUMBER_LENGTH, '0');
+};
+
+const normalizeUsername = (value) => String(value || '').trim().replace(/^@+/, '').toLowerCase();
+const isChatUsernameValid = (value) => /^[a-z0-9]{5,}$/i.test(String(value || ''));
 
 const stickerFileCache = new Map();
 const STICKER_CACHE_MAX = 200;
@@ -98,6 +134,32 @@ const normalizeStickerFileName = (value) => String(value || '')
   .toLowerCase();
 
 const buildStickerKey = (packName, stickerName) => `${normalizeStickerFileName(packName)}_${normalizeStickerFileName(stickerName)}`;
+
+const normalizeStickerSlug = (value) => String(value || '')
+  .trim()
+  .toLowerCase()
+  .replace(/[^a-z0-9\s-]/g, '')
+  .replace(/\s+/g, '-')
+  .replace(/-+/g, '-')
+  .replace(/^-+|-+$/g, '');
+
+const ensureUniqueStickerSlug = async (baseSlug) => {
+  const safeBase = baseSlug || 'sticker-pack';
+  let candidate = safeBase;
+  let counter = 1;
+  while (true) {
+    // eslint-disable-next-line no-await-in-loop
+    const exists = await new Promise((resolve) => {
+      db.get('SELECT id FROM sticker_packs WHERE slug = $1', [candidate], (err, row) => {
+        if (err) return resolve(false);
+        resolve(!!row);
+      });
+    });
+    if (!exists) return candidate;
+    counter += 1;
+    candidate = `${safeBase}-${counter}`;
+  }
+};
 
 const resolveStickerAssetPath = (filePath) => {
   const safePath = path.normalize(filePath).replace(/^([/\\])+/, '');
@@ -151,6 +213,7 @@ const ensureStickerSchema = async () => {
     CREATE TABLE IF NOT EXISTS sticker_packs (
       id BIGSERIAL PRIMARY KEY,
       name TEXT NOT NULL,
+      slug TEXT,
       description TEXT,
       author TEXT,
       created_at TIMESTAMPTZ DEFAULT NOW()
@@ -183,7 +246,17 @@ const ensureStickerSchema = async () => {
   `);
 
   await runStatement('CREATE INDEX IF NOT EXISTS idx_stickers_pack_id ON stickers(pack_id)');
+  await runStatement('CREATE UNIQUE INDEX IF NOT EXISTS idx_sticker_packs_slug ON sticker_packs(slug)');
   await runStatement('CREATE INDEX IF NOT EXISTS idx_user_sticker_packs_user_id ON user_sticker_packs(user_id)');
+  await runStatement(`
+    CREATE TABLE IF NOT EXISTS sticker_bot_sessions (
+      user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      step TEXT NOT NULL DEFAULT 'idle',
+      pack_name TEXT,
+      stickers_temp TEXT,
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
 };
 
 const ensureStickerData = async () => {
@@ -204,9 +277,10 @@ const ensureStickerData = async () => {
     let packId = packsByName.get(packName);
     if (!packId) {
       packId = await new Promise((resolve, reject) => {
+        const slug = normalizeStickerSlug(packName);
         db.run(
-          'INSERT INTO sticker_packs (name, description, author) VALUES ($1, $2, $3)',
-          [packName, `Sticker pack ${packName}`, 'LUME'],
+          'INSERT INTO sticker_packs (name, slug, description, author) VALUES ($1, $2, $3, $4)',
+          [packName, slug || null, `Sticker pack ${packName}`, 'LUME'],
           function(err) {
             if (err) return reject(err);
             resolve(this.lastID);
@@ -257,6 +331,40 @@ const momentUpload = multer({
       return cb(null, true);
     }
     cb(new Error('Only image files are allowed'));
+  }
+});
+
+const stickerUploadStorage = multer.diskStorage({
+  destination: (req, _file, cb) => {
+    const dir = path.join(__dirname, '../sticker-uploads');
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const filename = `sticker-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+    cb(null, filename);
+  }
+});
+
+const stickerUpload = multer({
+  storage: stickerUploadStorage,
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const allowed = ['.png', '.webp', '.gif'];
+    if (!allowed.includes(ext)) {
+      return cb(new Error('Sticker format not allowed'));
+    }
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Sticker format not allowed'));
+    }
+    return cb(null, true);
+  },
+  limits: {
+    fileSize: STICKER_BOT_LIMITS.maxFileSize,
+    files: 60
   }
 });
 
@@ -370,17 +478,9 @@ router.post('*', (req, res, next) => {
   verifyCSRFToken(req, res, next);
 });
 router.put('*', (req, res, next) => {
-  // Пропускаем servers
-  if (req.path.includes('/servers')) {
-    return next();
-  }
   verifyCSRFToken(req, res, next);
 });
 router.delete('*', (req, res, next) => {
-  // Пропускаем servers
-  if (req.path.includes('/servers')) {
-    return next();
-  }
   verifyCSRFToken(req, res, next);
 });
 router.patch('*', verifyCSRFToken);
@@ -587,8 +687,9 @@ router.delete('/profile', authenticateToken, (req, res) => {
       'DELETE FROM likes WHERE user_id = $1',
       'DELETE FROM posts WHERE user_id = $1',
       'DELETE FROM followers WHERE follower_id = $1 OR following_id = $2',
-      'DELETE FROM chats WHERE user1_id = $1 OR user2_id = $2',
-      'DELETE FROM messages WHERE sender_id = $1 OR receiver_id = $2',
+      'DELETE FROM chat_members WHERE user_id = $1',
+      'DELETE FROM chats WHERE owner_id = $1',
+      'DELETE FROM messages WHERE sender_id = $1',
       'DELETE FROM verification_requests WHERE user_id = $1',
       'DELETE FROM post_reports WHERE reporter_id = $1',
       'DELETE FROM refresh_tokens WHERE user_id = $1',
@@ -611,9 +712,7 @@ router.delete('/profile', authenticateToken, (req, res) => {
       }
 
       const query = deleteQueries[index];
-      const params = query.includes('follower_id = $1 OR following_id') || 
-                     query.includes('user1_id = $1 OR user2_id') ||
-                     query.includes('sender_id = $1 OR receiver_id')
+      const params = query.includes('follower_id = $1 OR following_id')
         ? [userId, userId]
         : [userId];
 
@@ -705,8 +804,11 @@ router.get('/users/:userId/posts', authenticateToken, (req, res) => {
 });
 
 // Get all users (for search/follow suggestions)
-router.get('/users', authenticateToken, (req, res) => {
+router.get('/users', authenticateToken, asyncHandler(async (req, res) => {
   const { q } = req.query;
+
+  await ensureStickerSchema();
+  await getOrCreateStickerBotUser(req);
 
   let query = '';
   let params = [];
@@ -742,43 +844,998 @@ router.get('/users', authenticateToken, (req, res) => {
 
     res.json({ users: formattedUsers });
   });
-});
+}));
 
-// Get messages for a user (chat list)
-router.get('/messages', authenticateToken, (req, res) => {
+// Get chat list for current user
+router.get('/chats', authenticateToken, (req, res) => {
   const userId = req.user.userId;
-
+  console.log('[chats] list request', { userId });
   const query = `
-     SELECT c.id, c.last_message, c.last_message_time, c.unread_count,
-            CASE WHEN c.user1_id = $1 THEN c.user2_id ELSE c.user1_id END AS contact_id,
-            u.name, u.username, u.avatar, u.verified
-     FROM chats c
-     JOIN users u ON u.id = (CASE WHEN c.user1_id = $2 THEN c.user2_id ELSE c.user1_id END)
-     WHERE c.user1_id = $3 OR c.user2_id = $4
-    ORDER BY c.last_message_time DESC
+    SELECT c.id, c.type, c.title, c.avatar, c.owner_id, c.is_public, c.is_private, c.username, c.invite_token, c.public_number, c.created_at,
+           cm.role,
+           lm.text as last_message_text, lm.type as last_message_type, lm.created_at as last_message_time
+    FROM chat_members cm
+    JOIN chats c ON c.id = cm.chat_id
+    LEFT JOIN LATERAL (
+      SELECT m.text, m.type, m.created_at
+      FROM messages m
+      WHERE m.chat_id = c.id AND m.deleted_for_all_at IS NULL
+      ORDER BY m.created_at DESC
+      LIMIT 1
+    ) lm ON true
+    WHERE cm.user_id = $1
+    ORDER BY lm.created_at DESC NULLS LAST, c.created_at DESC
   `;
 
-  db.all(query, [userId, userId, userId, userId], (err, chats) => {
+  db.all(query, [userId], async (err, rows) => {
     if (err) {
       console.error('Database error getting chats:', err);
       return res.status(500).json({ error: 'Database error' });
     }
+    console.log('[chats] list rows', { userId, count: rows?.length || 0 });
 
-    const chatList = chats.map(chat => ({
-      id: chat.id.toString(),
-      userId: String(chat.contact_id),
-      name: chat.name,
-      username: chat.username,
-      avatar: chat.avatar,
-      verified: chat.verified === 1,
-      lastMessage: chat.last_message || '',
-      timestamp: chat.last_message_time,
-      unread: chat.unread_count || 0
-    }));
+    const chatIds = rows.map(row => row.id);
+    const membersByChat = new Map();
 
-  res.json({ chats: chatList });
+    if (chatIds.length) {
+      const placeholders = chatIds.map((_, i) => `$${i + 1}`).join(',');
+      const membersQuery = `
+        SELECT cm.chat_id, cm.user_id, cm.role, u.name, u.username, u.avatar, u.verified
+        FROM chat_members cm
+        JOIN users u ON u.id = cm.user_id
+        WHERE cm.chat_id IN (${placeholders})
+      `;
+      const members = await new Promise((resolve) => {
+        db.all(membersQuery, chatIds, (membersErr, memberRows) => {
+          if (membersErr) return resolve([]);
+          resolve(memberRows || []);
+        });
+      });
+      console.log('[chats] list members', { userId, chatCount: chatIds.length, memberCount: (members || []).length });
+      (members || []).forEach((member) => {
+        if (!membersByChat.has(member.chat_id)) {
+          membersByChat.set(member.chat_id, []);
+        }
+        membersByChat.get(member.chat_id).push(member);
+      });
+    }
+
+    const formatted = rows.map((row) => {
+      const members = membersByChat.get(row.id) || [];
+      const isPrivate = row.type === 'private';
+      const otherMember = isPrivate
+        ? members.find((m) => String(m.user_id) !== String(userId))
+        : null;
+      const title = row.title || (otherMember?.name || otherMember?.username || 'Chat');
+      const avatar = row.avatar || otherMember?.avatar || null;
+
+      const publicNumber = row.public_number ? String(row.public_number) : null;
+
+      return {
+        id: row.id.toString(),
+        routeId: publicNumber || row.id.toString(),
+        type: row.type,
+        title,
+        avatar,
+        ownerId: row.owner_id ? row.owner_id.toString() : null,
+        isPublic: !!row.is_public,
+        isPrivate: !!row.is_private,
+        username: row.username || null,
+        inviteToken: row.invite_token || null,
+        publicNumber: row.public_number ? String(row.public_number) : null,
+        role: row.role,
+        members: members.map((member) => ({
+          id: member.user_id.toString(),
+          role: member.role,
+          name: member.name,
+          username: member.username,
+          avatar: member.avatar,
+          verified: member.verified === 1,
+        })),
+        lastMessage: row.last_message_text || '',
+        lastMessageType: row.last_message_type || 'text',
+        timestamp: row.last_message_time || row.created_at,
+      };
+    });
+
+    res.json({ chats: formatted });
   });
 });
+
+// Create chat (group/channel/private)
+router.post('/chats', authenticateToken, asyncHandler(async (req, res) => {
+  const ownerId = req.user.userId;
+  const { type = 'group', title = null, userIds = [], isPublic = false, username = null, avatar = null } = req.body || {};
+  console.log('[chats] create request', { ownerId, type, title, userIds, isPublic, username, avatar });
+
+  if (!['private', 'group', 'channel'].includes(type)) {
+    return res.status(400).json({ error: 'Invalid chat type' });
+  }
+
+  const cleanUserIds = Array.isArray(userIds)
+    ? Array.from(new Set(userIds.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0)))
+    : [];
+
+  if (type === 'private') {
+    if (cleanUserIds.length !== 1) {
+      return res.status(400).json({ error: 'Private chat requires exactly one userId' });
+    }
+    const otherUserId = cleanUserIds[0];
+    const existingChat = await new Promise((resolve) => {
+      const query = `
+        SELECT c.id
+        FROM chats c
+        JOIN chat_members cm1 ON cm1.chat_id = c.id AND cm1.user_id = $1
+        JOIN chat_members cm2 ON cm2.chat_id = c.id AND cm2.user_id = $2
+        WHERE c.type = 'private'
+        LIMIT 1
+      `;
+      db.get(query, [ownerId, otherUserId], (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      });
+    });
+    if (existingChat?.id) {
+      console.log('[chats] create existing private', { ownerId, otherUserId, chatId: existingChat.id });
+      return res.json({ chatId: existingChat.id.toString(), existing: true });
+    }
+  }
+
+  const normalizedUsername = isPublic ? normalizeUsername(username) : null;
+  if (isPublic && !normalizedUsername) {
+    return res.status(400).json({ error: 'Username is required for public chats' });
+  }
+  if (isPublic && normalizedUsername && !isChatUsernameValid(normalizedUsername)) {
+    return res.status(400).json({ error: { message: 'Username can only contain English letters and numbers', code: 'CHAT_USERNAME_INVALID' } });
+  }
+
+  const isPrivateChat = !isPublic;
+  const inviteToken = isPrivateChat ? generateInviteToken() : null;
+
+  const publicNumberPrefix = type === 'channel' ? '-100' : type === 'group' ? '-200' : null;
+  const publicNumberValue = publicNumberPrefix ? `${publicNumberPrefix}${generatePublicNumber()}` : null;
+
+  const chatId = await new Promise((resolve, reject) => {
+    const insertChat = () => {
+      const tokenValue = isPrivateChat ? generateInviteToken() : null;
+      const numberValue = publicNumberPrefix ? `${publicNumberPrefix}${generatePublicNumber()}` : null;
+      db.run(
+        `INSERT INTO chats (type, title, avatar, owner_id, is_public, is_private, username, invite_token, public_number)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+        ,
+        [type, title, avatar, ownerId, !!isPublic, isPrivateChat, normalizedUsername, tokenValue, numberValue],
+        function(err) {
+          if (err) {
+            if (err && err.code === 'SQLITE_CONSTRAINT') {
+              return insertChat();
+            }
+            return reject(err);
+          }
+          resolve(this.lastID);
+        }
+      );
+    };
+    insertChat();
+  });
+  console.log('[chats] create inserted', { ownerId, chatId });
+
+  await new Promise((resolve) => {
+    db.run(
+      `INSERT INTO chat_members (chat_id, user_id, role) VALUES ($1, $2, 'owner')`,
+      [chatId, ownerId],
+      (err) => {
+        if (err) {
+          console.error('[chats] create owner member error', { ownerId, chatId, error: err });
+        }
+        resolve();
+      }
+    );
+  });
+  console.log('[chats] create owner member', { ownerId, chatId });
+
+  const memberIds = type === 'private'
+    ? cleanUserIds
+    : cleanUserIds.filter((id) => String(id) !== String(ownerId));
+
+  await Promise.all(memberIds.map((userId) => new Promise((resolve) => {
+    db.run(
+      `INSERT INTO chat_members (chat_id, user_id, role) VALUES ($1, $2, 'member') ON CONFLICT DO NOTHING`,
+      [chatId, userId],
+      (err) => {
+        if (err) {
+          console.error('[chats] create member error', { chatId, userId, error: err });
+        }
+        resolve();
+      }
+    );
+  })));
+  console.log('[chats] create members added', { chatId, memberIds });
+
+  db.all(
+    'SELECT user_id, role FROM chat_members WHERE chat_id = $1',
+    [chatId],
+    (verifyErr, verifyRows) => {
+      if (verifyErr) {
+        console.error('[chats] create verify members error', { chatId, error: verifyErr });
+      } else {
+        console.log('[chats] create verify members', { chatId, members: verifyRows || [] });
+      }
+    }
+  );
+
+  res.status(201).json({ chatId: chatId.toString() });
+}));
+
+// List public channels (search)
+router.get('/chats/public', authenticateToken, asyncHandler(async (req, res) => {
+  const query = String(req.query.q || '').trim();
+  const term = query ? `%${query}%` : '%';
+  const limit = Math.min(Number(req.query.limit) || 20, 50);
+
+  const sql = `
+    SELECT c.id, c.title, c.username, c.avatar, c.created_at,
+           COUNT(cm.user_id) as members_count
+    FROM chats c
+    LEFT JOIN chat_members cm ON cm.chat_id = c.id
+    WHERE c.type = 'channel'
+      AND c.is_public = true
+      AND (c.title ILIKE $1 OR c.username ILIKE $1)
+    GROUP BY c.id
+    ORDER BY c.created_at DESC
+    LIMIT $2
+  `;
+
+  db.all(sql, [term, limit], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    const channels = (rows || []).map((row) => ({
+      id: row.id.toString(),
+      type: 'channel',
+      title: row.title,
+      username: row.username,
+      avatar: row.avatar,
+      membersCount: Number(row.members_count || 0),
+    }));
+    res.json({ channels });
+  });
+}));
+
+// Public channel details
+router.get('/chats/:id/public', authenticateToken, asyncHandler(async (req, res) => {
+  const chatId = req.params.id;
+  const userId = req.user.userId;
+
+  db.get(
+    `SELECT c.id, c.title, c.username, c.avatar, c.is_public,
+            COUNT(cm.user_id) as members_count
+     FROM chats c
+     LEFT JOIN chat_members cm ON cm.chat_id = c.id
+     WHERE c.id = $1 AND c.type = 'channel' AND c.is_public = true
+     GROUP BY c.id`,
+    [chatId],
+    (err, row) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      if (!row) {
+        return res.status(404).json({ error: 'Channel not found' });
+      }
+      db.get(
+        'SELECT role FROM chat_members WHERE chat_id = $1 AND user_id = $2',
+        [chatId, userId],
+        (memErr, memRow) => {
+          if (memErr) {
+            return res.status(500).json({ error: 'Database error' });
+          }
+          res.json({
+            channel: {
+              id: row.id.toString(),
+              type: 'channel',
+              title: row.title,
+              username: row.username,
+              avatar: row.avatar,
+              isPublic: !!row.is_public,
+              membersCount: Number(row.members_count || 0),
+              role: memRow?.role || null,
+            },
+          });
+        }
+      );
+    }
+  );
+}));
+
+// Subscribe to public channel
+router.post('/chats/:id/subscribe', authenticateToken, asyncHandler(async (req, res) => {
+  const chatId = req.params.id;
+  const userId = req.user.userId;
+
+  const chat = await new Promise((resolve) => {
+    db.get('SELECT id, type, is_public FROM chats WHERE id = $1', [chatId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (!chat || chat.type !== 'channel' || !chat.is_public) {
+    return res.status(404).json({ error: 'Channel not found' });
+  }
+
+  db.run(
+    `INSERT INTO chat_members (chat_id, user_id, role)
+     VALUES ($1, $2, 'member')
+     ON CONFLICT DO NOTHING`,
+    [chatId, userId],
+    (err) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json({ message: 'Subscribed', chatId: chatId.toString() });
+    }
+  );
+}));
+
+// Unsubscribe from public channel
+router.delete('/chats/:id/subscribe', authenticateToken, asyncHandler(async (req, res) => {
+  const chatId = req.params.id;
+  const userId = req.user.userId;
+
+  const roleRow = await new Promise((resolve) => {
+    db.get('SELECT role FROM chat_members WHERE chat_id = $1 AND user_id = $2', [chatId, userId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (!roleRow) {
+    return res.json({ message: 'Unsubscribed' });
+  }
+  if (roleRow.role === 'owner') {
+    return res.status(403).json({ error: 'Owner cannot unsubscribe' });
+  }
+
+  db.run(
+    'DELETE FROM chat_members WHERE chat_id = $1 AND user_id = $2',
+    [chatId, userId],
+    (err) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json({ message: 'Unsubscribed' });
+    }
+  );
+}));
+
+// Add chat member
+router.post('/chats/:id/members', authenticateToken, asyncHandler(async (req, res) => {
+  const requesterId = req.user.userId;
+  const chatId = req.params.id;
+  const { userId, username, role = 'member' } = req.body || {};
+
+  if (!userId && !username) {
+    return res.status(400).json({ error: 'userId or username is required' });
+  }
+  if (!['owner', 'admin', 'member'].includes(role)) {
+    return res.status(400).json({ error: 'Invalid role' });
+  }
+
+  let resolvedUserId = userId;
+  if (!resolvedUserId && username) {
+    const cleanUsername = String(username || '').replace(/^@+/, '');
+    const userRow = await new Promise((resolve) => {
+      db.get('SELECT id FROM users WHERE username = $1', [cleanUsername], (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      });
+    });
+    if (!userRow?.id) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    resolvedUserId = userRow.id;
+  }
+
+  if (!resolvedUserId) {
+    return res.status(400).json({ error: 'Invalid user reference' });
+  }
+
+  const requester = await new Promise((resolve) => {
+    db.get('SELECT role FROM chat_members WHERE chat_id = $1 AND user_id = $2', [chatId, requesterId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (!requester || (requester.role !== 'owner' && requester.role !== 'admin')) {
+    return res.status(403).json({ error: 'Insufficient permissions' });
+  }
+
+  db.run(
+    `INSERT INTO chat_members (chat_id, user_id, role) VALUES ($1, $2, $3)
+     ON CONFLICT (chat_id, user_id) DO UPDATE SET role = $3`,
+    [chatId, resolvedUserId, role],
+    (err) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json({ message: 'Member added', chatId: chatId.toString(), userId: resolvedUserId.toString(), role });
+    }
+  );
+}));
+
+// Remove chat member
+router.delete('/chats/:id/members/:userId', authenticateToken, asyncHandler(async (req, res) => {
+  const requesterId = req.user.userId;
+  const chatId = req.params.id;
+  const targetUserId = req.params.userId;
+
+  const requester = await new Promise((resolve) => {
+    db.get('SELECT role FROM chat_members WHERE chat_id = $1 AND user_id = $2', [chatId, requesterId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (!requester || (requester.role !== 'owner' && requester.role !== 'admin' && String(requesterId) !== String(targetUserId))) {
+    return res.status(403).json({ error: 'Insufficient permissions' });
+  }
+
+  if (String(requesterId) === String(targetUserId) && requester.role === 'owner') {
+    return res.status(400).json({ error: 'Owner cannot leave the chat' });
+  }
+
+  db.run(
+    'DELETE FROM chat_members WHERE chat_id = $1 AND user_id = $2',
+    [chatId, targetUserId],
+    (err) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json({ message: 'Member removed' });
+    }
+  );
+}));
+
+// Delete chat (group/channel)
+router.delete('/chats/:id', authenticateToken, asyncHandler(async (req, res) => {
+  const requesterId = req.user.userId;
+  const chatId = req.params.id;
+
+  const chat = await new Promise((resolve) => {
+    db.get(
+      'SELECT id, type, owner_id FROM chats WHERE id = $1',
+      [chatId],
+      (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      }
+    );
+  });
+
+  if (!chat) {
+    return res.status(404).json({ error: 'Chat not found' });
+  }
+
+  if (chat.type === 'private') {
+    return res.status(400).json({ error: 'Private chats cannot be deleted' });
+  }
+
+  if (String(chat.owner_id) !== String(requesterId)) {
+    return res.status(403).json({ error: 'Only the owner can delete the chat' });
+  }
+
+  db.run('DELETE FROM chats WHERE id = $1', [chatId], (err) => {
+    if (err) {
+      console.error('[chats] delete error', { chatId, err });
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json({ message: 'Chat deleted' });
+  });
+}));
+
+// Update chat details (group/channel)
+router.patch('/chats/:id', authenticateToken, asyncHandler(async (req, res) => {
+  const requesterId = req.user.userId;
+  const chatIdParam = req.params.id;
+  console.log('[chats] update request', { requesterId, chatIdParam, body: req.body });
+  const chatId = await new Promise((resolve) => {
+    if (String(chatIdParam || '').startsWith('-100') || String(chatIdParam || '').startsWith('-200')) {
+      db.get('SELECT id FROM chats WHERE public_number = $1', [chatIdParam], (err, row) => {
+        if (err) return resolve(null);
+        return resolve(row?.id || null);
+      });
+      return;
+    }
+    resolve(chatIdParam);
+  });
+
+  console.log('[chats] update resolved', { chatIdParam, chatId });
+
+  if (!chatId) {
+    return res.status(404).json({ error: 'Chat not found' });
+  }
+  const { title, avatar, username, isPublic, isPrivate, regenerateInvite } = req.body || {};
+
+  const chatAccess = await new Promise((resolve) => {
+    db.get(
+      `SELECT c.type, cm.role, c.username, c.is_public
+       FROM chats c
+       JOIN chat_members cm ON cm.chat_id = c.id AND cm.user_id = $2
+       WHERE c.id = $1`,
+      [chatId, requesterId],
+      (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      }
+    );
+  });
+
+  if (!chatAccess) {
+    return res.status(403).json({ error: 'Insufficient permissions' });
+  }
+  if (chatAccess.type === 'private') {
+    return res.status(400).json({ error: 'Private chats cannot be updated' });
+  }
+  if (chatAccess.role !== 'owner' && chatAccess.role !== 'admin') {
+    return res.status(403).json({ error: 'Insufficient permissions' });
+  }
+
+  const updates = [];
+  const values = [];
+  let index = 1;
+
+  if (title !== undefined) {
+    updates.push(`title = $${index}`);
+    values.push(title);
+    index += 1;
+  }
+  if (avatar !== undefined) {
+    updates.push(`avatar = $${index}`);
+    values.push(avatar || null);
+    index += 1;
+  }
+  const normalizedUsername = username !== undefined ? (username ? normalizeUsername(username) : null) : undefined;
+  if (normalizedUsername && !isChatUsernameValid(normalizedUsername)) {
+    return res.status(400).json({ error: { message: 'Username can only contain English letters and numbers', code: 'CHAT_USERNAME_INVALID' } });
+  }
+  if (isPublic === true) {
+    const existingUsername = chatAccess?.username ? String(chatAccess.username) : null;
+    if (normalizedUsername === undefined && !existingUsername) {
+      return res.status(400).json({ error: 'Username is required for public chats' });
+    }
+    if (normalizedUsername === null) {
+      return res.status(400).json({ error: 'Username is required for public chats' });
+    }
+  }
+  if (typeof isPrivate === 'boolean') {
+    updates.push(`is_private = $${index}`);
+    values.push(isPrivate);
+    index += 1;
+    if (isPrivate) {
+      updates.push(`is_public = $${index}`);
+      values.push(false);
+      index += 1;
+      updates.push(`username = $${index}`);
+      values.push(null);
+      index += 1;
+    } else if (typeof isPublic === 'boolean') {
+      updates.push(`is_public = $${index}`);
+      values.push(isPublic);
+      index += 1;
+    }
+  } else if (typeof isPublic === 'boolean') {
+    updates.push(`is_public = $${index}`);
+    values.push(isPublic);
+    index += 1;
+    if (isPublic) {
+      updates.push(`is_private = $${index}`);
+      values.push(false);
+      index += 1;
+    }
+  }
+
+  if (normalizedUsername !== undefined && !isPrivate) {
+    updates.push(`username = $${index}`);
+    values.push(normalizedUsername || null);
+    index += 1;
+  }
+  if (regenerateInvite) {
+    updates.push(`invite_token = $${index}`);
+    values.push(generateInviteToken());
+    index += 1;
+  }
+
+  if (updates.length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
+  }
+
+  values.push(chatId);
+
+  db.run(
+    `UPDATE chats SET ${updates.join(', ')} WHERE id = $${index}`,
+    values,
+    (err) => {
+      if (err) {
+        console.error('[chats] update error', { chatId, err });
+        if (err.code === '23505') {
+          return res.status(409).json({ error: { message: 'Username already taken', code: 'USERNAME_TAKEN' } });
+        }
+        return res.status(500).json({ error: { message: 'Database error', code: 'DB_ERROR' } });
+      }
+      db.get(
+        'SELECT id, type, title, avatar, owner_id, is_public, is_private, username, invite_token, public_number FROM chats WHERE id = $1',
+        [chatId],
+        (getErr, row) => {
+          if (getErr) {
+            console.error('[chats] update get error', { chatId, err: getErr });
+            return res.status(500).json({ error: 'Database error' });
+          }
+          res.json({ chat: row || null });
+        }
+      );
+    }
+  );
+}));
+
+// Resolve public chat by username (preview)
+router.get('/chats/username/:username', authenticateToken, asyncHandler(async (req, res) => {
+  const currentUserId = req.user.userId;
+  const username = normalizeUsername(req.params.username);
+  if (!username) {
+    return res.status(400).json({ error: 'Invalid username' });
+  }
+
+  const chat = await new Promise((resolve) => {
+    db.get(
+      `SELECT c.id, c.type, c.title, c.avatar, c.owner_id, c.is_public, c.is_private, c.username,
+              c.invite_token, c.public_number,
+              COUNT(cm.user_id) as members_count
+       FROM chats c
+       LEFT JOIN chat_members cm ON cm.chat_id = c.id
+       WHERE c.username = $1 AND c.is_public = true
+       GROUP BY c.id`,
+      [username],
+      (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      }
+    );
+  });
+
+  if (!chat) {
+    return res.status(404).json({ error: 'Chat not found' });
+  }
+
+  const member = await new Promise((resolve) => {
+    db.get(
+      'SELECT role FROM chat_members WHERE chat_id = $1 AND user_id = $2',
+      [chat.id, currentUserId],
+      (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      }
+    );
+  });
+
+  res.json({
+    chat: {
+      id: chat.id.toString(),
+      routeId: chat.public_number ? String(chat.public_number) : chat.id.toString(),
+      type: chat.type,
+      title: chat.title,
+      avatar: chat.avatar,
+      ownerId: chat.owner_id ? chat.owner_id.toString() : null,
+      isPublic: !!chat.is_public,
+      isPrivate: !!chat.is_private,
+      username: chat.username,
+      inviteToken: chat.invite_token || null,
+      publicNumber: chat.public_number ? String(chat.public_number) : null,
+      membersCount: Number(chat.members_count || 0),
+      role: member?.role || null,
+    },
+  });
+}));
+
+// Resolve chat by public number (-100/-200)
+router.get('/chats/public-number/:publicNumber', authenticateToken, asyncHandler(async (req, res) => {
+  const currentUserId = req.user.userId;
+  const publicNumber = String(req.params.publicNumber || '').trim();
+
+  const chat = await new Promise((resolve) => {
+    db.get(
+      `SELECT c.id, c.type, c.title, c.avatar, c.owner_id, c.is_public, c.is_private, c.username,
+              c.invite_token, c.public_number,
+              COUNT(cm.user_id) as members_count
+       FROM chats c
+       LEFT JOIN chat_members cm ON cm.chat_id = c.id
+       WHERE c.public_number = $1
+       GROUP BY c.id`,
+      [publicNumber],
+      (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      }
+    );
+  });
+
+  if (!chat) {
+    return res.status(404).json({ error: 'Chat not found' });
+  }
+
+  const member = await new Promise((resolve) => {
+    db.get(
+      'SELECT role FROM chat_members WHERE chat_id = $1 AND user_id = $2',
+      [chat.id, currentUserId],
+      (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      }
+    );
+  });
+
+  if (chat.is_public) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+
+  if (!member) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  res.json({
+    chat: {
+      id: chat.id.toString(),
+      routeId: chat.public_number ? String(chat.public_number) : chat.id.toString(),
+      type: chat.type,
+      title: chat.title,
+      avatar: chat.avatar,
+      ownerId: chat.owner_id ? chat.owner_id.toString() : null,
+      isPublic: !!chat.is_public,
+      isPrivate: !!chat.is_private,
+      username: chat.username,
+      inviteToken: chat.invite_token || null,
+      publicNumber: chat.public_number ? String(chat.public_number) : null,
+      membersCount: Number(chat.members_count || 0),
+      role: member?.role || null,
+    },
+  });
+}));
+
+// Resolve invite token (private preview)
+router.get('/chats/invite/:token', authenticateToken, asyncHandler(async (req, res) => {
+  const currentUserId = req.user.userId;
+  const token = String(req.params.token || '').trim();
+  if (!token) {
+    return res.status(400).json({ error: 'Invalid invite token' });
+  }
+
+  const chat = await new Promise((resolve) => {
+    db.get(
+      `SELECT c.id, c.type, c.title, c.avatar, c.owner_id, c.is_public, c.is_private, c.username,
+              c.invite_token, c.public_number,
+              COUNT(cm.user_id) as members_count
+       FROM chats c
+       LEFT JOIN chat_members cm ON cm.chat_id = c.id
+       WHERE c.invite_token = $1
+       GROUP BY c.id`,
+      [token],
+      (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      }
+    );
+  });
+
+  if (!chat) {
+    return res.status(404).json({ error: 'Invite not found' });
+  }
+
+  const member = await new Promise((resolve) => {
+    db.get(
+      'SELECT role FROM chat_members WHERE chat_id = $1 AND user_id = $2',
+      [chat.id, currentUserId],
+      (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      }
+    );
+  });
+
+  const pendingRequest = await new Promise((resolve) => {
+    db.get(
+      'SELECT status FROM chat_join_requests WHERE chat_id = $1 AND user_id = $2',
+      [chat.id, currentUserId],
+      (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      }
+    );
+  });
+
+  res.json({
+    chat: {
+      id: chat.id.toString(),
+      routeId: chat.public_number ? String(chat.public_number) : chat.id.toString(),
+      type: chat.type,
+      title: chat.title,
+      avatar: chat.avatar,
+      ownerId: chat.owner_id ? chat.owner_id.toString() : null,
+      isPublic: !!chat.is_public,
+      isPrivate: !!chat.is_private,
+      username: chat.username,
+      inviteToken: chat.invite_token || null,
+      publicNumber: chat.public_number ? String(chat.public_number) : null,
+      membersCount: Number(chat.members_count || 0),
+      role: member?.role || null,
+      joinStatus: pendingRequest?.status || null,
+    },
+  });
+}));
+
+// Request to join via invite
+router.post('/chats/:id/join-requests', authenticateToken, asyncHandler(async (req, res) => {
+  const userId = req.user.userId;
+  const chatId = req.params.id;
+
+  const chat = await new Promise((resolve) => {
+    db.get('SELECT id, type, is_private, is_public FROM chats WHERE id = $1', [chatId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (!chat) {
+    return res.status(404).json({ error: 'Chat not found' });
+  }
+
+  if (!chat.is_private && chat.type === 'group' && chat.is_public) {
+    db.run(
+      `INSERT INTO chat_members (chat_id, user_id, role)
+       VALUES ($1, $2, 'member')
+       ON CONFLICT DO NOTHING`,
+      [chatId, userId],
+      (err) => {
+        if (err) {
+          return res.status(500).json({ error: 'Database error' });
+        }
+        return res.json({ status: 'approved' });
+      }
+    );
+    return;
+  }
+
+  if (!chat.is_private) {
+    return res.status(404).json({ error: 'Chat not found' });
+  }
+
+  const member = await new Promise((resolve) => {
+    db.get('SELECT role FROM chat_members WHERE chat_id = $1 AND user_id = $2', [chatId, userId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (member) {
+    return res.json({ status: 'approved' });
+  }
+
+  db.run(
+    `INSERT INTO chat_join_requests (chat_id, user_id, status)
+     VALUES ($1, $2, 'pending')
+     ON CONFLICT (chat_id, user_id) DO UPDATE SET status = 'pending', created_at = NOW()`
+    ,
+    [chatId, userId],
+    (err) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json({ status: 'pending' });
+    }
+  );
+}));
+
+// List join requests for chat (owner/admin)
+router.get('/chats/:id/join-requests', authenticateToken, asyncHandler(async (req, res) => {
+  const requesterId = req.user.userId;
+  const chatId = req.params.id;
+
+  const requester = await new Promise((resolve) => {
+    db.get('SELECT role FROM chat_members WHERE chat_id = $1 AND user_id = $2', [chatId, requesterId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (!requester || (requester.role !== 'owner' && requester.role !== 'admin')) {
+    return res.status(403).json({ error: 'Insufficient permissions' });
+  }
+
+  db.all(
+    `SELECT r.id, r.user_id, r.status, r.created_at, u.name, u.username, u.avatar, u.verified
+     FROM chat_join_requests r
+     JOIN users u ON u.id = r.user_id
+     WHERE r.chat_id = $1 AND r.status = 'pending'
+     ORDER BY r.created_at ASC`,
+    [chatId],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      const requests = (rows || []).map((row) => ({
+        id: row.id.toString(),
+        userId: row.user_id.toString(),
+        status: row.status,
+        createdAt: row.created_at,
+        user: {
+          id: row.user_id.toString(),
+          name: row.name,
+          username: row.username,
+          avatar: row.avatar,
+          verified: row.verified === 1,
+        },
+      }));
+      res.json({ requests });
+    }
+  );
+}));
+
+// Approve/reject join request
+router.post('/chats/:id/join-requests/:requestId', authenticateToken, asyncHandler(async (req, res) => {
+  const requesterId = req.user.userId;
+  const chatId = req.params.id;
+  const requestId = req.params.requestId;
+  const { action } = req.body || {};
+
+  if (!['approve', 'reject'].includes(action)) {
+    return res.status(400).json({ error: 'Invalid action' });
+  }
+
+  const requester = await new Promise((resolve) => {
+    db.get('SELECT role FROM chat_members WHERE chat_id = $1 AND user_id = $2', [chatId, requesterId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (!requester || (requester.role !== 'owner' && requester.role !== 'admin')) {
+    return res.status(403).json({ error: 'Insufficient permissions' });
+  }
+
+  const requestRow = await new Promise((resolve) => {
+    db.get('SELECT user_id FROM chat_join_requests WHERE id = $1 AND chat_id = $2', [requestId, chatId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (!requestRow?.user_id) {
+    return res.status(404).json({ error: 'Request not found' });
+  }
+
+  db.run(
+    `UPDATE chat_join_requests
+     SET status = $1, reviewed_at = NOW(), reviewed_by = $2
+     WHERE id = $3`,
+    [action === 'approve' ? 'approved' : 'rejected', requesterId, requestId],
+    (err) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      if (action === 'approve') {
+        db.run(
+          `INSERT INTO chat_members (chat_id, user_id, role)
+           VALUES ($1, $2, 'member')
+           ON CONFLICT DO NOTHING`,
+          [chatId, requestRow.user_id],
+          () => {
+            res.json({ status: 'approved' });
+          }
+        );
+      } else {
+        res.json({ status: 'rejected' });
+      }
+    }
+  );
+}));
 
 // ==================== Stickers ====================
 
@@ -786,7 +1843,7 @@ router.get('/stickers/packs', authenticateToken, asyncHandler(async (_req, res) 
   await ensureStickerData();
 
   db.all(
-    `SELECT sp.id, sp.name, sp.description, sp.author, sp.created_at,
+    `SELECT sp.id, sp.name, sp.slug, sp.description, sp.author, sp.created_at,
             COUNT(s.id) as sticker_count
      FROM sticker_packs sp
      LEFT JOIN stickers s ON s.pack_id = sp.id
@@ -799,6 +1856,7 @@ router.get('/stickers/packs', authenticateToken, asyncHandler(async (_req, res) 
       const formatted = (packs || []).map((pack) => ({
         id: pack.id.toString(),
         name: pack.name,
+        slug: pack.slug,
         description: pack.description,
         author: pack.author,
         createdAt: pack.created_at,
@@ -813,7 +1871,7 @@ router.get('/stickers/packs/:id', authenticateToken, asyncHandler(async (req, re
   await ensureStickerData();
   const packId = req.params.id;
 
-  db.get('SELECT id, name, description, author, created_at FROM sticker_packs WHERE id = $1', [packId], (err, pack) => {
+  db.get('SELECT id, name, slug, description, author, created_at FROM sticker_packs WHERE id = $1', [packId], (err, pack) => {
     if (err) {
       return res.status(500).json({ error: 'Database error' });
     }
@@ -836,6 +1894,89 @@ router.get('/stickers/packs/:id', authenticateToken, asyncHandler(async (req, re
         pack: {
           id: pack.id.toString(),
           name: pack.name,
+          slug: pack.slug,
+          description: pack.description,
+          author: pack.author,
+          createdAt: pack.created_at,
+        },
+        stickers: formatted,
+      });
+    });
+  });
+}));
+
+router.get('/stickers/slug/:slug', authenticateToken, asyncHandler(async (req, res) => {
+  await ensureStickerData();
+  const slug = normalizeStickerSlug(req.params.slug || '');
+  if (!slug) {
+    return res.status(400).json({ error: 'Invalid sticker slug' });
+  }
+
+  db.get('SELECT id, name, slug, description, author, created_at FROM sticker_packs WHERE slug = $1', [slug], (err, pack) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (!pack) {
+      return res.status(404).json({ error: 'Pack not found' });
+    }
+
+    db.all('SELECT id, name, file_path FROM stickers WHERE pack_id = $1 ORDER BY id ASC', [pack.id], (err2, stickers) => {
+      if (err2) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      const formatted = (stickers || []).map((sticker) => ({
+        id: sticker.id.toString(),
+        name: sticker.name,
+        filePath: sticker.file_path,
+        url: `${getPublicBaseUrl(req)}/api/stickers/${sticker.id}`,
+      }));
+
+      res.json({
+        pack: {
+          id: pack.id.toString(),
+          name: pack.name,
+          slug: pack.slug,
+          description: pack.description,
+          author: pack.author,
+          createdAt: pack.created_at,
+        },
+        stickers: formatted,
+      });
+    });
+  });
+}));
+
+router.get('/stickers/public/slug/:slug', asyncHandler(async (req, res) => {
+  await ensureStickerData();
+  const slug = normalizeStickerSlug(req.params.slug || '');
+  if (!slug) {
+    return res.status(400).json({ error: 'Invalid sticker slug' });
+  }
+
+  db.get('SELECT id, name, slug, description, author, created_at FROM sticker_packs WHERE slug = $1', [slug], (err, pack) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (!pack) {
+      return res.status(404).json({ error: 'Pack not found' });
+    }
+
+    db.all('SELECT id, name, file_path FROM stickers WHERE pack_id = $1 ORDER BY id ASC', [pack.id], (err2, stickers) => {
+      if (err2) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      const formatted = (stickers || []).map((sticker) => ({
+        id: sticker.id.toString(),
+        name: sticker.name,
+        filePath: sticker.file_path,
+        url: `${getPublicBaseUrl(req)}/api/stickers/${sticker.id}`,
+      }));
+
+      res.json({
+        pack: {
+          id: pack.id.toString(),
+          name: pack.name,
+          slug: pack.slug,
           description: pack.description,
           author: pack.author,
           createdAt: pack.created_at,
@@ -852,7 +1993,7 @@ router.get('/stickers/mine', authenticateToken, asyncHandler(async (req, res) =>
   console.info('[Stickers] mine request', { userId });
 
   db.all(
-    `SELECT sp.id, sp.name, sp.description, sp.author, sp.created_at,
+    `SELECT sp.id, sp.name, sp.slug, sp.description, sp.author, sp.created_at,
             COUNT(s.id) as sticker_count,
             MAX(usp.added_at) as added_at
      FROM user_sticker_packs usp
@@ -870,6 +2011,7 @@ router.get('/stickers/mine', authenticateToken, asyncHandler(async (req, res) =>
       const formatted = (packs || []).map((pack) => ({
         id: pack.id.toString(),
         name: pack.name,
+        slug: pack.slug,
         description: pack.description,
         author: pack.author,
         createdAt: pack.created_at,
@@ -878,6 +2020,44 @@ router.get('/stickers/mine', authenticateToken, asyncHandler(async (req, res) =>
       res.json({ packs: formatted });
     }
   );
+}));
+
+router.get('/stickers/pack/:id', authenticateToken, asyncHandler(async (req, res) => {
+  await ensureStickerData();
+  const packId = req.params.id;
+
+  db.get('SELECT id, name, slug, description, author, created_at FROM sticker_packs WHERE id = $1', [packId], (err, pack) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (!pack) {
+      return res.status(404).json({ error: 'Pack not found' });
+    }
+
+    db.all('SELECT id, name, file_path FROM stickers WHERE pack_id = $1 ORDER BY id ASC', [packId], (err2, stickers) => {
+      if (err2) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      const formatted = (stickers || []).map((sticker) => ({
+        id: sticker.id.toString(),
+        name: sticker.name,
+        filePath: sticker.file_path,
+        url: `${getPublicBaseUrl(req)}/api/stickers/${sticker.id}`,
+      }));
+
+      res.json({
+        pack: {
+          id: pack.id.toString(),
+          name: pack.name,
+          slug: pack.slug,
+          description: pack.description,
+          author: pack.author,
+          createdAt: pack.created_at,
+        },
+        stickers: formatted,
+      });
+    });
+  });
 }));
 
 router.post('/stickers/add-pack', authenticateToken, asyncHandler(async (req, res) => {
@@ -912,7 +2092,7 @@ router.get('/stickers/:id', asyncHandler(async (req, res) => {
   const cached = stickerFileCache.get(stickerId);
   if (cached?.buffer) {
     res.setHeader('Content-Type', 'image/png');
-    res.setHeader('Cache-Control', 'private, max-age=3600');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
     res.setHeader('Content-Disposition', 'inline');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self' data:");
@@ -940,7 +2120,7 @@ router.get('/stickers/:id', asyncHandler(async (req, res) => {
       }
       cacheStickerBuffer(stickerId, buffer);
       res.setHeader('Content-Type', 'image/png');
-      res.setHeader('Cache-Control', 'private, max-age=3600');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
       res.setHeader('Content-Disposition', 'inline');
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self' data:");
@@ -949,55 +2129,410 @@ router.get('/stickers/:id', asyncHandler(async (req, res) => {
   });
 }));
 
+router.post('/stickers/bot/start', authenticateToken, asyncHandler(async (req, res) => {
+  await ensureStickerSchema();
+  await getOrCreateStickerBotUser(req);
+  const senderId = req.user.userId;
+  await resetStickerBotSession(senderId);
+  await sendBotMessage(req, senderId, STICKER_BOT_HELP);
+  res.json({ message: 'Sticker bot started' });
+}));
 
-// Get messages with a specific user
-router.get('/messages/:userId(\\d+)', authenticateToken, (req, res) => {
-  const currentUserId = req.user.userId;
-  const otherUserId = req.params.userId;
+// ==================== Sticker Bot ====================
 
-  const chatQuery = `
-    SELECT id FROM chats
-    WHERE (user1_id = $1 AND user2_id = $2) OR (user1_id = $3 AND user2_id = $4)
+const getStickerBotSession = (userId) => new Promise((resolve) => {
+  db.get(
+    'SELECT user_id, step, pack_name, stickers_temp FROM sticker_bot_sessions WHERE user_id = $1',
+    [userId],
+    (err, row) => {
+      if (err) return resolve({ user_id: userId, step: STICKER_BOT_STEPS.IDLE, pack_name: null, stickers_temp: '[]' });
+      resolve(row || { user_id: userId, step: STICKER_BOT_STEPS.IDLE, pack_name: null, stickers_temp: '[]' });
+    }
+  );
+});
+
+const upsertStickerBotSession = (userId, updates) => new Promise((resolve) => {
+  const step = updates.step || STICKER_BOT_STEPS.IDLE;
+  const packName = updates.packName ?? null;
+  const stickersTemp = updates.stickersTemp ?? '[]';
+  db.run(
+    `INSERT INTO sticker_bot_sessions (user_id, step, pack_name, stickers_temp, updated_at)
+     VALUES ($1, $2, $3, $4, NOW())
+     ON CONFLICT(user_id) DO UPDATE SET step = $2, pack_name = $3, stickers_temp = $4, updated_at = NOW()`
+    ,
+    [userId, step, packName, stickersTemp],
+    () => resolve()
+  );
+});
+
+const resetStickerBotSession = async (userId) => {
+  await upsertStickerBotSession(userId, { step: STICKER_BOT_STEPS.IDLE, packName: null, stickersTemp: '[]' });
+};
+
+const getOrCreateStickerBotUser = (req) => new Promise((resolve) => {
+  db.get('SELECT id, username, name, avatar, banner FROM users WHERE username = $1', [STICKER_BOT_USERNAME], (err, row) => {
+    if (row?.id) {
+      const desiredAvatar = `${getPublicBaseUrl(req)}/assets/stickers-bot/stickers-bot-avatar.jpg`;
+      const desiredBanner = `${getPublicBaseUrl(req)}/assets/stickers-bot/stickers-bot-banner.png`;
+      if (row.avatar !== desiredAvatar || row.banner !== desiredBanner) {
+        db.run(
+          'UPDATE users SET avatar = $1, banner = $2 WHERE id = $3',
+          [desiredAvatar, desiredBanner, row.id],
+          () => resolve(row)
+        );
+      } else {
+        resolve(row);
+      }
+      return;
+    }
+    db.run(
+      'INSERT INTO users (id, username, name, verified, avatar, banner) VALUES ($1, $2, $3, $4, $5, $6)',
+      [
+        STICKER_BOT_ID,
+        STICKER_BOT_USERNAME,
+        'Sticker Bot',
+        1,
+        `${getPublicBaseUrl(req)}/assets/stickers-bot/stickers-bot-avatar.jpg`,
+        `${getPublicBaseUrl(req)}/assets/stickers-bot/stickers-bot-banner.png`
+      ],
+      function(insertErr) {
+        if (insertErr) {
+          return resolve({ id: STICKER_BOT_ID, username: STICKER_BOT_USERNAME, name: 'Sticker Bot' });
+        }
+        resolve({ id: STICKER_BOT_ID, username: STICKER_BOT_USERNAME, name: 'Sticker Bot' });
+      }
+    );
+  });
+});
+
+const sendBotMessage = (req, receiverId, text) => new Promise((resolve) => {
+  const senderId = STICKER_BOT_ID;
+  const ensureChatQuery = `
+    SELECT c.id
+    FROM chats c
+    JOIN chat_members cm1 ON cm1.chat_id = c.id AND cm1.user_id = $1
+    JOIN chat_members cm2 ON cm2.chat_id = c.id AND cm2.user_id = $2
+    WHERE c.type = 'private'
+    LIMIT 1
   `;
 
-  db.get(chatQuery, [currentUserId, otherUserId, otherUserId, currentUserId], (err, chat) => {
-    if (err) {
-      console.error('[messages] chatQuery error:', err);
-      return res.status(500).json({ error: 'Database error' });
+  db.get(ensureChatQuery, [senderId, receiverId], (chatErr, chat) => {
+    if (chatErr) return resolve();
+
+    const ensureChat = (chatId) => {
+      const insertMessageQuery = `
+        INSERT INTO messages (chat_id, sender_id, text, type)
+        VALUES ($1, $2, $3, 'text')
+      `;
+      db.run(insertMessageQuery, [chatId, senderId, text], function(err) {
+        if (err) return resolve();
+        const messageId = this.lastID;
+        const sendChatMessage = req.app.get('sendChatMessage');
+        const senderQuery = 'SELECT name, username, avatar, verified FROM users WHERE id = $1';
+        if (sendChatMessage) {
+          db.get(senderQuery, [senderId], (senderErr, sender) => {
+            const senderData = senderErr ? { name: 'Sticker Bot', username: STICKER_BOT_USERNAME, avatar: null, verified: 1 } : sender;
+            sendChatMessage({
+              id: messageId,
+              chatId: String(chatId),
+              senderId: senderId.toString(),
+              text,
+              type: 'text',
+              timestamp: new Date().toISOString(),
+              attachments: [],
+              replyToMessageId: null,
+              sender: senderData
+            });
+          });
+        }
+        resolve();
+      });
+    };
+
+    if (chat?.id) {
+      return ensureChat(chat.id);
     }
 
-    getMessageHistory(currentUserId, otherUserId, res);
+    db.run(
+      `INSERT INTO chats (type, title, owner_id) VALUES ('private', NULL, $1)`,
+      [senderId],
+      function(insertErr) {
+        if (insertErr) return resolve();
+        const newChatId = this.lastID;
+        db.run(
+          `INSERT INTO chat_members (chat_id, user_id, role) VALUES ($1, $2, 'owner')`,
+          [newChatId, senderId],
+          () => {
+            db.run(
+              `INSERT INTO chat_members (chat_id, user_id, role) VALUES ($1, $2, 'member')`,
+              [newChatId, receiverId],
+              () => ensureChat(newChatId)
+            );
+          }
+        );
+      }
+    );
+  });
+});
+
+const STICKER_BOT_HELP = `Привет! Я помогу создать стикеры.\n\nКоманды:\n/newpack — создать набор\n/addsticker — добавить в существующий\n/upload — загрузить стикеры\n/publish — опубликовать`;
+
+const handleStickerBotCommand = async (req, senderId, text) => {
+  await ensureStickerSchema();
+  await getOrCreateStickerBotUser(req);
+  const session = await getStickerBotSession(senderId);
+  const trimmed = (text || '').trim();
+
+  if (trimmed.startsWith('/start')) {
+    await resetStickerBotSession(senderId);
+    await sendBotMessage(req, senderId, STICKER_BOT_HELP);
+    return true;
+  }
+
+  if (trimmed.startsWith('/newpack')) {
+    await upsertStickerBotSession(senderId, { step: STICKER_BOT_STEPS.CREATING_PACK, packName: null, stickersTemp: '[]' });
+    await sendBotMessage(req, senderId, 'Введите название набора:');
+    return true;
+  }
+
+  if (trimmed.startsWith('/addsticker')) {
+    if (!session.pack_name) {
+      await sendBotMessage(req, senderId, 'Сначала создайте набор через /newpack.');
+      return true;
+    }
+    await upsertStickerBotSession(senderId, { step: STICKER_BOT_STEPS.UPLOADING, packName: session.pack_name, stickersTemp: session.stickers_temp || '[]' });
+    await sendBotMessage(req, senderId, 'Отправьте стикеры (PNG, WEBP, GIF) через /upload.');
+    return true;
+  }
+
+  if (trimmed.startsWith('/upload')) {
+    if (!session.pack_name) {
+      await sendBotMessage(req, senderId, 'Сначала создайте набор через /newpack.');
+      return true;
+    }
+    await upsertStickerBotSession(senderId, { step: STICKER_BOT_STEPS.UPLOADING, packName: session.pack_name, stickersTemp: session.stickers_temp || '[]' });
+    const uploadUrl = `${getPublicBaseUrl(req)}/api/stickers/bot/upload`;
+    await sendBotMessage(req, senderId, `Загрузите стикеры (PNG, WEBP, GIF) через ${uploadUrl} (multipart поле stickers).`);
+    return true;
+  }
+
+  if (trimmed.startsWith('/publish')) {
+    const stickersTemp = JSON.parse(session.stickers_temp || '[]');
+    if (!session.pack_name) {
+      await sendBotMessage(req, senderId, 'Название набора не задано. Используйте /newpack.');
+      return true;
+    }
+    if (!stickersTemp.length) {
+      await sendBotMessage(req, senderId, 'Добавьте хотя бы один стикер перед публикацией.');
+      return true;
+    }
+    if (stickersTemp.length > STICKER_BOT_LIMITS.maxStickers) {
+      await sendBotMessage(req, senderId, `Слишком много стикеров. Максимум ${STICKER_BOT_LIMITS.maxStickers}.`);
+      return true;
+    }
+
+    const slugBase = normalizeStickerSlug(session.pack_name);
+    const slug = await ensureUniqueStickerSlug(slugBase);
+    const packDirName = normalizeStickerFileName(session.pack_name || 'pack');
+    const targetDir = path.join(STICKERS_BASE_DIR, packDirName);
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
+
+    const prepared = [];
+    for (const item of stickersTemp) {
+      const originalName = path.parse(item.originalFile || item.name || '').name;
+      const safeName = normalizeStickerFileName(originalName || item.name || 'sticker') || `sticker-${Date.now()}`;
+      const ext = path.extname(item.originalFile || item.tempFile || '').toLowerCase();
+      const finalFileName = `${safeName}${ext || '.png'}`;
+      const tempPath = path.join(__dirname, '../sticker-uploads', item.tempFile);
+      const finalPath = path.join(targetDir, finalFileName);
+      if (fs.existsSync(tempPath)) {
+        fs.renameSync(tempPath, finalPath);
+      }
+      prepared.push({
+        name: originalName || item.name || safeName,
+        filePath: path.join(packDirName, finalFileName).replace(/\\/g, '/')
+      });
+    }
+
+    const createdPackId = await new Promise((resolve, reject) => {
+      db.run(
+        'INSERT INTO sticker_packs (name, slug, description, author) VALUES ($1, $2, $3, $4)',
+        [session.pack_name, slug, `Sticker pack ${session.pack_name}`, STICKER_BOT_USERNAME],
+        function(err) {
+          if (err) return reject(err);
+          resolve(this.lastID);
+        }
+      );
+    }).catch(() => null);
+
+    if (!createdPackId) {
+      await sendBotMessage(req, senderId, 'Не удалось создать набор. Попробуйте позже.');
+      return true;
+    }
+
+    for (const item of prepared) {
+      await new Promise((resolve) => {
+        db.run(
+          'INSERT INTO stickers (pack_id, name, file_path) VALUES ($1, $2, $3)',
+          [createdPackId, item.name, item.filePath],
+          () => resolve()
+        );
+      });
+    }
+
+    const packLink = `${getPublicBaseUrl(req)}/addstickers/${slug}`;
+    await resetStickerBotSession(senderId);
+    await sendBotMessage(req, senderId, `Набор опубликован! Ссылка: ${packLink}`);
+    return true;
+  }
+
+  if (session.step === STICKER_BOT_STEPS.CREATING_PACK && trimmed) {
+    await upsertStickerBotSession(senderId, { step: STICKER_BOT_STEPS.UPLOADING, packName: trimmed, stickersTemp: '[]' });
+    const uploadUrl = `${getPublicBaseUrl(req)}/api/stickers/bot/upload`;
+    await sendBotMessage(req, senderId, `Отправьте стикеры (PNG, WEBP, GIF) через ${uploadUrl} (multipart поле stickers).`);
+    return true;
+  }
+
+  return false;
+};
+
+router.post('/stickers/bot/upload', authenticateToken, stickerUpload.array('stickers', STICKER_BOT_LIMITS.maxStickers), asyncHandler(async (req, res) => {
+  const senderId = req.user.userId;
+  const session = await getStickerBotSession(senderId);
+  if (!session.pack_name) {
+    return res.status(400).json({ error: 'Pack name not set. Use /newpack first.' });
+  }
+  if (session.step !== STICKER_BOT_STEPS.UPLOADING) {
+    return res.status(400).json({ error: 'Sticker upload not ожидается. Используйте /addsticker.' });
+  }
+  const files = req.files || [];
+  if (!files.length) {
+    return res.status(400).json({ error: 'No stickers uploaded' });
+  }
+
+  const existing = JSON.parse(session.stickers_temp || '[]');
+  if (existing.length + files.length > STICKER_BOT_LIMITS.maxStickers) {
+    files.forEach((file) => fs.unlinkSync(file.path));
+    return res.status(400).json({ error: `Max ${STICKER_BOT_LIMITS.maxStickers} stickers per pack` });
+  }
+
+  const added = files.map((file) => {
+    const originalName = path.parse(file.originalname).name;
+    return {
+      name: originalName || file.filename,
+      tempFile: file.filename,
+      originalFile: file.originalname
+    };
   });
 
-  function getMessageHistory(userId1, userId2, res) {
+  const updatedTemp = [...existing, ...added].map((item) => ({
+    ...item,
+    url: `${getPublicBaseUrl(req)}/api/stickers/bot/temp/${item.tempFile}`
+  }));
+
+  await upsertStickerBotSession(senderId, {
+    step: updatedTemp.length ? STICKER_BOT_STEPS.READY_TO_PUBLISH : STICKER_BOT_STEPS.UPLOADING,
+    packName: session.pack_name,
+    stickersTemp: JSON.stringify(updatedTemp)
+  });
+
+  await sendBotMessage(req, senderId, `Загружено стикеров: ${updatedTemp.length}. Когда будете готовы, используйте /publish.`);
+
+  res.json({
+    stickers: updatedTemp,
+    count: updatedTemp.length,
+    max: STICKER_BOT_LIMITS.maxStickers
+  });
+}));
+
+router.get('/stickers/bot/session', authenticateToken, asyncHandler(async (req, res) => {
+  const session = await getStickerBotSession(req.user.userId);
+  const stickersTemp = JSON.parse(session.stickers_temp || '[]');
+  res.json({
+    step: session.step,
+    packName: session.pack_name,
+    stickers: stickersTemp,
+    limits: STICKER_BOT_LIMITS
+  });
+}));
+
+router.get('/stickers/bot/temp/:filename', authenticateToken, asyncHandler(async (req, res) => {
+  const filename = req.params.filename;
+  if (!filename) {
+    return res.status(400).json({ error: 'Invalid filename' });
+  }
+  const safeName = path.basename(filename);
+  const filePath = path.join(__dirname, '../sticker-uploads', safeName);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'Sticker not found' });
+  }
+  const ext = path.extname(filePath).toLowerCase();
+  const contentType = ext === '.webp'
+    ? 'image/webp'
+    : ext === '.gif'
+      ? 'image/gif'
+      : 'image/png';
+  res.setHeader('Content-Type', contentType);
+  res.setHeader('Cache-Control', 'private, max-age=3600');
+  res.setHeader('Content-Disposition', 'inline');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self' data:");
+  return fs.createReadStream(filePath).pipe(res);
+}));
+
+
+// Get messages for a chat
+router.get('/chats/:chatId/messages', authenticateToken, (req, res) => {
+  const currentUserId = req.user.userId;
+  const chatId = req.params.chatId;
+  console.log('[messages] list request', { currentUserId, chatId });
+
+  const memberQuery = `
+    SELECT cm.role, c.type
+    FROM chat_members cm
+    JOIN chats c ON c.id = cm.chat_id
+    WHERE cm.chat_id = $1 AND cm.user_id = $2
+  `;
+
+  db.get(memberQuery, [chatId, currentUserId], (memberErr, membership) => {
+    if (memberErr) {
+      console.error('[messages] memberQuery error:', memberErr);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (!membership) {
+      console.warn('[messages] access denied', { currentUserId, chatId });
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    console.log('[messages] access granted', { currentUserId, chatId, role: membership.role, type: membership.type });
+
     const messageQuery = `
       SELECT m.*, u.name, u.username, u.avatar, u.verified,
-             (SELECT COUNT(*) FROM message_deletions WHERE message_id = m.id) as deleted_count,
              md.deleted_at as deleted_for_me,
-              mo.thumb_data_url, mo.ttl_seconds, mo.expires_at,
-              mv.viewed_at as moment_viewed_at,
-              s.id as sticker_id,
-              s.pack_id as sticker_pack_id,
-              s.name as sticker_name,
-              s.file_path as sticker_file_path
+             mo.thumb_data_url, mo.ttl_seconds, mo.expires_at,
+             mv.viewed_at as moment_viewed_at,
+             s.id as sticker_id,
+             s.pack_id as sticker_pack_id,
+             s.name as sticker_name,
+             s.file_path as sticker_file_path
        FROM messages m
        JOIN users u ON m.sender_id = u.id
        LEFT JOIN stickers s ON s.id = m.sticker_id
        LEFT JOIN message_deletions md ON md.message_id = m.id AND md.user_id = $1
        LEFT JOIN moments mo ON mo.id = m.moment_id
        LEFT JOIN moment_views mv ON mv.moment_id = mo.id AND mv.user_id = $2
-       WHERE (m.sender_id = $3 AND m.receiver_id = $4) OR (m.sender_id = $5 AND m.receiver_id = $6)
-        AND m.deleted_for_all_at IS NULL
-      ORDER BY m.created_at ASC
+       WHERE m.chat_id = $3
+         AND m.deleted_for_all_at IS NULL
+       ORDER BY m.created_at ASC
     `;
 
-    db.all(messageQuery, [currentUserId, currentUserId, userId1, userId2, userId2, userId1], (err, messages) => {
+    db.all(messageQuery, [currentUserId, currentUserId, chatId], (err, messages) => {
       if (err) {
         console.error('[messages] messageQuery error:', err);
         return res.status(500).json({ error: 'Database error' });
       }
 
-      // Get attachments for all messages
       const messageIds = messages.map(m => m.id);
       let attachmentsByMessage = {};
 
@@ -1006,9 +2541,9 @@ router.get('/messages/:userId(\\d+)', authenticateToken, (req, res) => {
         db.all(
           `SELECT * FROM attachments WHERE message_id IN (${placeholders})`,
           messageIds,
-          (err, attachments) => {
-            if (err) console.error('Error getting attachments:', err);
-            
+          (attErr, attachments) => {
+            if (attErr) console.error('Error getting attachments:', attErr);
+
             attachmentsByMessage = {};
             (attachments || []).forEach(att => {
               if (!attachmentsByMessage[att.message_id]) {
@@ -1034,57 +2569,88 @@ router.get('/messages/:userId(\\d+)', authenticateToken, (req, res) => {
       }
 
       function formatAndSendMessages(msgs, attsByMsg) {
-            const formattedMessages = msgs.map(msg => ({
-              id: msg.id.toString(),
-              senderId: msg.sender_id === userId1 ? 'self' : msg.sender_id.toString(),
-              text: msg.text,
-              type: msg.type || 'text',
-              sticker: msg.sticker_id ? {
-                id: msg.sticker_id.toString(),
-                packId: msg.sticker_pack_id ? msg.sticker_pack_id.toString() : null,
-                name: msg.sticker_name || null,
-                filePath: msg.sticker_file_path || null,
-                url: msg.sticker_file_path ? `${getPublicBaseUrl(req)}/api/stickers/${msg.sticker_id}` : null,
-              } : null,
-              moment: msg.moment_id ? {
-                id: msg.moment_id.toString(),
-                thumbDataUrl: msg.thumb_data_url || null,
-                ttlSeconds: msg.ttl_seconds || 86400,
-                expiresAt: msg.expires_at || null,
-                viewedAt: msg.moment_viewed_at || null
-              } : null,
-              timestamp: msg.created_at || msg.timestamp,
-              own: msg.sender_id === userId1,
-              attachments: attsByMsg[msg.id] || [],
-              deletedForMe: !!msg.deleted_for_me,
-              deletedForAll: !!msg.deleted_for_all_at,
-              replyToMessageId: msg.reply_to_message_id ? msg.reply_to_message_id.toString() : null,
-              linkPreview: msg.link_preview ? (() => {
-                try {
-                  return JSON.parse(msg.link_preview);
-                } catch (error) {
-                  return null;
-                }
-              })() : null
-            }));
-res.json({ messages: formattedMessages });
+        const formattedMessages = msgs.map(msg => ({
+          id: msg.id.toString(),
+          senderId: msg.sender_id === currentUserId ? 'self' : msg.sender_id.toString(),
+          sender: {
+            id: msg.sender_id?.toString(),
+            name: msg.name,
+            username: msg.username,
+            avatar: msg.avatar,
+            verified: msg.verified === 1,
+          },
+          text: msg.text,
+          type: msg.type || 'text',
+          sticker: msg.sticker_id ? {
+            id: msg.sticker_id.toString(),
+            packId: msg.sticker_pack_id ? msg.sticker_pack_id.toString() : null,
+            name: msg.sticker_name || null,
+            filePath: msg.sticker_file_path || null,
+            url: msg.sticker_file_path ? `${getPublicBaseUrl(req)}/api/stickers/${msg.sticker_id}` : null,
+          } : null,
+          moment: msg.moment_id ? {
+            id: msg.moment_id.toString(),
+            thumbDataUrl: msg.thumb_data_url || null,
+            ttlSeconds: msg.ttl_seconds || 86400,
+            expiresAt: msg.expires_at || null,
+            viewedAt: msg.moment_viewed_at || null
+          } : null,
+          timestamp: msg.created_at || msg.timestamp,
+          own: msg.sender_id === currentUserId,
+          attachments: attsByMsg[msg.id] || [],
+          deletedForMe: !!msg.deleted_for_me,
+          deletedForAll: !!msg.deleted_for_all_at,
+          replyToMessageId: msg.reply_to_message_id ? msg.reply_to_message_id.toString() : null,
+          linkPreview: msg.link_preview ? (() => {
+            try {
+              return JSON.parse(msg.link_preview);
+            } catch (error) {
+              return null;
+            }
+          })() : null
+        }));
+        res.json({ messages: formattedMessages });
       }
     });
-  }
+  });
 });
 
-// Send a message with WebSocket notification
+// Send a message in a chat
 router.post('/messages', authenticateToken, asyncHandler(async (req, res) => {
   const senderId = req.user.userId;
-  const { receiverId, text, attachmentIds, replyToMessageId, stickerId } = req.body;
+  const { chatId, text, attachmentIds, replyToMessageId, stickerId } = req.body;
 
-  if (!receiverId) {
-    return res.status(400).json({ error: 'Receiver ID is required' });
+  if (!chatId) {
+    return res.status(400).json({ error: 'chatId is required' });
+  }
+
+  if (String(chatId) === String(STICKER_BOT_ID)) {
+    const handled = await handleStickerBotCommand(req, senderId, text || '');
+    if (handled) {
+      return res.json({ message: 'Sticker bot handled' });
+    }
+  }
+
+  const member = await new Promise((resolve) => {
+    db.get(
+      'SELECT cm.role, c.type FROM chat_members cm JOIN chats c ON c.id = cm.chat_id WHERE cm.chat_id = $1 AND cm.user_id = $2',
+      [chatId, senderId],
+      (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      }
+    );
+  });
+
+  if (!member) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  if (member.type === 'channel' && !['owner', 'admin'].includes(member.role)) {
+    return res.status(403).json({ error: 'Only admins can write to channel' });
   }
 
   const messageText = text || '';
-  
-  // Validate attachmentIds if provided
   const attachments = Array.isArray(attachmentIds) ? attachmentIds : [];
 
   const { getLinkPreview } = require('./linkPreview');
@@ -1109,8 +2675,8 @@ router.post('/messages', authenticateToken, asyncHandler(async (req, res) => {
   }
 
   let sticker = null;
-  let stickerType = 'text';
-  let stickerText = messageText;
+  let messageType = 'text';
+  let messageBody = messageText;
 
   if (stickerId) {
     const stickerRow = await new Promise((resolve) => {
@@ -1137,12 +2703,12 @@ router.post('/messages', authenticateToken, asyncHandler(async (req, res) => {
       packName: stickerRow.pack_name,
       url: `${getPublicBaseUrl(req)}/api/stickers/${stickerRow.id}`,
     };
-    stickerType = 'sticker';
-    stickerText = messageText || '[sticker]';
+    messageType = 'sticker';
+    messageBody = messageText || '[sticker]';
   }
 
   const insertMessageQuery = `
-    INSERT INTO messages (sender_id, receiver_id, text, type, reply_to_message_id, link_preview, sticker_id)
+    INSERT INTO messages (chat_id, sender_id, text, type, reply_to_message_id, link_preview, sticker_id)
     VALUES ($1, $2, $3, $4, $5, $6, $7)
   `;
 
@@ -1154,7 +2720,7 @@ router.post('/messages', authenticateToken, asyncHandler(async (req, res) => {
 
       db.run(
         insertMessageQuery,
-        [senderId, receiverId, stickerText, stickerType, replyToMessageId || null, linkPreview ? JSON.stringify(linkPreview) : null, sticker ? sticker.id : null],
+        [chatId, senderId, messageBody, messageType, replyToMessageId || null, linkPreview ? JSON.stringify(linkPreview) : null, sticker ? sticker.id : null],
         function(err) {
           if (err) {
             return db.run('ROLLBACK', () => res.status(500).json({ error: 'Database error' }));
@@ -1188,146 +2754,114 @@ router.post('/messages', authenticateToken, asyncHandler(async (req, res) => {
               }
 
               const senderQuery = 'SELECT name, username, avatar, verified FROM users WHERE id = $1';
-               db.get(senderQuery, [senderId], (err, sender) => {
-                if (err) console.error('Error getting sender:', err);
+              db.get(senderQuery, [senderId], (senderErr, sender) => {
+                if (senderErr) console.error('Error getting sender:', senderErr);
 
                 let attachmentsData = [];
                 if (attachments.length > 0) {
                   db.all(
                     'SELECT * FROM attachments WHERE message_id = $1',
                     [messageId],
-                    (err, atts) => {
-                      if (err) console.error('Error getting attachments:', err);
+                    (attErr, atts) => {
+                      if (attErr) console.error('Error getting attachments:', attErr);
                       attachmentsData = atts || [];
-                      continueWithMessage(messageId, messageText, sender, attachmentsData);
+                      continueWithMessage(messageId, sender, attachmentsData);
                     }
                   );
                 } else {
-                  continueWithMessage(messageId, messageText, sender, []);
+                  continueWithMessage(messageId, sender, []);
                 }
 
-                function continueWithMessage(msgId, msgText, senderData, atts) {
-                  const getChatQuery = `
-                    SELECT id FROM chats
-                    WHERE (user1_id = $1 AND user2_id = $2) OR (user1_id = $3 AND user2_id = $4)
-                  `;
+                function continueWithMessage(msgId, senderData, atts) {
+                  const formattedAttachments = atts.map(att => ({
+                    id: att.id.toString(),
+                    type: att.type,
+                    url: att.url,
+                    mime: att.mime,
+                    size: att.size,
+                    width: att.width,
+                    height: att.height
+                  }));
 
-                  db.get(getChatQuery, [senderId, receiverId, receiverId, senderId], (err, existingChat) => {
-                    if (err) {
-                      console.error('Error getting chat:', err);
-                      return res.json({ message: 'Message sent successfully', messageId });
-                    }
+                  const sendChatMessage = req.app.get('sendChatMessage');
+                  const createNotification = req.app.get('createNotification');
 
-                    let chatId = existingChat ? existingChat.id : null;
-
-                  const chatMessage = stickerType === 'sticker'
-                    ? `Стикер ${sticker?.name || ''}`.trim()
-                    : atts.length > 0
-                      ? `[${atts.length} вложение(ий)] ${msgText.substring(0, 50)}`
-                      : msgText;
-
-                    const updateOrCreateQuery = chatId
-                      ? `UPDATE chats SET last_message = $1, last_message_time = NOW(), unread_count = unread_count + 1 WHERE id = $2`
-                      : `INSERT INTO chats (user1_id, user2_id, last_message, last_message_time, unread_count) VALUES ($1, $2, $3, NOW(), 1)`;
-
-                    const params = chatId ? [chatMessage, chatId] : [senderId, receiverId, chatMessage];
-
-                    db.run(updateOrCreateQuery, params, function(err) {
-                      if (err) {
-                        console.error('Error updating chat:', err);
-                      }
-
-                      if (!chatId && this?.lastID) {
-                        chatId = this.lastID;
-                      }
-
-                      const formattedAttachments = atts.map(att => ({
-                        id: att.id.toString(),
-                        type: att.type,
-                        url: att.url,
-                        mime: att.mime,
-                        size: att.size,
-                        width: att.width,
-                        height: att.height
-                      }));
-
-                       const sendToUser = req.app.get('sendToUser');
-                       const createNotification = req.app.get('createNotification');
-                       const receiverQuery = 'SELECT name, username, avatar FROM users WHERE id = $1';
-
-                      if (sendToUser) {
-                        sendToUser(receiverId, {
-                          type: 'new_message',
-                          data: {
-                            id: msgId,
-                            senderId: senderId.toString(),
-                            receiverId: receiverId.toString(),
-                            text: msgText,
-                            type: stickerType,
-                            sticker,
-                            timestamp: new Date().toISOString(),
-                            attachments: formattedAttachments,
-                            replyToMessageId: replyToMessageId ? replyToMessageId.toString() : null,
-                            linkPreview,
-                            sender: senderData ? {
-                              name: senderData.name,
-                              username: senderData.username,
-                              avatar: senderData.avatar,
-                              verified: senderData.verified === 1
-                            } : null
-                          }
-                        });
-                      }
-
-                      if (createNotification) {
-                        const actorName = senderData?.name || senderData?.username || 'Someone';
-                        createNotification({
-                          userId: receiverId,
-                          type: 'message',
-                          actorId: senderId,
-                          actorUsername: senderData?.username || null,
-                          actorAvatar: senderData?.avatar || null,
-                          targetId: senderId,
-                          targetType: 'user',
-                          message: `${actorName} отправил вам сообщение`,
-                          url: `/messages/${senderId}`,
-                        }).catch(err => {
-                          console.error('[API] Error creating notification:', err);
-                        });
-                      }
-
-                      res.json({
-                        message: 'Message sent successfully',
-                        messageId: msgId,
-                        attachments: formattedAttachments,
-                        replyToMessageId: replyToMessageId ? replyToMessageId.toString() : null,
-                        linkPreview,
-                        sticker,
-                        type: stickerType,
-                      });
-
-                      indexMessage({
-                        id: msgId,
-                        chatId: chatId,
-                        serverId: null,
-                        userId: senderId,
-                        text: msgText,
-                        timestamp: new Date().toISOString(),
-                      }).catch(err => {
-                        console.error('[Meilisearch] Indexation error:', err);
-                      });
-
-                      createMentionNotifications(msgText, senderId, {
-                        actorId: senderId,
-                        actorUsername: senderData?.username || null,
-                        actorAvatar: senderData?.avatar || null,
-                        targetId: msgId,
-                        targetType: 'message',
-                        message: null,
-                        url: `/messages/${senderId}?message=${msgId}`,
-                      }, req);
+                  if (sendChatMessage) {
+                    sendChatMessage({
+                      id: msgId,
+                      chatId: String(chatId),
+                      senderId: senderId.toString(),
+                      text: messageBody,
+                      type: messageType,
+                      sticker,
+                      timestamp: new Date().toISOString(),
+                      attachments: formattedAttachments,
+                      replyToMessageId: replyToMessageId ? replyToMessageId.toString() : null,
+                      linkPreview,
+                      sender: senderData ? {
+                        name: senderData.name,
+                        username: senderData.username,
+                        avatar: senderData.avatar,
+                        verified: senderData.verified === 1
+                      } : null
                     });
+                  }
+
+                  if (createNotification) {
+                    db.all(
+                      'SELECT user_id FROM chat_members WHERE chat_id = $1 AND user_id <> $2',
+                      [chatId, senderId],
+                      (memberErr, members) => {
+                        if (memberErr) return;
+                        const actorName = senderData?.name || senderData?.username || 'Someone';
+                        (members || []).forEach((memberRow) => {
+                          createNotification({
+                            userId: memberRow.user_id,
+                            type: 'message',
+                            actorId: senderId,
+                            actorUsername: senderData?.username || null,
+                            actorAvatar: senderData?.avatar || null,
+                            targetId: chatId,
+                            targetType: 'chat',
+                            message: `${actorName} отправил сообщение`,
+                            url: `/messages/${chatId}`,
+                          }).catch(err => {
+                            console.error('[API] Error creating notification:', err);
+                          });
+                        });
+                      }
+                    );
+                  }
+
+                  res.json({
+                    message: 'Message sent successfully',
+                    messageId: msgId,
+                    attachments: formattedAttachments,
+                    replyToMessageId: replyToMessageId ? replyToMessageId.toString() : null,
+                    linkPreview,
+                    sticker,
+                    type: messageType,
                   });
+
+                  indexMessage({
+                    id: msgId,
+                    chatId: chatId,
+                    userId: senderId,
+                    text: messageBody,
+                    timestamp: new Date().toISOString(),
+                  }).catch(err => {
+                    console.error('[Meilisearch] Indexation error:', err);
+                  });
+
+                  createMentionNotifications(messageBody, senderId, {
+                    actorId: senderId,
+                    actorUsername: senderData?.username || null,
+                    actorAvatar: senderData?.avatar || null,
+                    targetId: msgId,
+                    targetType: 'message',
+                    message: null,
+                    url: `/messages/${chatId}?message=${msgId}`,
+                  }, req);
                 }
               });
             });
@@ -1343,14 +2877,29 @@ router.post('/messages', authenticateToken, asyncHandler(async (req, res) => {
 // Отправка голосового сообщения
 router.post('/messages/voice', authenticateToken, voiceUpload.single('audio'), asyncHandler(async (req, res) => {
   const senderId = req.user.userId;
-  const { receiverId, duration, replyToMessageId } = req.body;
+  const { chatId, duration, replyToMessageId } = req.body;
 
   if (!req.file) {
     return res.status(400).json({ error: 'Audio file is required' });
   }
 
-  if (!receiverId) {
-    return res.status(400).json({ error: 'Receiver ID is required' });
+  if (!chatId) {
+    return res.status(400).json({ error: 'chatId is required' });
+  }
+
+  const member = await new Promise((resolve) => {
+    db.get('SELECT role, c.type FROM chat_members cm JOIN chats c ON c.id = cm.chat_id WHERE cm.chat_id = $1 AND cm.user_id = $2', [chatId, senderId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (!member) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  if (member.type === 'channel' && !['owner', 'admin'].includes(member.role)) {
+    return res.status(403).json({ error: 'Only admins can write to channel' });
   }
 
   const audioDuration = parseFloat(duration) || 0;
@@ -1361,7 +2910,7 @@ router.post('/messages/voice', authenticateToken, voiceUpload.single('audio'), a
   const messageText = `\u0413\u043e\u043b\u043e\u0441\u043e\u0432\u043e\u0435 \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0435 (${Math.floor(audioDuration)}\u0441)`;
   
   const insertMessageQuery = `
-    INSERT INTO messages (sender_id, receiver_id, text, type, reply_to_message_id)
+    INSERT INTO messages (chat_id, sender_id, text, type, reply_to_message_id)
     VALUES ($1, $2, $3, 'voice', $4)
   `;
 
@@ -1371,7 +2920,7 @@ router.post('/messages/voice', authenticateToken, voiceUpload.single('audio'), a
         if (beginErr) return reject(beginErr);
         db.run(
           insertMessageQuery,
-          [senderId, receiverId, messageText, replyToMessageId || null],
+          [chatId, senderId, messageText, replyToMessageId || null],
           function(err) {
             if (err) {
               return db.run('ROLLBACK', () => reject(err));
@@ -1429,86 +2978,57 @@ router.post('/messages/voice', authenticateToken, voiceUpload.single('audio'), a
   });
 
   // Обновляем или создаем чат
-  const chatId = await new Promise((resolve, reject) => {
-    db.get(
-      'SELECT id FROM chats WHERE (user1_id = $1 AND user2_id = $2) OR (user1_id = $3 AND user2_id = $4)',
-      [senderId, receiverId, receiverId, senderId],
-      (err, row) => {
-        if (err) reject(err);
-        else resolve(row ? row.id : null);
-      }
-    );
-  });
-
-  if (chatId) {
-    await new Promise((resolve, reject) => {
-      db.run(
-        'UPDATE chats SET last_message = $1, last_message_time = NOW(), unread_count = unread_count + 1 WHERE id = $2',
-        [messageText, chatId],
-        (err) => (err ? reject(err) : resolve())
-      );
-    });
-  } else {
-    await new Promise((resolve, reject) => {
-      db.run(
-        'INSERT INTO chats (user1_id, user2_id, last_message, last_message_time, unread_count) VALUES ($1, $2, $3, NOW(), 1)',
-        [senderId, receiverId, messageText],
-        (err) => (err ? reject(err) : resolve())
-      );
-    });
-  }
+  const chatIdValue = chatId;
 
   // Отправляем WebSocket уведомление
   const sendToUser = req.app.get('sendToUser');
   const createNotification = req.app.get('createNotification');
 
-  if (sendToUser) {
-    sendToUser(receiverId, {
-      type: 'new_message',
-      data: {
-        id: messageId.toString(),
-        senderId: senderId.toString(),
-        receiverId: receiverId.toString(),
-        text: messageText,
-        type: 'voice',
-        timestamp: new Date().toISOString(),
-        attachments: [attachment],
-        replyToMessageId: replyToMessageId ? replyToMessageId.toString() : null,
-        sender: sender ? {
-          name: sender.name,
-          username: sender.username,
-          avatar: sender.avatar,
-          verified: sender.verified === 1
-        } : null
-      }
+  const sendChatMessage = req.app.get('sendChatMessage');
+  if (sendChatMessage) {
+    sendChatMessage({
+      id: messageId.toString(),
+      chatId: String(chatIdValue),
+      senderId: senderId.toString(),
+      text: messageText,
+      type: 'voice',
+      timestamp: new Date().toISOString(),
+      attachments: [attachment],
+      replyToMessageId: replyToMessageId ? replyToMessageId.toString() : null,
+      sender: sender ? {
+        name: sender.name,
+        username: sender.username,
+        avatar: sender.avatar,
+        verified: sender.verified === 1
+      } : null
     });
   }
 
   // Создаем уведомление для получателя
   if (createNotification) {
-    const actorName = sender?.name || sender?.username || 'Someone';
-    const chatQuery = `
-      SELECT id FROM chats
-      WHERE (user1_id = $1 AND user2_id = $2) OR (user1_id = $3 AND user2_id = $4)
-      ORDER BY id DESC
-      LIMIT 1
-    `;
-    db.get(chatQuery, [senderId, receiverId, receiverId, senderId], (err, chat) => {
-      const chatId = chat?.id;
-      createNotification({
-        userId: receiverId,
-        type: 'message',
-        actorId: senderId,
-        actorUsername: sender?.username || null,
-        actorAvatar: sender?.avatar || null,
-        targetId: chatId || null,
-        targetType: 'chat',
-        message: `${actorName} отправил вам сообщение`,
-        url: chatId ? `/messages/${chatId}` : '/messages',
-      }).catch(err => {
-        console.error('[API] Error creating notification:', err);
-      });
-    });
+    db.all(
+      'SELECT user_id FROM chat_members WHERE chat_id = $1 AND user_id <> $2',
+      [chatIdValue, senderId],
+      (memberErr, members) => {
+        if (memberErr) return;
+        const actorName = sender?.name || sender?.username || 'Someone';
+        (members || []).forEach((memberRow) => {
+          createNotification({
+            userId: memberRow.user_id,
+            type: 'message',
+            actorId: senderId,
+            actorUsername: sender?.username || null,
+            actorAvatar: sender?.avatar || null,
+            targetId: chatIdValue || null,
+            targetType: 'chat',
+            message: `${actorName} отправил сообщение`,
+            url: `/messages/${chatIdValue}`,
+          }).catch(err => {
+            console.error('[API] Error creating notification:', err);
+          });
+        });
+      }
+    );
   }
 
   res.json({
@@ -1529,9 +3049,10 @@ router.get('/messages/search', authenticateToken, asyncHandler(async (req, res) 
 
   // Получаем все чаты, где пользователь является участником
   const getChatsQuery = `
-    SELECT c.id, c.user1_id, c.user2_id
+    SELECT c.id
     FROM chats c
-    WHERE c.user1_id = $1 OR c.user2_id = $2
+    JOIN chat_members cm ON cm.chat_id = c.id
+    WHERE cm.user_id = $1
   `;
 
   const chats = await new Promise((resolve, reject) => {
@@ -1576,20 +3097,10 @@ router.get('/messages/search', authenticateToken, asyncHandler(async (req, res) 
               u.username as sender_username,
               u.avatar as sender_avatar,
               u.verified as sender_verified,
-              c.id as chat_id,
-              uc.id as contact_id,
-              uc.name as contact_name,
-              uc.username as contact_username,
-              uc.avatar as contact_avatar,
-              uc.verified as contact_verified
+              c.id as chat_id
        FROM messages m
        JOIN users u ON m.sender_id = u.id
-       JOIN chats c ON (m.sender_id = c.user1_id AND m.receiver_id = c.user2_id)
-                  OR (m.sender_id = c.user2_id AND m.receiver_id = c.user1_id)
-       JOIN users uc ON uc.id = CASE
-         WHEN c.user1_id = m.sender_id THEN c.user2_id
-         ELSE c.user1_id
-       END
+       JOIN chats c ON c.id = m.chat_id
        WHERE c.id = ANY($1)
          AND m.deleted_for_all_at IS NULL
          AND m.text ILIKE $2
@@ -1615,13 +3126,7 @@ router.get('/messages/search', authenticateToken, asyncHandler(async (req, res) 
       avatar: row.sender_avatar,
       verified: row.sender_verified === 1,
     },
-    contact: row.contact_id ? {
-      id: String(row.contact_id),
-      name: row.contact_name,
-      username: row.contact_username,
-      avatar: row.contact_avatar,
-      verified: row.contact_verified === 1,
-    } : null,
+    contact: null,
   }));
 
   res.json({
@@ -3041,10 +4546,29 @@ router.post('/uploads', authenticateToken, fileUpload.single('file'), uploadFile
 
 router.post('/moments', authenticateToken, momentUpload.single('file'), asyncHandler(async (req, res) => {
   const senderId = req.user.userId;
-  const { receiverId, ttlSeconds = 86400 } = req.body;
+  const { chatId, ttlSeconds = 86400 } = req.body;
 
-  if (!receiverId) {
-    throw new ValidationError('Receiver ID is required');
+  if (!chatId) {
+    throw new ValidationError('chatId is required');
+  }
+
+  const membership = await new Promise((resolve) => {
+    db.get(
+      'SELECT role, c.type FROM chat_members cm JOIN chats c ON c.id = cm.chat_id WHERE cm.chat_id = $1 AND cm.user_id = $2',
+      [chatId, senderId],
+      (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      }
+    );
+  });
+
+  if (!membership) {
+    throw new ValidationError('Access denied');
+  }
+
+  if (membership.type === 'channel' && !['owner', 'admin'].includes(membership.role)) {
+    throw new ValidationError('Only admins can write to channel');
   }
 
   if (!req.file) {
@@ -3092,7 +4616,7 @@ router.post('/moments', authenticateToken, momentUpload.single('file'), asyncHan
       `INSERT INTO moments (sender_id, receiver_id, file_path, mime, size, width, height, thumb_data_url, ttl_seconds, expires_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
       ,
-      [senderId, receiverId, filePath, mime, size, width, height, thumbDataUrl, ttlValue, expiresAt],
+      [senderId, chatId, filePath, mime, size, width, height, thumbDataUrl, ttlValue, expiresAt],
       function(err) {
         if (err) reject(err);
         else resolve(this.lastID);
@@ -3103,10 +4627,10 @@ router.post('/moments', authenticateToken, momentUpload.single('file'), asyncHan
   // Insert message referencing moment
   const messageId = await new Promise((resolve, reject) => {
     db.run(
-      `INSERT INTO messages (sender_id, receiver_id, text, type, moment_id)
+      `INSERT INTO messages (chat_id, sender_id, text, type, moment_id)
        VALUES ($1, $2, $3, $4, $5)`
       ,
-      [senderId, receiverId, 'Исчезающее фото', 'moment_image', momentId],
+      [chatId, senderId, 'Исчезающее фото', 'moment_image', momentId],
       function(err) {
         if (err) reject(err);
         else resolve(this.lastID);
@@ -3114,47 +4638,26 @@ router.post('/moments', authenticateToken, momentUpload.single('file'), asyncHan
     );
   });
 
-  // Update chats last message
-  const getChatQuery = `
-    SELECT id FROM chats
-    WHERE (user1_id = $1 AND user2_id = $2) OR (user1_id = $3 AND user2_id = $4)
-  `;
-  db.get(getChatQuery, [senderId, receiverId, receiverId, senderId], (err, existingChat) => {
-    if (err) {
-      return res.json({ messageId, momentId });
-    }
-
-    const chatMessage = 'Исчезающее фото';
-    const updateOrCreateQuery = existingChat
-      ? `UPDATE chats SET last_message = $1, last_message_time = NOW(), unread_count = unread_count + 1 WHERE id = $2`
-      : `INSERT INTO chats (user1_id, user2_id, last_message, last_message_time, unread_count) VALUES ($1, $2, $3, NOW(), 1)`;
-    const params = existingChat ? [chatMessage, existingChat.id] : [senderId, receiverId, chatMessage];
-    db.run(updateOrCreateQuery, params, () => {
-      const sendToUser = req.app.get('sendToUser');
-      if (sendToUser) {
-        sendToUser(receiverId, {
-          type: 'new_message',
-          data: {
-            id: messageId,
-            senderId: senderId.toString(),
-            receiverId: receiverId.toString(),
-            text: 'Исчезающее фото',
-            timestamp: new Date().toISOString(),
-            type: 'moment_image',
-            moment: {
-              id: momentId.toString(),
-              thumbDataUrl: thumbDataUrl,
-              ttlSeconds: ttlValue,
-              expiresAt,
-              viewedBy: []
-            }
-          }
-        });
+  const sendChatMessage = req.app.get('sendChatMessage');
+  if (sendChatMessage) {
+    sendChatMessage({
+      id: messageId,
+      chatId: String(chatId),
+      senderId: senderId.toString(),
+      text: 'Исчезающее фото',
+      timestamp: new Date().toISOString(),
+      type: 'moment_image',
+      moment: {
+        id: momentId.toString(),
+        thumbDataUrl: thumbDataUrl,
+        ttlSeconds: ttlValue,
+        expiresAt,
+        viewedBy: []
       }
-
-      res.json({ messageId, momentId, thumbDataUrl, ttlSeconds: ttlValue, expiresAt });
     });
-  });
+  }
+
+  res.json({ messageId, momentId, thumbDataUrl, ttlSeconds: ttlValue, expiresAt });
 }));
 
 router.post('/moments/:id/open', authenticateToken, asyncHandler(async (req, res) => {
@@ -3180,7 +4683,18 @@ router.post('/moments/:id/open', authenticateToken, asyncHandler(async (req, res
     return res.status(410).json({ error: 'Moment expired' });
   }
 
-  if (String(moment.receiver_id) !== String(userId)) {
+  if (!moment.receiver_id) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  const memberRow = await new Promise((resolve) => {
+    db.get('SELECT 1 FROM chat_members WHERE chat_id = $1 AND user_id = $2', [moment.receiver_id, userId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (!memberRow) {
     return res.status(403).json({ error: 'Access denied' });
   }
 
@@ -3255,7 +4769,18 @@ router.get('/moments/:id/content', authenticateToken, asyncHandler(async (req, r
     return res.status(410).json({ error: 'Moment revoked' });
   }
 
-  if (String(moment.receiver_id) !== String(userId)) {
+  if (!moment.receiver_id) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  const memberRow = await new Promise((resolve) => {
+    db.get('SELECT 1 FROM chat_members WHERE chat_id = $1 AND user_id = $2', [moment.receiver_id, userId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (!memberRow) {
     return res.status(403).json({ error: 'Access denied' });
   }
 
@@ -3301,7 +4826,18 @@ router.post('/moments/:id/viewed', authenticateToken, asyncHandler(async (req, r
     return res.status(404).json({ error: 'Moment not found' });
   }
 
-  if (String(moment.receiver_id) !== String(userId)) {
+  if (!moment.receiver_id) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  const memberRow = await new Promise((resolve) => {
+    db.get('SELECT 1 FROM chat_members WHERE chat_id = $1 AND user_id = $2', [moment.receiver_id, userId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (!memberRow) {
     return res.status(403).json({ error: 'Access denied' });
   }
 
@@ -3381,46 +4917,45 @@ router.post('/chats/:chatId/read', authenticateToken, (req, res) => {
     return res.status(400).json({ error: 'lastReadMessageId is required' });
   }
 
-  // Upsert chat_reads record
-  db.run(
-    `INSERT INTO chat_reads (chat_id, user_id, last_read_message_id, updated_at)
-     VALUES ($1, $2, $3, NOW())
-     ON CONFLICT(chat_id, user_id) 
-     DO UPDATE SET last_read_message_id = $4, updated_at = NOW()`,
-    [chatId, userId, lastReadMessageId, lastReadMessageId],
-    function(err) {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
+  db.get('SELECT 1 FROM chat_members WHERE chat_id = $1 AND user_id = $2', [chatId, userId], (memberErr, memberRow) => {
+    if (memberErr) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (!memberRow) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
 
-      // Broadcast read update to other chat participants via WebSocket
-      const sendToUser = req.app.get('sendToUser');
-      if (sendToUser) {
-        // Get other participants in the chat
-        db.get('SELECT user1_id, user2_id FROM chats WHERE id = $1', [chatId], (err, chat) => {
-          if (err || !chat) return;
-          
-          const otherUserId = chat.user1_id === userId ? chat.user2_id : chat.user1_id;
-          
-          // Send read update to the other user
-          sendToUser(otherUserId, {
-            type: 'chat:read_update',
-            data: {
-              chatId: chatId.toString(),
-              userId: userId.toString(),
-              lastReadMessageId: lastReadMessageId.toString()
-            }
-          });
+    db.run(
+      `INSERT INTO chat_reads (chat_id, user_id, last_read_message_id, updated_at)
+       VALUES ($1, $2, $3, NOW())
+       ON CONFLICT(chat_id, user_id)
+       DO UPDATE SET last_read_message_id = $4, updated_at = NOW()`,
+      [chatId, userId, lastReadMessageId, lastReadMessageId],
+      function(err) {
+        if (err) {
+          return res.status(500).json({ error: 'Database error' });
+        }
+
+  const broadcastToChat = req.app.get('broadcastToChat');
+  if (broadcastToChat) {
+    broadcastToChat(chatId, {
+      type: 'chat:read_update',
+      data: {
+        chatId: chatId.toString(),
+        userId: userId.toString(),
+        lastReadMessageId: lastReadMessageId.toString()
+      }
+    });
+  }
+
+        res.json({
+          message: 'Chat marked as read',
+          chatId: chatId.toString(),
+          lastReadMessageId: lastReadMessageId.toString()
         });
       }
-
-      res.json({ 
-        message: 'Chat marked as read',
-        chatId: chatId.toString(),
-        lastReadMessageId: lastReadMessageId.toString()
-      });
-    }
-  );
+    );
+  });
 });
 
 // Get chat read status for all participants
@@ -3428,27 +4963,36 @@ router.get('/chats/:chatId/read-status', authenticateToken, (req, res) => {
   const userId = req.user.userId;
   const chatId = req.params.chatId;
 
-  const query = `
-    SELECT cr.user_id, cr.last_read_message_id, cr.updated_at, u.name, u.username
-    FROM chat_reads cr
-    JOIN users u ON cr.user_id = u.id
-    WHERE cr.chat_id = $1
-  `;
-
-  db.all(query, [chatId], (err, readStatuses) => {
-    if (err) {
+  db.get('SELECT 1 FROM chat_members WHERE chat_id = $1 AND user_id = $2', [chatId, userId], (memberErr, memberRow) => {
+    if (memberErr) {
       return res.status(500).json({ error: 'Database error' });
     }
+    if (!memberRow) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
 
-    const formatted = readStatuses.map(status => ({
-      userId: status.user_id.toString(),
-      name: status.name,
-      username: status.username,
-      lastReadMessageId: status.last_read_message_id.toString(),
-      updatedAt: status.updated_at
-    }));
+    const query = `
+      SELECT cr.user_id, cr.last_read_message_id, cr.updated_at, u.name, u.username
+      FROM chat_reads cr
+      JOIN users u ON cr.user_id = u.id
+      WHERE cr.chat_id = $1
+    `;
 
-    res.json({ chatId: chatId.toString(), readStatuses: formatted });
+    db.all(query, [chatId], (err, readStatuses) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      const formatted = readStatuses.map(status => ({
+        userId: status.user_id.toString(),
+        name: status.name,
+        username: status.username,
+        lastReadMessageId: status.last_read_message_id ? status.last_read_message_id.toString() : null,
+        updatedAt: status.updated_at
+      }));
+
+      res.json({ chatId: chatId.toString(), readStatuses: formatted });
+    });
   });
 });
 
@@ -3471,10 +5015,8 @@ router.delete('/messages/:messageId', authenticateToken, (req, res) => {
     }
 
     const isAuthor = String(message.sender_id) === String(userId);
-    const isReceiver = String(message.receiver_id) === String(userId);
-
-    if (!isAuthor && !isReceiver) {
-      return res.status(403).json({ error: 'You can only delete messages you sent or received' });
+    if (!isAuthor) {
+      return res.status(403).json({ error: 'You can only delete messages you sent' });
     }
 
     if (scope === 'all') {
@@ -3494,14 +5036,15 @@ router.delete('/messages/:messageId', authenticateToken, (req, res) => {
           }
 
           // Notify via WebSocket
-          const sendToUser = req.app.get('sendToUser');
-          if (sendToUser && message.receiver_id) {
-            sendToUser(message.receiver_id, {
+          const sendChatMessage = req.app.get('sendChatMessage');
+          if (sendChatMessage) {
+            sendChatMessage({
+              chatId: message.chat_id ? String(message.chat_id) : null,
               type: 'message:deleted',
-              data: { 
-                messageId: messageId.toString(), 
-                scope: 'all', 
-                byUserId: userId.toString() 
+              data: {
+                messageId: messageId.toString(),
+                scope: 'all',
+                byUserId: userId.toString()
               }
             });
           }
@@ -3515,7 +5058,6 @@ router.delete('/messages/:messageId', authenticateToken, (req, res) => {
       );
     } else {
       // Delete for me (default)
-      // Check if already deleted for this user
       db.get(
         'SELECT * FROM message_deletions WHERE message_id = $1 AND user_id = $2',
         [messageId, userId],
@@ -3529,7 +5071,6 @@ router.delete('/messages/:messageId', authenticateToken, (req, res) => {
             return res.status(400).json({ error: 'Already deleted for you' });
           }
 
-          // Insert deletion record
           db.run(
             'INSERT INTO message_deletions (message_id, user_id) VALUES ($1, $2)',
             [messageId, userId],
@@ -3539,22 +5080,7 @@ router.delete('/messages/:messageId', authenticateToken, (req, res) => {
                 return res.status(500).json({ error: 'Database error' });
               }
 
-              // Notify via WebSocket
-              const sendToUser = req.app.get('sendToUser');
-              const otherUserId = isAuthor ? message.receiver_id : message.sender_id;
-              
-              if (sendToUser && otherUserId) {
-                sendToUser(otherUserId, {
-                  type: 'message:deleted',
-                  data: { 
-                    messageId: messageId.toString(), 
-                    scope: 'me', 
-                    byUserId: userId.toString() 
-                  }
-                });
-              }
-
-              res.json({ 
+              res.json({
                 message: 'Message deleted for you',
                 messageId: messageId.toString(),
                 scope: 'me'
@@ -3567,9 +5093,7 @@ router.delete('/messages/:messageId', authenticateToken, (req, res) => {
   });
 });
 
-// Servers (Communities) module routes
-const serversRoutes = require('./servers');
-router.use('/servers', serversRoutes);
+// Servers module removed
 
 // Link Preview (Open Graph)
 router.post('/link-preview', asyncHandler(async (req, res) => {

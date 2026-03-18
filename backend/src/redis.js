@@ -21,7 +21,7 @@ const CHANNELS = {
   NEW_MESSAGE: 'ws:new_message',
   POST_CREATED: 'ws:post_created',
   NOTIFICATION: 'ws:notification',
-  SERVER_MESSAGE: 'ws:server_message',
+  CHAT_MESSAGE: 'ws:chat_message',
 };
 
 // Singleton инстансы Redis
