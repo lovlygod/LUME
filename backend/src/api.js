@@ -3719,10 +3719,10 @@ router.post('/profile/verification-request', authenticateToken, (req, res) => {
     const registrationDate = new Date(user.created_at);
     const currentDate = new Date();
     const timeDiff = currentDate.getTime() - registrationDate.getTime();
-    const hoursDiff = Math.floor(timeDiff / (1000 * 3600));
+    const minutesDiff = Math.floor(timeDiff / (1000 * 60));
 
-    if (hoursDiff < 2) {
-      return res.status(400).json({ error: 'You must be registered for at least 2 hours to request verification' });
+    if (minutesDiff < 5) {
+      return res.status(400).json({ error: 'You must be registered for at least 5 minutes to request verification' });
     }
 
     // Check if user already has an active verification

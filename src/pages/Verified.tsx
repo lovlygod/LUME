@@ -32,7 +32,19 @@ const Verified = () => {
         setUser(userResponse.user);
 
         const statusResponse = await verificationAPI.getVerificationStatus(userResponse.user.id);
-        setVerificationStatus(statusResponse.verificationStatus);
+        const rawStatus = statusResponse.verificationStatus as (VerificationStatus & {
+          created_at?: string;
+          review_notes?: string;
+        }) | null;
+        if (rawStatus) {
+          setVerificationStatus({
+            ...rawStatus,
+            createdAt: rawStatus.createdAt || rawStatus.created_at,
+            reviewNotes: rawStatus.reviewNotes || rawStatus.review_notes,
+          });
+        } else {
+          setVerificationStatus(null);
+        }
       } catch (error) {
         console.error('Failed to load user data:', error);
         toast({
@@ -63,7 +75,19 @@ const Verified = () => {
       });
 
       const statusResponse = await verificationAPI.getVerificationStatus(user.id);
-      setVerificationStatus(statusResponse.verificationStatus);
+      const rawStatus = statusResponse.verificationStatus as (VerificationStatus & {
+        created_at?: string;
+        review_notes?: string;
+      }) | null;
+      if (rawStatus) {
+        setVerificationStatus({
+          ...rawStatus,
+          createdAt: rawStatus.createdAt || rawStatus.created_at,
+          reviewNotes: rawStatus.reviewNotes || rawStatus.review_notes,
+        });
+      } else {
+        setVerificationStatus(null);
+      }
 
       setFormData({ platform: '', reason: '', videoUrl: '' });
     } catch (error: unknown) {
