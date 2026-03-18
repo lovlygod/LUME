@@ -407,12 +407,12 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, timestamp, replies, reso
 
             {/* Post Image */}
             {imageUrl && (
-              <div className="mt-3 rounded-[20px] border border-white/10 bg-white/4 p-2">
+              <div className="mt-3 rounded-[20px] bg-white/4 p-2">
                 <ImageThumb
                   imageId={`post-${id}`}
                   src={normalizeImageUrl(imageUrl) || ''}
                   alt="Post"
-                  className="max-h-[360px] w-full rounded-[18px] object-cover"
+                  className="max-h-[360px] w-full rounded-[14px] object-cover"
                   onOpen={(imageId, src) => {
                     setActiveImageId(imageId);
                     setActiveImageSrc(src);
