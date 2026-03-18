@@ -1,6 +1,6 @@
-﻿# LUME API Documentation
+# LUME API Documentation
 
-РџРѕР»РЅР°СЏ РґРѕРєСѓРјРµРЅС‚Р°С†РёСЏ РїРѕ РІСЃРµРј API endpoint'Р°Рј LUME.
+Full documentation for all LUME API endpoints.
 
 **Base URL:** `http://localhost:5000/api`
 
@@ -8,16 +8,16 @@
 
 ---
 
-## рџ”ђ РђСѓС‚РµРЅС‚РёС„РёРєР°С†РёСЏ
+## 🔐 Authentication
 
-Р’СЃРµ Р·Р°РїСЂРѕСЃС‹ (РєСЂРѕРјРµ `/login`, `/register`) С‚СЂРµР±СѓСЋС‚:
+All requests (except `/login`, `/register`) require:
 - **Cookie:** `token` (httpOnly)
 - **Header:** `X-CSRF-Token`
-- **Header:** `Authorization: Bearer <token>` (РѕРїС†РёРѕРЅР°Р»СЊРЅРѕ)
+- **Header:** `Authorization: Bearer <token>` (optional)
 
 ---
 
-## рџ“‘ РЎРѕРґРµСЂР¶Р°РЅРёРµ
+## 📑 Table of Contents
 
 - [Auth](#auth)
 - [Users](#users)
@@ -27,13 +27,17 @@
 - [Verification](#verification)
 - [Admin](#admin)
 - [Uploads](#uploads)
+- [Errors](#errors)
+- [Notifications](#notifications)
+- [WebSocket Events](#websocket-events)
+- [Related Documents](#related-documents)
 
 ---
 
 ## Auth
 
 ### POST `/register`
-Р РµРіРёСЃС‚СЂР°С†РёСЏ РЅРѕРІРѕРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ.
+Register a new user.
 
 **Body:**
 ```json
@@ -61,8 +65,8 @@
 ```
 
 **Cookies:**
-- `refreshToken` (httpOnly, 30 РґРЅРµР№)
-- `token` (httpOnly, 24 С‡Р°СЃР°)
+- `refreshToken` (httpOnly, 30 days)
+- `token` (httpOnly, 24 hours)
 
 **Errors:**
 - `400` - Validation error (email format, password length, username format)
@@ -71,7 +75,7 @@
 ---
 
 ### POST `/login`
-Р’С…РѕРґ РІ СЃРёСЃС‚РµРјСѓ.
+Sign in.
 
 **Body:**
 ```json
@@ -100,8 +104,8 @@
 ```
 
 **Cookies:**
-- `refreshToken` (httpOnly, 30 РґРЅРµР№)
-- `token` (httpOnly, 24 С‡Р°СЃР°)
+- `refreshToken` (httpOnly, 30 days)
+- `token` (httpOnly, 24 hours)
 
 **Errors:**
 - `401` - Invalid credentials
@@ -109,19 +113,19 @@
 ---
 
 ### POST `/refresh`
-РћР±РЅРѕРІР»РµРЅРёРµ access С‚РѕРєРµРЅР°.
+Refresh access token.
 
 **Cookies:** `refreshToken`
 
 **Response 200:**
 ```json
 {
-  "token": "РЅРѕРІС‹Р№ access token"
+  "token": "new access token"
 }
 ```
 
 **Cookies:**
-- `token` (РѕР±РЅРѕРІР»С‘РЅРЅС‹Р№, 24 С‡Р°СЃР°)
+- `token` (refreshed, 24 hours)
 
 **Errors:**
 - `401` - Invalid or expired refresh token
@@ -129,7 +133,7 @@
 ---
 
 ### POST `/logout`
-Р’С‹С…РѕРґ РёР· СЃРёСЃС‚РµРјС‹.
+Sign out.
 
 **Response 200:**
 ```json
@@ -138,14 +142,14 @@
 }
 ```
 
-**Cookies:** `refreshToken` Рё `token` РѕС‡РёС‰Р°СЋС‚СЃСЏ
+**Cookies:** `refreshToken` and `token` are cleared
 
 ---
 
 ## Users
 
 ### GET `/profile`
-РџРѕР»СѓС‡РµРЅРёРµ РґР°РЅРЅС‹С… С‚РµРєСѓС‰РµРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ.
+Get current user profile.
 
 **Response 200:**
 ```json
@@ -170,7 +174,7 @@
 ---
 
 ### GET `/profile/:userId`
-РџРѕР»СѓС‡РµРЅРёРµ РїСЂРѕС„РёР»СЏ РґСЂСѓРіРѕРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ.
+Get another user profile.
 
 **Response 200:**
 ```json
@@ -192,7 +196,7 @@
 ---
 
 ### PUT `/profile`
-РћР±РЅРѕРІР»РµРЅРёРµ РїСЂРѕС„РёР»СЏ.
+Update profile.
 
 **Body:**
 ```json
@@ -215,12 +219,12 @@
 ---
 
 ### POST `/profile/avatar`
-Р—Р°РіСЂСѓР·РєР° Р°РІР°С‚Р°СЂР°.
+Upload avatar.
 
 **Content-Type:** `multipart/form-data`
 
 **Body:**
-- `avatar`: С„Р°Р№Р» (image/jpeg, png, gif, webp, max 25MB)
+- `avatar`: file (image/jpeg, png, gif, webp, max 25MB)
 
 **Response 200:**
 ```json
@@ -233,12 +237,12 @@
 ---
 
 ### POST `/profile/banner`
-Р—Р°РіСЂСѓР·РєР° Р±Р°РЅРЅРµСЂР°.
+Upload banner.
 
 **Content-Type:** `multipart/form-data`
 
 **Body:**
-- `banner`: С„Р°Р№Р» (image/jpeg, png, gif, webp, max 25MB)
+- `banner`: file (image/jpeg, png, gif, webp, max 25MB)
 
 **Response 200:**
 ```json
@@ -251,7 +255,7 @@
 ---
 
 ### DELETE `/profile`
-РЈРґР°Р»РµРЅРёРµ Р°РєРєР°СѓРЅС‚Р°.
+Delete account.
 
 **Body:**
 ```json
@@ -276,7 +280,7 @@
 ## Posts
 
 ### GET `/posts`
-РџРѕР»СѓС‡РµРЅРёРµ Р»РµРЅС‚С‹ РїСѓР±Р»РёРєР°С†РёР№.
+Get feed posts.
 
 **Response 200:**
 ```json
@@ -305,7 +309,7 @@
 ---
 
 ### GET `/posts/recommended`
-РџРѕРїСѓР»СЏСЂРЅС‹Рµ РїРѕСЃС‚С‹ (Р·Р° 7 РґРЅРµР№).
+Popular posts (last 7 days).
 
 **Response 200:**
 ```json
@@ -317,7 +321,7 @@
 ---
 
 ### GET `/posts/following`
-РџРѕСЃС‚С‹ РѕС‚ РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№, РЅР° РєРѕС‚РѕСЂС‹С… РІС‹ РїРѕРґРїРёСЃР°РЅС‹.
+Posts from users you follow.
 
 **Response 200:**
 ```json
@@ -329,7 +333,7 @@
 ---
 
 ### GET `/users/:userId/posts`
-РџРѕСЃС‚С‹ РєРѕРЅРєСЂРµС‚РЅРѕРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ.
+Posts by a specific user.
 
 **Response 200:**
 ```json
@@ -341,9 +345,9 @@
 ---
 
 ### POST `/posts`
-РЎРѕР·РґР°РЅРёРµ РїРѕСЃС‚Р°.
+Create a post.
 
-**Content-Type:** `application/json` РёР»Рё `multipart/form-data`
+**Content-Type:** `application/json` or `multipart/form-data`
 
 **Body (JSON):**
 ```json
@@ -353,8 +357,8 @@
 ```
 
 **Body (FormData):**
-- `text`: СЃС‚СЂРѕРєР° (max 420 СЃРёРјРІРѕР»РѕРІ)
-- `image`: С„Р°Р№Р» (РѕРїС†РёРѕРЅР°Р»СЊРЅРѕ)
+- `text`: string (max 420 chars)
+- `image`: file (optional)
 
 **Response 201:**
 ```json
@@ -371,7 +375,7 @@
 ---
 
 ### DELETE `/posts/:postId`
-РЈРґР°Р»РµРЅРёРµ РїРѕСЃС‚Р°.
+Delete a post.
 
 **Response 200:**
 ```json
@@ -387,7 +391,7 @@
 ---
 
 ### POST `/posts/:postId/resonance`
-РџРѕСЃС‚Р°РІРёС‚СЊ/СЃРЅСЏС‚СЊ Р»Р°Р№Рє (Resonance).
+Toggle like (Resonance).
 
 **Response 200:**
 ```json
@@ -401,7 +405,7 @@
 ---
 
 ### GET `/posts/:postId/comments`
-РџРѕР»СѓС‡РµРЅРёРµ РєРѕРјРјРµРЅС‚Р°СЂРёРµРІ Рє РїРѕСЃС‚Сѓ.
+Get post comments.
 
 **Response 200:**
 ```json
@@ -424,7 +428,7 @@
 ---
 
 ### POST `/posts/:postId/comments`
-Р”РѕР±Р°РІР»РµРЅРёРµ РєРѕРјРјРµРЅС‚Р°СЂРёСЏ.
+Add a comment.
 
 **Body:**
 ```json
@@ -445,7 +449,7 @@
 ---
 
 ### POST `/posts/:postId/report`
-Р–Р°Р»РѕР±Р° РЅР° РїРѕСЃС‚.
+Report a post.
 
 **Body:**
 ```json
@@ -467,7 +471,7 @@
 ## Messages
 
 ### GET `/messages`
-РџРѕР»СѓС‡РµРЅРёРµ СЃРїРёСЃРєР° С‡Р°С‚РѕРІ.
+Get chat list.
 
 **Response 200:**
 ```json
@@ -491,7 +495,7 @@
 ---
 
 ### GET `/messages/:userId`
-РСЃС‚РѕСЂРёСЏ РїРµСЂРµРїРёСЃРєРё СЃ РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј.
+Get message history with a user.
 
 **Response 200:**
 ```json
@@ -514,7 +518,7 @@
 ---
 
 ### POST `/messages`
-РћС‚РїСЂР°РІРєР° СЃРѕРѕР±С‰РµРЅРёСЏ.
+Send a message.
 
 **Body:**
 ```json
@@ -537,10 +541,10 @@
 ---
 
 ### DELETE `/messages/:messageId?scope=me|all`
-РЈРґР°Р»РµРЅРёРµ СЃРѕРѕР±С‰РµРЅРёСЏ.
+Delete a message.
 
 **Query Parameters:**
-- `scope`: `me` (РґР»СЏ СЃРµР±СЏ) РёР»Рё `all` (РґР»СЏ РІСЃРµС…, С‚РѕР»СЊРєРѕ 15 РјРёРЅ)
+- `scope`: `me` (for yourself) or `all` (for everyone, only within 15 minutes)
 
 **Response 200:**
 ```json
@@ -552,17 +556,17 @@
 ---
 
 ### GET `/messages/search`
-РџРѕР»РЅРѕС‚РµРєСЃС‚РѕРІС‹Р№ РїРѕРёСЃРє СЃРѕРѕР±С‰РµРЅРёР№ (Meilisearch).
+Full-text message search (Meilisearch).
 
 **Query Parameters:**
-- `q`: РџРѕРёСЃРєРѕРІС‹Р№ Р·Р°РїСЂРѕСЃ (РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ)
-- `limit`: РњР°РєСЃРёРјР°Р»СЊРЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ (РѕРїС†РёРѕРЅР°Р»СЊРЅРѕ, РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ 50)
+- `q`: search query (required)
+- `limit`: max number of results (optional, default 50)
 
 **Features:**
-- Fuzzy search (Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРѕРµ РёСЃРїСЂР°РІР»РµРЅРёРµ РѕРїРµС‡Р°С‚РѕРє)
-- Partial match (РїРѕРёСЃРє РїРѕ С‡Р°СЃС‚Рё СЃР»РѕРІР°)
-- РЎРѕСЂС‚РёСЂРѕРІРєР° РїРѕ РґР°С‚Рµ (РЅРѕРІС‹Рµ СЃРЅР°С‡Р°Р»Р°)
-- РћРіСЂР°РЅРёС‡РµРЅРёРµ: С‚РѕР»СЊРєРѕ С‡Р°С‚С‹, РіРґРµ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ СЏРІР»СЏРµС‚СЃСЏ СѓС‡Р°СЃС‚РЅРёРєРѕРј
+- Fuzzy search (automatic typo correction)
+- Partial match (search by word part)
+- Sort by date (newest first)
+- Restriction: only chats where the user is a participant
 
 **Response 200:**
 ```json
@@ -600,7 +604,7 @@
 ---
 
 ### POST `/chats/:chatId/read`
-РћС‚РјРµС‚РёС‚СЊ С‡Р°С‚ РєР°Рє РїСЂРѕС‡РёС‚Р°РЅРЅС‹Р№.
+Mark chat as read.
 
 **Body:**
 ```json
@@ -619,7 +623,7 @@
 ---
 
 ### GET `/chats/:chatId/read-status`
-РџРѕР»СѓС‡РёС‚СЊ СЃС‚Р°С‚СѓСЃ РїСЂРѕС‡С‚РµРЅРёСЏ.
+Get read status.
 
 **Response 200:**
 ```json
@@ -635,16 +639,16 @@
 ## Servers
 
 ### POST `/servers`
-РЎРѕР·РґР°РЅРёРµ СЃРµСЂРІРµСЂР°.
+Create a server.
 
 **Content-Type:** `multipart/form-data`
 
 **Body:**
-- `name`: СЃС‚СЂРѕРєР° (РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ)
-- `username`: СЃС‚СЂРѕРєР° (min 5 СЃРёРјРІРѕР»РѕРІ, РґР»СЏ public)
-- `type`: `public` РёР»Рё `private`
-- `description`: СЃС‚СЂРѕРєР° (РѕРїС†РёРѕРЅР°Р»СЊРЅРѕ)
-- `icon`: С„Р°Р№Р» (РѕРїС†РёРѕРЅР°Р»СЊРЅРѕ, image)
+- `name`: string (required)
+- `username`: string (min 5 chars, for public)
+- `type`: `public` or `private`
+- `description`: string (optional)
+- `icon`: file (optional, image)
 
 **Response 201:**
 ```json
@@ -669,7 +673,7 @@
 ---
 
 ### GET `/servers/my`
-РњРѕРё СЃРµСЂРІРµСЂС‹.
+Get my servers.
 
 **Response 200:**
 ```json
@@ -693,7 +697,7 @@
 ---
 
 ### GET `/servers/public`
-РџСѓР±Р»РёС‡РЅС‹Рµ СЃРµСЂРІРµСЂС‹.
+Get public servers.
 
 **Response 200:**
 ```json
@@ -705,7 +709,7 @@
 ---
 
 ### GET `/servers/:identifier`
-РџРѕР»СѓС‡РёС‚СЊ СЃРµСЂРІРµСЂ РїРѕ username РёР»Рё ID.
+Get server by username or ID.
 
 **Response 200:**
 ```json
@@ -739,7 +743,7 @@
 ---
 
 ### PUT `/servers/:id`
-РћР±РЅРѕРІРёС‚СЊ СЃРµСЂРІРµСЂ (Owner).
+Update server (Owner).
 
 **Body:**
 ```json
@@ -764,7 +768,7 @@
 ---
 
 ### DELETE `/servers/:id`
-РЈРґР°Р»РёС‚СЊ СЃРµСЂРІРµСЂ (Owner).
+Delete server (Owner).
 
 **Response 200:**
 ```json
@@ -780,7 +784,7 @@
 ---
 
 ### POST `/servers/:id/join`
-Р’СЃС‚СѓРїРёС‚СЊ РІ РїСѓР±Р»РёС‡РЅС‹Р№ СЃРµСЂРІРµСЂ.
+Join a public server.
 
 **Response 200:**
 ```json
@@ -797,7 +801,7 @@
 ---
 
 ### POST `/servers/:id/request-join`
-РџРѕРґР°С‚СЊ Р·Р°СЏРІРєСѓ РІ РїСЂРёРІР°С‚РЅС‹Р№ СЃРµСЂРІРµСЂ.
+Request to join a private server.
 
 **Response 200:**
 ```json
@@ -815,7 +819,7 @@
 ---
 
 ### GET `/servers/:id/requests`
-РџРѕР»СѓС‡РёС‚СЊ Р·Р°СЏРІРєРё (Owner).
+Get join requests (Owner).
 
 **Response 200:**
 ```json
@@ -840,7 +844,7 @@
 ---
 
 ### POST `/servers/:id/requests/:requestId/approve`
-РћРґРѕР±СЂРёС‚СЊ Р·Р°СЏРІРєСѓ (Owner).
+Approve request (Owner).
 
 **Response 200:**
 ```json
@@ -856,7 +860,7 @@
 ---
 
 ### POST `/servers/:id/requests/:requestId/reject`
-РћС‚РєР»РѕРЅРёС‚СЊ Р·Р°СЏРІРєСѓ (Owner).
+Reject request (Owner).
 
 **Response 200:**
 ```json
@@ -872,7 +876,7 @@
 ---
 
 ### POST `/servers/:id/leave`
-РџРѕРєРёРЅСѓС‚СЊ СЃРµСЂРІРµСЂ.
+Leave a server.
 
 **Response 200:**
 ```json
@@ -889,7 +893,7 @@
 ---
 
 ### POST `/servers/:id/channels`
-РЎРѕР·РґР°С‚СЊ РєР°РЅР°Р» (Admin+).
+Create a channel (Admin+).
 
 **Body:**
 ```json
@@ -918,11 +922,11 @@
 ---
 
 ### GET `/servers/:serverId/channels/:channelId/messages`
-РџРѕР»СѓС‡РёС‚СЊ СЃРѕРѕР±С‰РµРЅРёСЏ РєР°РЅР°Р»Р°.
+Get channel messages.
 
 **Query Parameters:**
-- `limit`: (РѕРїС†РёРѕРЅР°Р»СЊРЅРѕ, default 50)
-- `before`: (РѕРїС†РёРѕРЅР°Р»СЊРЅРѕ, ID СЃРѕРѕР±С‰РµРЅРёСЏ РґР»СЏ РїР°РіРёРЅР°С†РёРё)
+- `limit`: optional, default 50
+- `before`: optional, message ID for pagination
 
 **Response 200:**
 ```json
@@ -954,7 +958,7 @@
 ---
 
 ### POST `/servers/:serverId/channels/:channelId/messages`
-РћС‚РїСЂР°РІРёС‚СЊ СЃРѕРѕР±С‰РµРЅРёРµ РІ РєР°РЅР°Р».
+Send a message to a channel.
 
 **Body:**
 ```json
@@ -979,7 +983,7 @@
 ---
 
 ### DELETE `/servers/:serverId/channels/:channelId/messages/:messageId`
-РЈРґР°Р»РёС‚СЊ СЃРѕРѕР±С‰РµРЅРёРµ (Author/Moderator+).
+Delete a message (Author/Moderator+).
 
 **Body:**
 ```json
@@ -1002,7 +1006,7 @@
 ---
 
 ### GET `/servers/:id/members`
-РџРѕР»СѓС‡РёС‚СЊ СѓС‡Р°СЃС‚РЅРёРєРѕРІ СЃРµСЂРІРµСЂР°.
+Get server members.
 
 **Response 200:**
 ```json
@@ -1030,7 +1034,7 @@
 ---
 
 ### PUT `/servers/:serverId/members/:memberId/role`
-РР·РјРµРЅРёС‚СЊ СЂРѕР»СЊ СѓС‡Р°СЃС‚РЅРёРєР° (Admin+).
+Change member role (Admin+).
 
 **Body:**
 ```json
@@ -1053,7 +1057,7 @@
 ---
 
 ### DELETE `/servers/:serverId/members/:memberId`
-РљРёРєРЅСѓС‚СЊ СѓС‡Р°СЃС‚РЅРёРєР° (Moderator+).
+Kick a member (Moderator+).
 
 **Response 200:**
 ```json
@@ -1071,7 +1075,7 @@
 ## Verification
 
 ### GET `/profile/:userId/verification-status`
-РџРѕР»СѓС‡РёС‚СЊ СЃС‚Р°С‚СѓСЃ РІРµСЂРёС„РёРєР°С†РёРё.
+Get verification status.
 
 **Response 200:**
 ```json
@@ -1090,7 +1094,7 @@
 ---
 
 ### POST `/profile/verification-request`
-РџРѕРґР°С‚СЊ Р·Р°СЏРІРєСѓ РЅР° РІРµСЂРёС„РёРєР°С†РёСЋ.
+Submit a verification request.
 
 **Body:**
 ```json
@@ -1117,7 +1121,7 @@
 ## Admin
 
 ### GET `/admin/verification-requests`
-РџРѕР»СѓС‡РёС‚СЊ РІСЃРµ Р·Р°СЏРІРєРё РЅР° РІРµСЂРёС„РёРєР°С†РёСЋ.
+Get all verification requests.
 
 **Response 200:**
 ```json
@@ -1141,7 +1145,7 @@
 ---
 
 ### POST `/admin/review-verification-request/:requestId`
-Р Р°СЃСЃРјРѕС‚СЂРµС‚СЊ Р·Р°СЏРІРєСѓ.
+Review a verification request.
 
 **Body:**
 ```json
@@ -1164,7 +1168,7 @@
 ---
 
 ### GET `/admin/users`
-РџРѕР»СѓС‡РёС‚СЊ РІСЃРµС… РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№.
+Get all users.
 
 **Response 200:**
 ```json
@@ -1176,7 +1180,7 @@
 ---
 
 ### GET `/admin/post-reports`
-РџРѕР»СѓС‡РёС‚СЊ Р¶Р°Р»РѕР±С‹ РЅР° РїРѕСЃС‚С‹.
+Get post reports.
 
 **Response 200:**
 ```json
@@ -1202,7 +1206,7 @@
 ---
 
 ### POST `/admin/post-reports/:reportId`
-Р Р°СЃСЃРјРѕС‚СЂРµС‚СЊ Р¶Р°Р»РѕР±Сѓ.
+Review a post report.
 
 **Body:**
 ```json
@@ -1227,12 +1231,12 @@
 ## Uploads
 
 ### POST `/uploads`
-Р—Р°РіСЂСѓР·РёС‚СЊ С„Р°Р№Р».
+Upload a file.
 
 **Content-Type:** `multipart/form-data`
 
 **Body:**
-- `file`: С„Р°Р№Р» (max 10MB)
+- `file`: file (max 10MB)
 
 **Response 201:**
 ```json
@@ -1252,7 +1256,7 @@
 ---
 
 ### GET `/attachments/:attachmentId`
-РџРѕР»СѓС‡РёС‚СЊ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ РІР»РѕР¶РµРЅРёРё.
+Get attachment info.
 
 **Response 200:**
 ```json
@@ -1271,7 +1275,7 @@
 
 ---
 
-## РћС€РёР±РєРё
+## Errors
 
 ### 400 Bad Request
 ```json
@@ -1363,11 +1367,11 @@
 ## Notifications
 
 ### GET `/notifications`
-РџРѕР»СѓС‡РµРЅРёРµ СѓРІРµРґРѕРјР»РµРЅРёР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ.
+Get user notifications.
 
 **Query Parameters:**
-- `limit`: (РѕРїС†РёРѕРЅР°Р»СЊРЅРѕ, default 50) - РјР°РєСЃРёРјР°Р»СЊРЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ СѓРІРµРґРѕРјР»РµРЅРёР№
-- `unreadOnly`: (РѕРїС†РёРѕРЅР°Р»СЊРЅРѕ) - РµСЃР»Рё `true`, РІРѕР·РІСЂР°С‰Р°РµС‚ С‚РѕР»СЊРєРѕ РЅРµРїСЂРѕС‡РёС‚Р°РЅРЅС‹Рµ
+- `limit`: optional, default 50
+- `unreadOnly`: optional, if `true` returns only unread notifications
 
 **Response 200:**
 ```json
@@ -1386,16 +1390,16 @@
 ```
 
 **Notification Types:**
-- `message` - РЅРѕРІРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ
-- `reply` - РѕС‚РІРµС‚ РЅР° РІР°С€ РїРѕСЃС‚
-- `mention` - СѓРїРѕРјРёРЅР°РЅРёРµ (@username)
-- `reaction` - СЂРµР°РєС†РёСЏ РЅР° РїРѕСЃС‚ (Resonance)
-- `server_invite` - Р·Р°СЏРІРєР° РЅР° РІСЃС‚СѓРїР»РµРЅРёРµ РІ СЃРµСЂРІРµСЂ
+- `message` - new message
+- `reply` - reply to your post
+- `mention` - mention (@username)
+- `reaction` - post reaction (Resonance)
+- `server_invite` - server join request
 
 ---
 
 ### POST `/notifications/read`
-РћС‚РјРµС‚РёС‚СЊ СѓРІРµРґРѕРјР»РµРЅРёСЏ РєР°Рє РїСЂРѕС‡РёС‚Р°РЅРЅС‹Рµ.
+Mark notifications as read.
 
 **Body:**
 ```json
@@ -1406,8 +1410,8 @@
 ```
 
 **Parameters:**
-- `notificationId`: (РѕРїС†РёРѕРЅР°Р»СЊРЅРѕ) - ID СѓРІРµРґРѕРјР»РµРЅРёСЏ РґР»СЏ РѕС‚РјРµС‚РєРё
-- `markAllAsRead`: (РѕРїС†РёРѕРЅР°Р»СЊРЅРѕ) - РµСЃР»Рё `true`, РѕС‚РјРµС‡Р°РµС‚ РІСЃРµ СѓРІРµРґРѕРјР»РµРЅРёСЏ РєР°Рє РїСЂРѕС‡РёС‚Р°РЅРЅС‹Рµ
+- `notificationId`: optional, notification ID to mark
+- `markAllAsRead`: optional, if `true` marks all as read
 
 **Response 200:**
 ```json
@@ -1421,7 +1425,7 @@
 ## WebSocket Events
 
 ### `notification_new`
-РЎРѕР±С‹С‚РёРµ Рѕ РЅРѕРІРѕРј СѓРІРµРґРѕРјР»РµРЅРёРё.
+New notification event.
 
 **Payload:**
 ```json
@@ -1438,10 +1442,9 @@
 
 ---
 
-## РЎРІСЏР·Р°РЅРЅС‹Рµ РґРѕРєСѓРјРµРЅС‚С‹
+## Related Documents
 
 - [Features Inventory](../docs/FEATURES_INVENTORY.md)
 - [Error Handling](../docs/ERROR_HANDLING.md)
 - [Servers Module](../docs/SERVERS_MODULE.md)
 - [README](../README.md)
-
