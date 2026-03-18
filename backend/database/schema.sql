@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS chats (
 CREATE TABLE IF NOT EXISTS messages (
   id BIGSERIAL PRIMARY KEY,
   sender_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  receiver_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  chat_id BIGINT REFERENCES chats(id) ON DELETE CASCADE,
   text TEXT,
   type TEXT DEFAULT 'text',
   reply_to_message_id BIGINT,
@@ -118,6 +118,11 @@ CREATE TABLE IF NOT EXISTS chat_join_requests (
   reviewed_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
   UNIQUE(chat_id, user_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id);
+CREATE INDEX IF NOT EXISTS idx_chat_members_user_id ON chat_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_chat_join_requests_chat_id ON chat_join_requests(chat_id);
+CREATE INDEX IF NOT EXISTS idx_chat_join_requests_user_id ON chat_join_requests(user_id);
 
 CREATE TABLE IF NOT EXISTS attachments (
   id BIGSERIAL PRIMARY KEY,
