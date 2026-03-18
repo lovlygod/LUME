@@ -10,12 +10,9 @@ developer-platform/
 # backend
 backend/node_modules
 backend/.env
-backend/.env.*
 backend/uploads
 backend/moment-uploads
 backend/package-lock.json
-backend/yt-dlp.exe
-backend/yt-dlp
 
 # logs
 npm-debug.log*
