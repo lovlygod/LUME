@@ -226,7 +226,9 @@ const UserProfile = () => {
                   className={`flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-smooth disabled:opacity-50 ${
                     isFollowing
                       ? 'bg-white/10 text-white hover:bg-white/15'
-                      : 'bg-white/10 text-white hover:bg-white/15'
+                      : isVerifiedUser(user)
+                        ? 'bg-blue-500/80 text-white hover:bg-blue-500'
+                        : 'bg-white/10 text-white hover:bg-white/15'
                   }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
