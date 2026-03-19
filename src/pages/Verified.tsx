@@ -136,9 +136,11 @@ const Verified = () => {
       setFormData({ platform: '', reason: '', videoUrl: '' });
       statusRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (error: unknown) {
+      const apiMessage = (error as { error?: { message?: string } })?.error?.message;
+      const isMinDaysError = apiMessage?.includes('5') && apiMessage?.includes('дн');
       toast({
         title: t("common.error"),
-        description: error instanceof Error ? error.message : t("verified.submitError"),
+        description: isMinDaysError ? t("verified.minDaysError", { days: 5 }) : (error instanceof Error ? error.message : t("verified.submitError")),
         variant: 'destructive'
       });
     } finally {

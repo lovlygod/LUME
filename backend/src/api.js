@@ -3719,10 +3719,10 @@ router.post('/profile/verification-request', authenticateToken, (req, res) => {
     const registrationDate = new Date(user.created_at);
     const currentDate = new Date();
     const timeDiff = currentDate.getTime() - registrationDate.getTime();
-    const minutesDiff = Math.floor(timeDiff / (1000 * 60));
+    const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
 
-    if (minutesDiff < 5) {
-      return res.status(400).json({ error: 'You must be registered for at least 5 minutes to request verification' });
+    if (daysDiff < 5) {
+      return res.status(400).json({ error: 'Вы должны находиться на платформе не менее 5 дней, чтобы получить верификацию' });
     }
 
     // Check if user already has an active verification
@@ -5229,7 +5229,3 @@ router.post('/notifications/:id/read', authenticateToken, asyncHandler(async (re
 
 module.exports = router;
 module.exports.ensureStickerData = ensureStickerData;
-
-
-
-

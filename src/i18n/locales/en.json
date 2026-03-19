@@ -479,6 +479,7 @@
     "reasonPlaceholderShort": "Why do you want verification",
     "submitButton": "Submit request",
     "submitToast": "Request sent",
+    "minDaysError": "You must be on the platform for at least {days} days to get verified",
     "bannerAlt": "Verification",
     "alreadyVerified": "You are already verified!",
     "requestPending": "Your verification request is pending review.",
