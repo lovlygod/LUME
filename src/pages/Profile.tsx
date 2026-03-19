@@ -371,13 +371,17 @@ const ProfilePage = () => {
             )}
             {!isOwnProfile && user && (
               <div className="flex gap-2">
-                <motion.button
-                  onClick={handleFollowToggle}
-                  disabled={isFollowLoading}
-                  className="btn-glass"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
+              <motion.button
+                onClick={handleFollowToggle}
+                disabled={isFollowLoading}
+                className={`btn-glass ${
+                  !isFollowing && isVerifiedUser(user)
+                    ? "bg-blue-500/80 text-white hover:bg-blue-500"
+                    : ""
+                }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
                   {isFollowLoading ? (
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                   ) : isFollowing ? (
@@ -675,4 +679,3 @@ const ProfilePage = () => {
 // User List Item Component
 
 export default ProfilePage;
-
