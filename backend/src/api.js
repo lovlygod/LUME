@@ -9,9 +9,9 @@ const {
   upload
 } = require('./profile');
 const { upload: fileUpload, uploadFile, voiceUpload, uploadVoiceMessage } = require('./uploads');
+const { upload: cloudImageUpload, uploadStickers, uploadMemoryImage } = require('./middleware/upload');
 const crypto = require('crypto');
 const { getPublicBaseUrl } = require('./utils/baseUrl');
-const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const db = require('./db');
@@ -142,6 +142,8 @@ const normalizeStickerSlug = (value) => String(value || '')
   .replace(/\s+/g, '-')
   .replace(/-+/g, '-')
   .replace(/^-+|-+$/g, '');
+
+const isRemoteUrl = (value) => /^https?:\/\//i.test(String(value || ''));
 
 const ensureUniqueStickerSlug = async (baseSlug) => {
   const safeBase = baseSlug || 'sticker-pack';
@@ -308,65 +310,8 @@ const ensureStickerData = async () => {
   }
 };
 
-const momentStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path.join(__dirname, '../moment-uploads');
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-    cb(null, filename);
-  }
-});
-
-const momentUpload = multer({
-  storage: momentStorage,
-  limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype && file.mimetype.startsWith('image/')) {
-      return cb(null, true);
-    }
-    cb(new Error('Only image files are allowed'));
-  }
-});
-
-const stickerUploadStorage = multer.diskStorage({
-  destination: (req, _file, cb) => {
-    const dir = path.join(__dirname, '../sticker-uploads');
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const filename = `sticker-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-    cb(null, filename);
-  }
-});
-
-const stickerUpload = multer({
-  storage: stickerUploadStorage,
-  fileFilter: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const allowed = ['.png', '.webp', '.gif'];
-    if (!allowed.includes(ext)) {
-      return cb(new Error('Sticker format not allowed'));
-    }
-    if (!file.mimetype.startsWith('image/')) {
-      return cb(new Error('Sticker format not allowed'));
-    }
-    return cb(null, true);
-  },
-  limits: {
-    fileSize: STICKER_BOT_LIMITS.maxFileSize,
-    files: 60
-  }
-});
+const momentUpload = uploadMemoryImage;
+const stickerUpload = uploadStickers;
 
 // Test route - самый первый роут
 
@@ -1887,7 +1832,9 @@ router.get('/stickers/packs/:id', authenticateToken, asyncHandler(async (req, re
         id: sticker.id.toString(),
         name: sticker.name,
         filePath: sticker.file_path,
-        url: `${getPublicBaseUrl(req)}/api/stickers/${sticker.id}`,
+        url: isRemoteUrl(sticker.file_path)
+          ? sticker.file_path
+          : `${getPublicBaseUrl(req)}/api/stickers/${sticker.id}`,
       }));
 
       res.json({
@@ -1928,7 +1875,9 @@ router.get('/stickers/slug/:slug', authenticateToken, asyncHandler(async (req, r
         id: sticker.id.toString(),
         name: sticker.name,
         filePath: sticker.file_path,
-        url: `${getPublicBaseUrl(req)}/api/stickers/${sticker.id}`,
+        url: isRemoteUrl(sticker.file_path)
+          ? sticker.file_path
+          : `${getPublicBaseUrl(req)}/api/stickers/${sticker.id}`,
       }));
 
       res.json({
@@ -1969,7 +1918,9 @@ router.get('/stickers/public/slug/:slug', asyncHandler(async (req, res) => {
         id: sticker.id.toString(),
         name: sticker.name,
         filePath: sticker.file_path,
-        url: `${getPublicBaseUrl(req)}/api/stickers/${sticker.id}`,
+        url: isRemoteUrl(sticker.file_path)
+          ? sticker.file_path
+          : `${getPublicBaseUrl(req)}/api/stickers/${sticker.id}`,
       }));
 
       res.json({
@@ -2042,7 +1993,9 @@ router.get('/stickers/pack/:id', authenticateToken, asyncHandler(async (req, res
         id: sticker.id.toString(),
         name: sticker.name,
         filePath: sticker.file_path,
-        url: `${getPublicBaseUrl(req)}/api/stickers/${sticker.id}`,
+        url: isRemoteUrl(sticker.file_path)
+          ? sticker.file_path
+          : `${getPublicBaseUrl(req)}/api/stickers/${sticker.id}`,
       }));
 
       res.json({
@@ -2105,6 +2058,10 @@ router.get('/stickers/:id', asyncHandler(async (req, res) => {
     }
     if (!sticker) {
       return res.status(404).json({ error: 'Sticker not found' });
+    }
+
+    if (isRemoteUrl(sticker.file_path)) {
+      return res.redirect(sticker.file_path);
     }
 
     let absolutePath;
@@ -2333,26 +2290,16 @@ const handleStickerBotCommand = async (req, senderId, text) => {
 
     const slugBase = normalizeStickerSlug(session.pack_name);
     const slug = await ensureUniqueStickerSlug(slugBase);
-    const packDirName = normalizeStickerFileName(session.pack_name || 'pack');
-    const targetDir = path.join(STICKERS_BASE_DIR, packDirName);
-    if (!fs.existsSync(targetDir)) {
-      fs.mkdirSync(targetDir, { recursive: true });
-    }
-
     const prepared = [];
     for (const item of stickersTemp) {
       const originalName = path.parse(item.originalFile || item.name || '').name;
       const safeName = normalizeStickerFileName(originalName || item.name || 'sticker') || `sticker-${Date.now()}`;
-      const ext = path.extname(item.originalFile || item.tempFile || '').toLowerCase();
-      const finalFileName = `${safeName}${ext || '.png'}`;
-      const tempPath = path.join(__dirname, '../sticker-uploads', item.tempFile);
-      const finalPath = path.join(targetDir, finalFileName);
-      if (fs.existsSync(tempPath)) {
-        fs.renameSync(tempPath, finalPath);
+      if (!item.url) {
+        continue;
       }
       prepared.push({
         name: originalName || item.name || safeName,
-        filePath: path.join(packDirName, finalFileName).replace(/\\/g, '/')
+        filePath: item.url
       });
     }
 
@@ -2423,13 +2370,14 @@ router.post('/stickers/bot/upload', authenticateToken, stickerUpload.array('stic
     return {
       name: originalName || file.filename,
       tempFile: file.filename,
-      originalFile: file.originalname
+      originalFile: file.originalname,
+      url: file.path
     };
   });
 
   const updatedTemp = [...existing, ...added].map((item) => ({
     ...item,
-    url: `${getPublicBaseUrl(req)}/api/stickers/bot/temp/${item.tempFile}`
+    url: item.url || item.path || null
   }));
 
   await upsertStickerBotSession(senderId, {
@@ -2464,22 +2412,13 @@ router.get('/stickers/bot/temp/:filename', authenticateToken, asyncHandler(async
     return res.status(400).json({ error: 'Invalid filename' });
   }
   const safeName = path.basename(filename);
-  const filePath = path.join(__dirname, '../sticker-uploads', safeName);
-  if (!fs.existsSync(filePath)) {
+  const session = await getStickerBotSession(req.user.userId);
+  const stickersTemp = JSON.parse(session.stickers_temp || '[]');
+  const item = stickersTemp.find((sticker) => sticker.tempFile === safeName || sticker.url?.includes(safeName));
+  if (!item?.url) {
     return res.status(404).json({ error: 'Sticker not found' });
   }
-  const ext = path.extname(filePath).toLowerCase();
-  const contentType = ext === '.webp'
-    ? 'image/webp'
-    : ext === '.gif'
-      ? 'image/gif'
-      : 'image/png';
-  res.setHeader('Content-Type', contentType);
-  res.setHeader('Cache-Control', 'private, max-age=3600');
-  res.setHeader('Content-Disposition', 'inline');
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self' data:");
-  return fs.createReadStream(filePath).pipe(res);
+  res.json({ url: item.url });
 }));
 
 
@@ -2586,7 +2525,11 @@ router.get('/chats/:chatId/messages', authenticateToken, (req, res) => {
             packId: msg.sticker_pack_id ? msg.sticker_pack_id.toString() : null,
             name: msg.sticker_name || null,
             filePath: msg.sticker_file_path || null,
-            url: msg.sticker_file_path ? `${getPublicBaseUrl(req)}/api/stickers/${msg.sticker_id}` : null,
+            url: msg.sticker_file_path
+              ? (isRemoteUrl(msg.sticker_file_path)
+                ? msg.sticker_file_path
+                : `${getPublicBaseUrl(req)}/api/stickers/${msg.sticker_id}`)
+              : null,
           } : null,
           moment: msg.moment_id ? {
             id: msg.moment_id.toString(),
@@ -2701,7 +2644,9 @@ router.post('/messages', authenticateToken, asyncHandler(async (req, res) => {
       filePath: stickerRow.file_path,
       packId: stickerRow.pack_id.toString(),
       packName: stickerRow.pack_name,
-      url: `${getPublicBaseUrl(req)}/api/stickers/${stickerRow.id}`,
+      url: isRemoteUrl(stickerRow.file_path)
+        ? stickerRow.file_path
+        : `${getPublicBaseUrl(req)}/api/stickers/${stickerRow.id}`,
     };
     messageType = 'sticker';
     messageBody = messageText || '[sticker]';
@@ -2927,7 +2872,7 @@ router.post('/messages/voice', authenticateToken, voiceUpload.single('audio'), a
             }
 
             const createdMessageId = this.lastID;
-            const attachmentUrl = `${getPublicBaseUrl(req)}/uploads/voice/${req.file.filename}`;
+            const attachmentUrl = req.file.path || req.file.secure_url || req.file.url;
 
             db.run(
               `INSERT INTO attachments (message_id, type, url, mime, size, duration)
@@ -3268,8 +3213,7 @@ router.post('/posts', authenticateToken, upload.single('image'), (req, res) => {
     return res.status(400).json({ error: 'Post text exceeds 420 characters' });
   }
 
-  // Сохраняем полный URL для корректного отображения
-  const imageUrl = req.file ? `${getPublicBaseUrl(req)}/uploads/${req.file.filename}` : null;
+  const imageUrl = req.file ? (req.file.path || req.file.secure_url || req.file.url) : null;
 
   let query;
   let params;
@@ -4580,31 +4524,50 @@ router.post('/moments', authenticateToken, momentUpload.single('file'), asyncHan
     throw new ValidationError('Only image files are allowed for moments');
   }
 
-  const filename = req.file.filename;
-  const filePath = req.file.path;
+  const cloudinary = require('./config/cloudinary');
+  const uploadToCloudinary = () => new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'lume/moments',
+        resource_type: 'image',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+        transformation: [{ quality: 'auto', fetch_format: 'auto' }],
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+    stream.end(req.file.buffer);
+  });
+
+  const cloudResult = await uploadToCloudinary();
+  const filePath = cloudResult?.secure_url || cloudResult?.url;
   const size = req.file.size;
 
   let width = null;
   let height = null;
-  try {
-    const sizeOf = require('image-size');
-    const dimensions = sizeOf(filePath);
-    width = dimensions.width || null;
-    height = dimensions.height || null;
-  } catch (e) {
-    // ignore
-  }
-
   let thumbDataUrl = null;
-  try {
-    const sharp = require('sharp');
-    const thumbBuffer = await sharp(filePath)
-      .resize(32, 32, { fit: 'inside' })
-      .blur(12)
-      .toBuffer();
-    thumbDataUrl = `data:image/jpeg;base64,${thumbBuffer.toString('base64')}`;
-  } catch (e) {
-    // ignore
+  if (req.file.buffer) {
+    try {
+      const sizeOf = require('image-size');
+      const dimensions = sizeOf(req.file.buffer);
+      width = dimensions.width || null;
+      height = dimensions.height || null;
+    } catch (e) {
+      // ignore
+    }
+
+    try {
+      const sharp = require('sharp');
+      const thumbBuffer = await sharp(req.file.buffer)
+        .resize(32, 32, { fit: 'inside' })
+        .blur(12)
+        .toBuffer();
+      thumbDataUrl = `data:image/jpeg;base64,${thumbBuffer.toString('base64')}`;
+    } catch (e) {
+      // ignore
+    }
   }
 
   const ttlValue = Number.isFinite(Number(ttlSeconds)) ? Math.max(60, Math.min(7 * 24 * 3600, Number(ttlSeconds))) : 86400;
@@ -4802,13 +4765,11 @@ router.get('/moments/:id/content', authenticateToken, asyncHandler(async (req, r
     });
   });
 
-  res.setHeader('Content-Type', moment.mime || 'image/jpeg');
-  res.setHeader('Cache-Control', 'no-store');
-  res.setHeader('Content-Disposition', 'inline');
-
-  const stream = fs.createReadStream(moment.file_path);
-  stream.on('error', () => res.status(500).end());
-  stream.pipe(res);
+  res.json({
+    url: moment.file_path,
+    mime: moment.mime || 'image/jpeg',
+    expiresAt: moment.expires_at || null
+  });
 }));
 
 router.post('/moments/:id/viewed', authenticateToken, asyncHandler(async (req, res) => {

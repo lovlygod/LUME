@@ -1,24 +1,7 @@
 const db = require('./db');
-const { getPublicBaseUrl } = require('./utils/baseUrl');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
-
-// Set up multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const filename = `${Date.now()}-${Math.round(Math.random() * 1E9)}${ext}`;
-    cb(null, filename);
-  }
-});
+const { uploadFile: cloudUploadFile, uploadVoice: cloudUploadVoice } = require('./middleware/upload');
 
 // File type validation
 const allowedMimeTypes = [
@@ -39,32 +22,32 @@ const blockedExtensions = ['.exe', '.bat', '.cmd', '.sh', '.ps1', '.vbs', '.js',
 
 const fileFilter = (req, file, cb) => {
   const ext = path.extname(file.originalname).toLowerCase();
-  
+
   // Block dangerous extensions
   if (blockedExtensions.includes(ext)) {
     return cb(new Error('File type not allowed'));
   }
-  
+
   // Allow images
   if (file.mimetype.startsWith('image/')) {
     return cb(null, true);
   }
-  
+
   // Allow specific MIME types
   if (allowedMimeTypes.includes(file.mimetype)) {
     return cb(null, true);
   }
-  
+
   // Block everything else
   cb(new Error('File type not allowed'));
 };
 
-// Create multer upload instance
+// Create multer upload instance (Cloudinary storage)
 const upload = multer({
-  storage,
+  storage: cloudUploadFile.storage,
   fileFilter,
   limits: {
-    fileSize: 25 * 1024 * 1024 // 25MB limit
+    fileSize: 5 * 1024 * 1024 // 5MB limit
   }
 });
 
@@ -75,9 +58,7 @@ const uploadFile = async (req, res) => {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const userId = req.user?.userId || 'anonymous';
-    const filename = req.file.filename;
-    const url = `${getPublicBaseUrl(req)}/uploads/${filename}`;
+    const url = req.file.path || req.file.secure_url || req.file.url;
     const mime = req.file.mimetype;
     const size = req.file.size;
 
@@ -92,7 +73,7 @@ const uploadFile = async (req, res) => {
     if (isImage) {
       try {
         const sizeOf = require('image-size');
-        const dimensions = sizeOf(req.file.path);
+        const dimensions = sizeOf(url);
         width = dimensions.width;
         height = dimensions.height;
       } catch (e) {
@@ -108,8 +89,6 @@ const uploadFile = async (req, res) => {
       function(err) {
         if (err) {
           console.error('Error creating attachment record:', err);
-          // Delete the file
-          fs.unlinkSync(path.join(__dirname, '../uploads', filename));
           return res.status(500).json({ error: 'Database error' });
         }
 
@@ -123,14 +102,14 @@ const uploadFile = async (req, res) => {
           type,
           width,
           height,
-          filename
+          filename: req.file.originalname
         });
       }
     );
   } catch (error) {
     if (error instanceof multer.MulterError) {
       if (error.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ error: 'File too large. Max size is 25MB' });
+        return res.status(400).json({ error: 'File too large. Max size is 5MB' });
       }
       return res.status(400).json({ error: error.message });
     }
@@ -138,42 +117,26 @@ const uploadFile = async (req, res) => {
   }
 };
 
-// Voice message storage (separate config for audio files)
-const voiceStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../uploads/voice');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const filename = `voice-${Date.now()}-${Math.round(Math.random() * 1E9)}${ext}`;
-    cb(null, filename);
-  }
-});
-
-// Voice message upload instance
+// Voice message upload instance (Cloudinary storage)
 const voiceUpload = multer({
-  storage: voiceStorage,
+  storage: cloudUploadVoice.storage,
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    
+
     // Block dangerous extensions
     if (blockedExtensions.includes(ext)) {
       return cb(new Error('File type not allowed'));
     }
-    
+
     // Allow audio types
     if (file.mimetype.startsWith('audio/')) {
       return cb(null, true);
     }
-    
+
     cb(new Error('File type not allowed'));
   },
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit for voice messages
+    fileSize: 5 * 1024 * 1024, // 5MB limit for voice messages
     files: 1
   }
 });
@@ -185,9 +148,7 @@ const uploadVoiceMessage = async (req, res) => {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const userId = req.user?.userId || 'anonymous';
-    const filename = req.file.filename;
-    const url = `${getPublicBaseUrl(req)}/uploads/voice/${filename}`;
+    const url = req.file.path || req.file.secure_url || req.file.url;
     const mime = req.file.mimetype;
     const size = req.file.size;
     const duration = parseFloat(req.body.duration) || 0;
@@ -200,8 +161,6 @@ const uploadVoiceMessage = async (req, res) => {
       function(err) {
         if (err) {
           console.error('Error creating voice attachment record:', err);
-          // Delete the file
-          fs.unlinkSync(path.join(__dirname, '../uploads/voice', filename));
           return res.status(500).json({ error: 'Database error' });
         }
 
@@ -220,7 +179,7 @@ const uploadVoiceMessage = async (req, res) => {
   } catch (error) {
     if (error instanceof multer.MulterError) {
       if (error.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ error: 'File too large. Max size is 10MB' });
+        return res.status(400).json({ error: 'File too large. Max size is 5MB' });
       }
       return res.status(400).json({ error: error.message });
     }

@@ -116,7 +116,7 @@ LUME/
     │   ├── servers.js      # 服务器与频道
     │   ├── auth.js         # 认证 (JWT, refresh tokens, cookies)
     │   ├── profile.js      # 用户资料
-    │   ├── uploads.js      # 文件上传
+    │   ├── uploads.js      # 文件上传（Cloudinary）
     │   ├── validation.js   # Zod 校验
     │   ├── permissions.js  # 权限系统
     │   ├── rateLimiter.js  # 限流中间件
@@ -128,7 +128,7 @@ LUME/
     │   ├── serializers.js  # 数据序列化
     │   └── db.js           # PostgreSQL
     │
-    ├── uploads/            # 上传文件
+    ├── uploads/            # （已移除）本地上传目录
     ├── migrate.js          # 主要迁移
     ├── migrate-rate-limit.js # 限流迁移
     ├── migrate-communities.js # 服务器迁移

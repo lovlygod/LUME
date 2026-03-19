@@ -86,13 +86,7 @@ Sticker assets live in:
 src/assets/stickers/<PackName>/<StickerName>.png
 ```
 
-Sticker Bot uploads are stored temporarily in:
-
-```
-backend/sticker-uploads/
-```
-
-The backend scans this directory and syncs packs/stickers into the database at startup.
+Sticker Bot uploads are stored in Cloudinary and persisted in the database (no local `backend/sticker-uploads/`).
 
 ---
 

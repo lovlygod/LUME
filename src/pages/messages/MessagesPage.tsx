@@ -720,8 +720,8 @@ const MessagesPage = () => {
     try {
       setMomentLoadingMap((prev) => ({ ...prev, [msg.id]: true }));
       const res = await messagesAPI.openMoment(msg.moment.id);
-      const url = `${API_BASE_URL}/api/moments/${msg.moment.id}/content?token=${res.token}`;
-      setMomentOpenMap((prev) => ({ ...prev, [msg.id]: url }));
+      const content = await messagesAPI.getMomentContent(msg.moment.id, res.token);
+      setMomentOpenMap((prev) => ({ ...prev, [msg.id]: content.url }));
     } catch (e) {
       const statusCode = (e as { error?: { statusCode?: number } })?.error?.statusCode;
       if (statusCode === 410) {

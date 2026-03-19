@@ -160,8 +160,8 @@ Get current user profile.
     "name": "John Doe",
     "username": "johndoe",
     "bio": "Hello!",
-    "avatar": "http://localhost:5000/uploads/...",
-    "banner": "http://localhost:5000/uploads/...",
+    "avatar": "https://res.cloudinary.com/dbmpcpvrr/image/upload/...",
+    "banner": "https://res.cloudinary.com/dbmpcpvrr/image/upload/...",
     "verified": false,
     "joinDate": "2024-01-01T00:00:00.000Z",
     "followersCount": 42,
@@ -230,7 +230,7 @@ Upload avatar.
 ```json
 {
   "message": "Avatar uploaded successfully",
-  "avatar": "http://localhost:5000/uploads/..."
+  "avatar": "https://res.cloudinary.com/dbmpcpvrr/image/upload/..."
 }
 ```
 
@@ -248,7 +248,7 @@ Upload banner.
 ```json
 {
   "message": "Banner uploaded successfully",
-  "banner": "http://localhost:5000/uploads/..."
+  "banner": "https://res.cloudinary.com/dbmpcpvrr/image/upload/..."
 }
 ```
 
@@ -290,7 +290,7 @@ Get feed posts.
       "id": "1",
       "userId": "1",
       "text": "Hello world!",
-      "imageUrl": "http://localhost:5000/uploads/...",
+      "imageUrl": "https://res.cloudinary.com/dbmpcpvrr/image/upload/...",
       "timestamp": "2024-01-01T12:00:00.000Z",
       "replies": 5,
       "reposts": 2,
@@ -1243,7 +1243,7 @@ Upload a file.
 {
   "message": "File uploaded successfully",
   "attachmentId": "123",
-  "url": "http://localhost:5000/uploads/...",
+  "url": "https://res.cloudinary.com/dbmpcpvrr/...",
   "type": "image",
   "mime": "image/jpeg",
   "size": 102400
@@ -1263,7 +1263,7 @@ Get attachment info.
 {
   "attachment": {
     "id": "123",
-    "url": "http://localhost:5000/uploads/...",
+    "url": "https://res.cloudinary.com/dbmpcpvrr/...",
     "type": "image",
     "mime": "image/jpeg",
     "size": 102400,

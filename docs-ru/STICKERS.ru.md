@@ -86,13 +86,7 @@ export interface StickerPack {
 src/assets/stickers/<PackName>/<StickerName>.png
 ```
 
-Временные загрузки Sticker Bot:
-
-```
-backend/sticker-uploads/
-```
-
-Сервер сканирует каталог и синхронизирует данные при старте.
+Загрузки Sticker Bot хранятся в Cloudinary и сохраняются в БД (локальной директории `backend/sticker-uploads/` больше нет).
 
 ---
 

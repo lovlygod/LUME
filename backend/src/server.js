@@ -139,9 +139,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static files from uploads directory
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-app.use('/sticker-uploads', express.static(path.join(__dirname, '../sticker-uploads')));
+// Serve static assets
 app.use('/assets', express.static(path.join(__dirname, '../../src/assets')));
 
 // Update user online status in DB

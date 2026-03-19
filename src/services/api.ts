@@ -211,10 +211,15 @@ export const profileAPI = {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      const message = errorData.error?.message || errorData.error || errorData.message || `HTTP error! status: ${response.status}`;
+      throw new Error(message);
     }
 
-    return response.json();
+    const data = await response.json();
+    if (!data?.avatar || typeof data.avatar !== 'string' || data.avatar.trim().length === 0) {
+      throw new Error('Avatar upload did not return a valid URL');
+    }
+    return data;
   },
 
   uploadBanner: async (file: File): Promise<{ message: string; banner: string }> => {
@@ -232,10 +237,15 @@ export const profileAPI = {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      const message = errorData.error?.message || errorData.error || errorData.message || `HTTP error! status: ${response.status}`;
+      throw new Error(message);
     }
 
-    return response.json();
+    const data = await response.json();
+    if (!data?.banner || typeof data.banner !== 'string' || data.banner.trim().length === 0) {
+      throw new Error('Banner upload did not return a valid URL');
+    }
+    return data;
   },
 };
 
@@ -556,6 +566,13 @@ export const messagesAPI = {
   openMoment: async (momentId: string) => {
     return apiRequest<{ token: string; expiresAt: string }>(`/moments/${momentId}/open`, {
       method: 'POST',
+    });
+  },
+
+  getMomentContent: async (momentId: string, token: string): Promise<{ url: string; mime?: string; expiresAt?: string | null }> => {
+    const params = new URLSearchParams({ token });
+    return apiRequest(`/moments/${momentId}/content?${params.toString()}`, {
+      method: 'GET',
     });
   },
 

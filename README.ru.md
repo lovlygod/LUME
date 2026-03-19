@@ -115,7 +115,7 @@ LUME/
     │   ├── servers.js      # Серверы и каналы
     │   ├── auth.js         # Аутентификация (JWT, refresh tokens, cookies)
     │   ├── profile.js      # Профиль пользователя
-    │   ├── uploads.js      # Загрузка файлов
+    │   ├── uploads.js      # Загрузка файлов (Cloudinary)
     │   ├── validation.js   # Zod схемы валидации
     │   ├── permissions.js  # Система прав доступа
     │   ├── rateLimiter.js  # Rate limiting middleware
@@ -127,7 +127,7 @@ LUME/
     │   ├── serializers.js  # Сериализация данных
     │   └── db.js           # База данных PostgreSQL
     │
-    ├── uploads/            # Загруженные файлы
+    ├── uploads/            # (удалено) локальная директория загрузок
     ├── migrate.js          # Основные миграции БД
     ├── migrate-rate-limit.js # Миграция rate limiting
     ├── migrate-communities.js # Миграция серверов
