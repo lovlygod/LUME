@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Moon, Sun, Globe, Lock, Users, MessageCircle, Save, Snowflake, AlertTriangle, Trash2, LogOut, MonitorSmartphone, Check, Upload } from "lucide-react";
+import Lottie from "lottie-react";
+import russiaLottie from "@/assets/lottie/Russia.json";
+import usaLottie from "@/assets/lottie/USA.json";
+import chinaLottie from "@/assets/lottie/China.json";
+import spainLottie from "@/assets/lottie/Spain.json";
+import portugueseBrazilLottie from "@/assets/lottie/Portuguese (Brazil).json";
 import silentDoodle from "@/assets/Chat-Background/silent-doodle.png";
 import gameDoodle from "@/assets/Chat-Background/game-doodle.png";
 import cosmicDoodle from "@/assets/Chat-Background/Cosmic Doodle.png";
@@ -12,6 +18,7 @@ import { toast } from 'sonner';
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useChatBackground } from "@/hooks/useChatBackground";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Settings = () => {
   const { user: authUser, logout } = useAuth();
@@ -167,11 +174,19 @@ const Settings = () => {
     }
   };
 
-  const handleLanguageChange = (lang: "ru" | "en") => {
+  const handleLanguageChange = (lang: "ru" | "en" | "zh" | "es" | "pt-BR") => {
     setLanguage(lang);
     localStorage.setItem("language", lang);
     toast.success(t("settings.languageChanged"));
   };
+
+  const languageOptions = [
+    { value: "ru", label: "Россия", lottie: russiaLottie },
+    { value: "en", label: "USA", lottie: usaLottie },
+    { value: "zh", label: "中国", lottie: chinaLottie },
+    { value: "es", label: "España", lottie: spainLottie },
+    { value: "pt-BR", label: "Português (Brasil)", lottie: portugueseBrazilLottie },
+  ] as const;
 
   const handleDeleteAccount = async () => {
     if (deletePassword.length < 6) {
@@ -242,26 +257,23 @@ const Settings = () => {
               </div>
               
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleLanguageChange("ru")}
-                  className={`px-4 py-2 rounded-full text-xs font-medium transition-smooth ${
-                    language === "ru"
-                      ? "bg-white/10 text-white"
-                      : "bg-white/5 text-secondary hover:text-white"
-                  }`}
-                >
-                  RU
-                </button>
-                <button
-                  onClick={() => handleLanguageChange("en")}
-                  className={`px-4 py-2 rounded-full text-xs font-medium transition-smooth ${
-                    language === "en"
-                      ? "bg-white/10 text-white"
-                      : "bg-white/5 text-secondary hover:text-white"
-                  }`}
-                >
-                  EN
-                </button>
+                <Select value={language} onValueChange={(value) => handleLanguageChange(value as "ru" | "en" | "zh" | "es" | "pt-BR")}>
+                  <SelectTrigger className="h-10 w-[200px] rounded-full border-white/10 bg-white/5 text-white">
+                    <SelectValue placeholder={t("settings.interfaceLanguage")} />
+                  </SelectTrigger>
+                  <SelectContent className="border-white/10 bg-[#0B0B0F]">
+                    {languageOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6">
+                            <Lottie animationData={option.lottie} loop className="h-6 w-6" />
+                          </div>
+                          <span>{option.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>

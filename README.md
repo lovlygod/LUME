@@ -39,7 +39,7 @@ English | [Русский](./README.ru.md) | [中文](./README.cn.md)
 - 👑 **Admin panel** for user/content management
 - ⚡ **Real-time notifications** via WebSocket
 - 🔒 **Security**: httpOnly cookies, rate limiting, CSP headers
-- 🌐 **i18n**: Russian and English UI
+- 🌐 **i18n**: Russian, English, Chinese, Spanish, Portuguese (Brazil) UI
 
 ---
 

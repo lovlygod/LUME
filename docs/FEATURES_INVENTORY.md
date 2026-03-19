@@ -362,7 +362,7 @@ English | [Русский](../docs-ru/FEATURES_INVENTORY.ru.md) | [中文](../do
 | Компоненты | 60+ | 0 | 0 | 60+ |
 | API endpoints | 40+ | 0 | 0 | 40+ |
 | WebSocket события | 12+ | 0 | 0 | 12+ |
-| i18n языки | 2 | 0 | 0 | 2 |
+| i18n языки | 5 | 0 | 0 | 5 |
 
 **Общий статус:** ✅ Production-ready
 
