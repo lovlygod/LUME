@@ -124,4 +124,4 @@ Chat Panel (right)
 
 - [Overview](./OVERVIEW.md)
 - [Style System](./STYLE_SYSTEM.md)
-- [Servers UI](./SERVERS_UI.md)
+- [Groups UI](./GROUPS_UI.md)

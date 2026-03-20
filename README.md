@@ -7,7 +7,7 @@ English | [Русский](./README.ru.md) | [中文](./README.cn.md)
 [![React](https://img.shields.io/badge/React-18.3.1-blue.svg)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-blue.svg)](https://www.typescriptlang.org/)
 
-**LUME** is a modern social network with messenger features built on Node.js + React. The project includes a feed, direct messaging, user verification, admin panel, content moderation, and **servers (communities)** with channels.
+**LUME** is a modern social network with messenger features built on Node.js + React. The project includes a feed, direct messaging, user verification, admin panel, content moderation, and **group/channel chats** inside Messages.
 
 ---
 
@@ -32,7 +32,7 @@ English | [Русский](./README.ru.md) | [中文](./README.cn.md)
 ### Highlights:
 - 🔄 **Real-time feed** with WebSocket updates
 - 💬 **Messenger** for 1:1 private chats
-- 👥 **Servers (Communities)** with channels and roles
+- 👥 **Groups & Channels** managed as chat types (`group`, `channel`)
 - 👤 **User profiles** with avatars and banners
 - ✅ **Verification system** via TikTok video
 - 🛡️ **Content moderation** with reports
@@ -86,7 +86,7 @@ LUME/
 │   ├── src/
 │   │   ├── components/     # UI components
 │   │   │   ├── ui/         # shadcn/ui components
-│   │   │   ├── servers/    # Server components
+  │   │   │   ├── groups/     # (legacy) Group components
 │   │   │   ├── feed/       # Feed components
 │   │   │   ├── post/       # Post components
 │   │   │   ├── chat/       # Chat components
@@ -98,7 +98,7 @@ LUME/
 │   │   ├── pages/          # App pages
 │   │   │   ├── auth/       # Auth pages
 │   │   │   ├── messages/   # Messages pages
-│   │   │   └── server/     # Server pages
+  │   │   │   └── group/      # (legacy) Group pages
 │   │   ├── services/       # API client, errorHandler, websocket
 │   │   ├── contexts/       # React contexts (Auth, Language, Theme, Server)
 │   │   ├── hooks/          # Custom hooks (React Query)
@@ -111,8 +111,7 @@ LUME/
 └── Backend (Express + PostgreSQL)
     ├── src/
     │   ├── server.js       # Entry point + WebSocket server
-    │   ├── api.js          # API routes (Auth, Posts, Messages, Profile)
-    │   ├── servers.js      # Servers and channels
+    │   ├── api.js          # API routes (Auth, Posts, Chats, Messages, Profile)
     │   ├── auth.js         # Authentication (JWT, refresh tokens, cookies)
     │   ├── profile.js      # User profile
     │   ├── uploads.js      # File uploads (Cloudinary)
@@ -130,7 +129,7 @@ LUME/
     ├── uploads/            # (removed) local uploads directory
     ├── migrate.js          # Core migrations
     ├── migrate-rate-limit.js # Rate limiting migration
-    ├── migrate-communities.js # Servers migration
+    ├── migrate-communities.js # Groups migration
     ├── migrate-audit.js    # Audit migration
     └── package.json
 ```
@@ -139,20 +138,19 @@ LUME/
 
 ## ⚙️ Key features
 
-### 1. Servers (Communities)
+### 1. Groups & Channels (Chats)
 
 **Features:**
-- Create public/private servers
-- Role system: Owner (100), Admin (80), Moderator (50), Member (10)
-- Text channels
-- Join requests for private servers
-- Member management (kick, change role)
-- Real-time channel messaging
-- File uploads in messages
+- Chat types: `group`, `channel`, `private`
+- Create group/channel chats
+- Join requests (public channels)
+- Member management with roles
+- Real-time chat messages
+- File uploads in chat messages
 
 **URL navigation:**
-- Public: `/server/:username/channel/:channelName`
-- Private: `/server/:id/channel/:channelName`
+- `/messages`
+- `/messages/:chatId`
 
 ### 2. Feed
 
@@ -204,14 +202,14 @@ LUME/
 - **CSP headers**: XSS protection
 - **Zod validation**: strict data validation
 - **Centralized error handling**
-- **Permission checks**: server role and access control
+- **Permission checks**: chat role and access control
 
 ### 7. Permissions
 
-**Server roles:**
-- **Owner (100)**: full access, delete server
-- **Admin (80)**: manage channels and members
-- **Moderator (50)**: moderate messages, kick, timeouts
+**Chat roles:**
+- **Owner (100)**: full access, delete chat
+- **Admin (80)**: manage members and settings
+- **Moderator (50)**: moderate messages
 - **Member (10)**: read and send
 
 **Rules:**
@@ -223,7 +221,7 @@ LUME/
 
 **Audit events:**
 - User logins/logouts
-- Delete posts/messages/servers
+- Delete posts/messages/chats
 - Member role changes
 - Kick/ban actions
 - Verification requests
@@ -291,61 +289,52 @@ LUME/
 | ttl_seconds | INTEGER | TTL seconds |
 | expires_at | DATETIME | Expiration time |
 
-### Server tables
+### Chat tables
 
-#### `servers`
+#### `chats`
 | Field | Type | Description |
 |-------|------|-------------|
 | id | INTEGER | Primary key |
 | username | TEXT | Public username (unique) |
-| name | TEXT | Server name |
+| name | TEXT | Chat title |
 | description | TEXT | Description |
-| icon_url | TEXT | Icon URL |
-| type | TEXT | public/private |
+| avatar | TEXT | Chat avatar |
+| type | TEXT | private/group/channel |
 | owner_id | INTEGER | Owner |
 | created_at | DATETIME | Created at |
 
-#### `server_members`
+#### `chat_members`
 | Field | Type | Description |
 |-------|------|-------------|
-| server_id | INTEGER | Server |
+| chat_id | INTEGER | Chat |
 | user_id | INTEGER | Member |
 | role_id | INTEGER | Role |
 | joined_at | DATETIME | Joined at |
 
-#### `server_roles`
+#### `chat_roles`
 | Field | Type | Description |
 |-------|------|-------------|
 | id | INTEGER | Primary key |
-| server_id | INTEGER | Server |
+| chat_id | INTEGER | Chat |
 | name | TEXT | Role name |
 | rank | INTEGER | Rank (priority) |
 | permissions_json | TEXT | Permissions (JSON) |
 | is_system | BOOLEAN | System role |
 
-#### `server_channels`
+#### `messages`
 | Field | Type | Description |
 |-------|------|-------------|
 | id | INTEGER | Primary key |
-| server_id | INTEGER | Server |
-| name | TEXT | Channel name |
-| type | TEXT | text/voice |
-| position | INTEGER | Position |
-
-#### `server_messages`
-| Field | Type | Description |
-|-------|------|-------------|
-| id | INTEGER | Primary key |
-| channel_id | INTEGER | Channel |
+| chat_id | INTEGER | Chat |
 | user_id | INTEGER | Author |
 | text | TEXT | Text |
 | created_at | DATETIME | Timestamp |
 
-#### `server_join_requests`
+#### `chat_join_requests`
 | Field | Type | Description |
 |-------|------|-------------|
 | id | INTEGER | Primary key |
-| server_id | INTEGER | Server |
+| chat_id | INTEGER | Chat |
 | user_id | INTEGER | Requestor |
 | status | TEXT | pending/approved/rejected |
 | created_at | DATETIME | Requested at |
@@ -408,20 +397,21 @@ http://localhost:5000/api
 - `DELETE /posts/:postId` — Delete post
 - `POST /posts/:postId/resonance` — Like
 
+#### Chats
+- `GET /chats` — Chat list
+- `POST /chats` — Create chat
+- `PUT /chats/:chatId` — Update chat
+- `POST /chats/:chatId/members` — Add member
+- `DELETE /chats/:chatId/members/:userId` — Remove member
+- `GET /chats/public?query=...` — Public channels
+- `POST /chats/:chatId/subscribe` — Join public channel
+- `GET /chats/:chatId/join-requests` — Join requests
+- `POST /chats/:chatId/join-requests/:requestId/review` — Approve/reject
+
 #### Messages
-- `GET /messages` — Chat list
-- `GET /messages/:userId` — Message history
+- `GET /messages?chatId=...` — Chat history
 - `POST /messages` — Send message
 - `DELETE /messages/:messageId` — Delete message
-
-#### Servers
-- `POST /servers` — Create server
-- `GET /servers/my` — My servers
-- `GET /servers/public` — Public servers
-- `GET /servers/:identifier` — Server by username/ID
-- `POST /servers/:id/join` — Join
-- `POST /servers/:id/channels` — Create channel
-- `POST /servers/:serverId/channels/:channelId/messages` — Channel message
 
 ---
 
@@ -440,7 +430,7 @@ ws://localhost:5000/ws
 - `typing:start` / `typing:stop` — Typing indicator
 - `chat:read` — Mark chat read
 - `message:delivered` — Delivery
-- `server:subscribe` / `server:unsubscribe` — Subscribe to server
+- `chat:subscribe` / `chat:unsubscribe` — Subscribe to chat
 
 **Server → Client:**
 - `new_post` — New post
@@ -449,7 +439,7 @@ ws://localhost:5000/ws
 - `chat:read_update` — Read status
 - `presence:update` — Online status
 - `channel:new_message` — Channel message
-- `server:created` / `server:deleted` — Server created/deleted
+- `chat:read_update` — Read status update
 
 ---
 
@@ -472,7 +462,7 @@ All inputs are strictly validated.
 Unified API error format.
 
 ### 6. Permission checks
-Role-based access control for servers.
+Role-based access control for chats.
 
 ---
 
@@ -493,7 +483,7 @@ npm install
 node migrate.js                    # Core tables
 node migrate-rate-limit.js         # Rate limiting
 node migrate-audit.js              # Audit logs
-node migrate-communities.js        # Servers (communities)
+node migrate-communities.js        # Groups (communities)
 
 # Start
 npm run dev
@@ -544,7 +534,7 @@ MIT License
 
 - [Features Inventory](./docs/FEATURES_INVENTORY.md) — Complete feature list
 - [Error Handling](./docs/ERROR_HANDLING.md) — Error handling system
-- [Servers Module](./docs/SERVERS_MODULE.md) — Servers module docs
+- [Groups Module](./docs/GROUPS_MODULE.md) — Groups module docs
 - [Project UI](./docs/PROJECT_UI/) — UI/UX documentation
 - [API Documentation](./backend/API.md) — API endpoints
 

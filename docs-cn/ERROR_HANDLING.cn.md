@@ -65,7 +65,7 @@ const { logger } = require('./logger');
 const { audit } = require('./audit');
 
 logger.auth.login(userId, true, req.ip);
-logger.server.created(serverId, userId, name);
+logger.group.created(groupId, userId, name);
 logger.post.created(postId, userId);
 
 audit.login(userId, true, ip, userAgent);
@@ -140,12 +140,12 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 ## 验证（Zod）
 
 ```javascript
-const { createServerSchema } = require('./validation');
+const { createGroupSchema } = require('./validation');
 
-router.post('/servers', authenticateToken, asyncHandler(async (req, res) => {
-  const result = createServerSchema.safeParse(req.body);
+router.post('/groups', authenticateToken, asyncHandler(async (req, res) => {
+  const result = createGroupSchema.safeParse(req.body);
   if (!result.success) {
-    throw new ValidationError('Invalid server data', {
+    throw new ValidationError('Invalid group data', {
       fields: result.error.flatten().fieldErrors,
     });
   }
@@ -201,7 +201,7 @@ const ERROR_MESSAGES = {
 
 ## 相关文档
 
-- [Servers Module](./SERVERS_MODULE.cn.md)
+- [Groups Module](./GROUPS_MODULE.cn.md)
 - [WebSocket Architecture](./WEBSOCKET_ARCHITECTURE.cn.md)
 - [Features Inventory](./FEATURES_INVENTORY.cn.md)
 - [Project UI](./PROJECT_UI/)

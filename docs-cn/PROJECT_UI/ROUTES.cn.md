@@ -2,7 +2,7 @@
 
 中文 | [Русский](../../docs-ru/PROJECT_UI/ROUTES.ru.md) | [English](../../docs/PROJECT_UI/ROUTES.md)
 
-**最后更新：** 2026-03-16
+**最后更新：** 2026-03-19
 
 ---
 
@@ -45,16 +45,6 @@
 | `/messages` | Messages | `src/pages/Messages.tsx` | 聊天列表 |
 | `/messages/:chatId` | Messages | `src/pages/Messages.tsx` | 聊天视图 |
 | `/messages?userId=:id` | Messages | `src/pages/Messages.tsx` | 通过 query 参数打开聊天 |
-
-### 服务器
-
-| 路径 | 组件 | 文件 | 说明 |
-|------|------|------|------|
-| `/servers` | ServersPage | `src/pages/ServersPage.tsx` | 服务器目录 |
-| `/server/:identifier` | ServerPage | `src/pages/ServerPage.tsx` | 服务器页面 |
-| `/server/:identifier/channel/:channelName` | ServerPage | `src/pages/ServerPage.tsx` | 频道聊天 |
-| `/server/:identifier/settings` | ServerSettingsPage | `src/pages/ServerSettingsPage.tsx` | 设置 |
-| `/server/:identifier/members` | ServerMembersPage | `src/pages/ServerMembersPage.tsx` | 成员 |
 
 ### 个人资料
 
@@ -100,14 +90,8 @@
   </Route>
 
   <Route element={<ProtectedRoute />}>
-    <Route path="/server/:identifier/channel/:channelName" element={<ServerPage />} />
-    <Route path="/server/:identifier/settings" element={<ServerSettingsPage />} />
-    <Route path="/server/:identifier/members" element={<ServerMembersPage />} />
-    <Route path="/server/:identifier" element={<ServerPage />} />
-
     <Route element={<MainLayout />}>
       <Route path="/feed" element={<Index />} />
-      <Route path="/servers" element={<ServersPage />} />
       <Route path="/messages" element={<Messages />} />
       <Route path="/messages/:chatId" element={<Messages />} />
       <Route path="/profile" element={<Profile />} />
@@ -140,9 +124,6 @@ const hideRightSidebar = pathname.startsWith("/messages");
 
 ```
 /messages/:chatId
-/server/:identifier/channel/:channelName
-/server/:identifier/settings
-/server/:identifier/members
 ```
 
 ---

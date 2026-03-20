@@ -2,7 +2,7 @@
 
 [English](../docs/WEBSOCKET_ARCHITECTURE.md) | Русский | [中文](../docs-cn/WEBSOCKET_ARCHITECTURE.cn.md)
 
-**Последнее обновление:** 2026-03-11
+**Последнее обновление:** 2026-03-19
 **Статус:** реализовано и используется
 
 ---
@@ -32,13 +32,13 @@ REDIS_PASSWORD=
 REDIS_DB=0
 ```
 
-Каналы: `ws:new_message`, `ws:post_created`, `ws:notification`, `ws:server_message`.
+Каналы: `ws:new_message`, `ws:post_created`, `ws:notification`, `ws:chat_message`.
 
 ---
 
 ## WebSocket события
 
-**Клиент → Сервер:** `register`, `ping`, `typing:start`, `typing:stop`, `message:delivered`, `chat:read`, `server:subscribe`, `server:unsubscribe`, `server:message_read`
+**Клиент → Сервер:** `register`, `ping`, `typing:start`, `typing:stop`, `message:delivered`, `chat:read`, `chat:subscribe`, `chat:unsubscribe`
 
 **Сервер → Клиент:** `welcome`, `pong`, `typing:update`, `message:delivered`, `chat:read_update`, `presence:update`, `new_message`, `post_created`, `notification`, `notification_new`, `channel:new_message`, `channel:message_deleted`, `channel:edited`, `session_terminated`
 
@@ -55,6 +55,6 @@ REDIS_DB=0
 
 ## Связанные документы
 
-- [Servers Module](./SERVERS_MODULE.ru.md)
+- [Groups Module](./GROUPS_MODULE.ru.md)
 - [Error Handling](./ERROR_HANDLING.ru.md)
 - [Features Inventory](./FEATURES_INVENTORY.ru.md)

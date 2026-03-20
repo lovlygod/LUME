@@ -2,7 +2,7 @@
 
 [English](../../docs/PROJECT_UI/OVERVIEW.md) | Русский | [中文](../../docs-cn/PROJECT_UI/OVERVIEW.cn.md)
 
-**Последнее обновление:** 2026-03-11
+**Последнее обновление:** 2026-03-19
 
 ---
 
@@ -22,8 +22,6 @@ LUME
 │   ├── /explore
 │   ├── /messages
 │   ├── /messages?userId=... — открытие чата по query param
-│   ├── /servers
-│   ├── /server/:identifier
 │   ├── /profile
 │   ├── /verified
 │   ├── /settings
@@ -38,6 +36,16 @@ LUME
 
 - **LandingLayout** — публичные страницы
 - **AppLayout** — основное приложение
+
+---
+
+## Навигация
+
+```
+Landing → Login → Feed
+Feed → Explore / Messages / Profile / Settings / Admin
+Messages → Chat list → Chat panel
+```
 
 ---
 

@@ -54,4 +54,4 @@
 
 - [Overview](./OVERVIEW.ru.md)
 - [Style System](./STYLE_SYSTEM.ru.md)
-- [Servers UI](./SERVERS_UI.ru.md)
+- [Groups UI](./GROUPS_UI.ru.md)

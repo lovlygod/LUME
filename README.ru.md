@@ -7,7 +7,7 @@
 [![React](https://img.shields.io/badge/React-18.3.1-blue.svg)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-blue.svg)](https://www.typescriptlang.org/)
 
-**LUME** — это современная социальная сеть с функциями мессенджера, построенная на стеке Node.js + React. Проект включает в себя ленту публикаций, систему личных сообщений, верификацию пользователей, админ-панель, систему модерации контента и **серверы (communities)** с каналами.
+**LUME** — это современная социальная сеть с функциями мессенджера, построенная на стеке Node.js + React. Проект включает в себя ленту публикаций, систему личных сообщений, верификацию пользователей, админ-панель, систему модерации контента и **чаты-группы/каналы** в Messages.
 
 ---
 
@@ -32,7 +32,7 @@
 ### Ключевые особенности:
 - 🔄 **Лента публикаций** в реальном времени с WebSocket обновлениями
 - 💬 **Мессенджер** для обмена личными сообщениями
-- 👥 **Серверы (Communities)** с каналами и ролями
+- 👥 **Группы и каналы** как типы чатов (`group`, `channel`)
 - 👤 **Профили пользователей** с аватарами и баннерами
 - ✅ **Система верификации** через TikTok видео
 - 🛡️ **Модерация контента** с системой репортов
@@ -86,7 +86,7 @@ LUME/
 │   ├── src/
 │   │   ├── components/     # UI компоненты
 │   │   │   ├── ui/         # shadcn/ui компоненты
-│   │   │   ├── servers/    # Компоненты серверов
+  │   │   │   ├── groups/     # (legacy) Компоненты групп
 │   │   │   ├── feed/       # Компоненты ленты
 │   │   │   ├── post/       # Компоненты постов
 │   │   │   ├── chat/       # Компоненты чатов
@@ -98,7 +98,7 @@ LUME/
 │   │   ├── pages/          # Страницы приложения
 │   │   │   ├── auth/       # Auth страницы
 │   │   │   ├── messages/   # Страницы сообщений
-│   │   │   └── server/     # Страницы серверов
+  │   │   │   └── group/      # (legacy) Страницы групп
 │   │   ├── services/       # API клиент, errorHandler, websocket
 │   │   ├── contexts/       # React контексты (Auth, Language, Theme, Server)
 │   │   ├── hooks/          # Кастомные хуки (React Query)
@@ -111,8 +111,7 @@ LUME/
 └── Backend (Express + PostgreSQL)
     ├── src/
     │   ├── server.js       # Точка входа, WebSocket сервер
-    │   ├── api.js          # API роуты (Auth, Posts, Messages, Profile)
-    │   ├── servers.js      # Серверы и каналы
+    │   ├── api.js          # API роуты (Auth, Posts, Chats, Messages, Profile)
     │   ├── auth.js         # Аутентификация (JWT, refresh tokens, cookies)
     │   ├── profile.js      # Профиль пользователя
     │   ├── uploads.js      # Загрузка файлов (Cloudinary)
@@ -130,7 +129,7 @@ LUME/
     ├── uploads/            # (удалено) локальная директория загрузок
     ├── migrate.js          # Основные миграции БД
     ├── migrate-rate-limit.js # Миграция rate limiting
-    ├── migrate-communities.js # Миграция серверов
+    ├── migrate-communities.js # Миграция групп
     ├── migrate-audit.js    # Миграция audit
     └── package.json
 ```
@@ -139,20 +138,19 @@ LUME/
 
 ## ⚙️ Функциональные возможности
 
-### 1. Серверы (Communities)
+### 1. Группы и каналы (Chats)
 
 **Возможности:**
-- Создание публичных и приватных серверов
-- Система ролей: Owner (100), Admin (80), Moderator (50), Member (10)
-- Текстовые каналы
-- Заявки на вступление для приватных серверов
-- Управление участниками (kick, change role)
-- Real-time сообщения в каналах
-- Загрузка файлов в сообщения
+- Типы чатов: `group`, `channel`, `private`
+- Создание групп/каналов
+- Заявки на вступление (public channels)
+- Управление участниками и ролями
+- Real-time сообщения
+- Загрузка файлов в сообщениях
 
 **URL навигация:**
-- Публичный: `/server/:username/channel/:channelName`
-- Приватный: `/server/:id/channel/:channelName`
+- `/messages`
+- `/messages/:chatId`
 
 ### 2. Лента публикаций (Feed)
 
@@ -203,15 +201,15 @@ LUME/
 - **CSP заголовки**: защита от XSS
 - **Zod валидация**: строгая проверка данных
 - **Централизованная обработка ошибок**
-- **Централизованная проверка прав (Permissions)**: система ролей и прав доступа
+- **Централизованная проверка прав (Permissions)**: система ролей и прав доступа в чатах
 
 ### 7. Система прав доступа (Permissions)
 
-**Роли на сервере:**
-- **Owner (100)**: полный доступ, удаление сервера
-- **Admin (80)**: управление каналами, участниками, настройками
-- **Moderator (50)**: модерация сообщений, кик, таймауты
-- **Member (10)**: чтение каналов, отправка сообщений
+**Роли чатов:**
+- **Owner (100)**: полный доступ, удаление чата
+- **Admin (80)**: управление участниками и настройками
+- **Moderator (50)**: модерация сообщений
+- **Member (10)**: чтение и отправка
 
 **Принципы:**
 - Нельзя управлять пользователем с рангом >= твоего
@@ -222,7 +220,7 @@ LUME/
 
 **Аудит событий:**
 - Все входы/выходы пользователей
-- Удаление постов, сообщений, серверов
+- Удаление постов, сообщений, чатов
 - Изменение ролей участников
 - Кик/бан пользователей
 - Запросы на верификацию
@@ -290,61 +288,52 @@ LUME/
 | ttl_seconds | INTEGER | Время жизни |
 | expires_at | DATETIME | Истекает |
 
-### Таблицы серверов
+### Таблицы чатов
 
-#### `servers`
+#### `chats`
 | Поле | Тип | Описание |
 |------|-----|----------|
 | id | INTEGER | Первичный ключ |
 | username | TEXT | Уникальный username (для public) |
 | name | TEXT | Название |
 | description | TEXT | Описание |
-| icon_url | TEXT | URL иконки |
-| type | TEXT | public/private |
+| avatar | TEXT | URL аватара |
+| type | TEXT | private/group/channel |
 | owner_id | INTEGER | Владелец |
 | created_at | DATETIME | Дата создания |
 
-#### `server_members`
+#### `chat_members`
 | Поле | Тип | Описание |
 |------|-----|----------|
-| server_id | INTEGER | Сервер |
+| chat_id | INTEGER | Чат |
 | user_id | INTEGER | Участник |
 | role_id | INTEGER | Роль |
 | joined_at | DATETIME | Дата вступления |
 
-#### `server_roles`
+#### `chat_roles`
 | Поле | Тип | Описание |
 |------|-----|----------|
 | id | INTEGER | Первичный ключ |
-| server_id | INTEGER | Сервер |
+| chat_id | INTEGER | Чат |
 | name | TEXT | Название роли |
 | rank | INTEGER | Ранг (приоритет) |
 | permissions_json | TEXT | Права (JSON) |
 | is_system | BOOLEAN | Системная роль |
 
-#### `server_channels`
+#### `messages`
 | Поле | Тип | Описание |
 |------|-----|----------|
 | id | INTEGER | Первичный ключ |
-| server_id | INTEGER | Сервер |
-| name | TEXT | Название |
-| type | TEXT | text/voice |
-| position | INTEGER | Позиция в списке |
-
-#### `server_messages`
-| Поле | Тип | Описание |
-|------|-----|----------|
-| id | INTEGER | Первичный ключ |
-| channel_id | INTEGER | Канал |
+| chat_id | INTEGER | Чат |
 | user_id | INTEGER | Автор |
 | text | TEXT | Текст |
 | created_at | DATETIME | Дата |
 
-#### `server_join_requests`
+#### `chat_join_requests`
 | Поле | Тип | Описание |
 |------|-----|----------|
 | id | INTEGER | Первичный ключ |
-| server_id | INTEGER | Сервер |
+| chat_id | INTEGER | Чат |
 | user_id | INTEGER | Заявитель |
 | status | TEXT | pending/approved/rejected |
 | created_at | DATETIME | Дата заявки |
@@ -407,20 +396,21 @@ http://localhost:5000/api
 - `DELETE /posts/:postId` — Удалить пост
 - `POST /posts/:postId/resonance` — Лайк
 
+#### Chats
+- `GET /chats` — Список чатов
+- `POST /chats` — Создать чат
+- `PUT /chats/:chatId` — Обновить чат
+- `POST /chats/:chatId/members` — Добавить участника
+- `DELETE /chats/:chatId/members/:userId` — Удалить участника
+- `GET /chats/public?query=...` — Публичные каналы
+- `POST /chats/:chatId/subscribe` — Вступить в публичный канал
+- `GET /chats/:chatId/join-requests` — Заявки на вступление
+- `POST /chats/:chatId/join-requests/:requestId/review` — Approve/reject
+
 #### Messages
-- `GET /messages` — Список чатов
-- `GET /messages/:userId` — История переписки
+- `GET /messages?chatId=...` — История чата
 - `POST /messages` — Отправить сообщение
 - `DELETE /messages/:messageId` — Удалить сообщение
-
-#### Servers
-- `POST /servers` — Создать сервер
-- `GET /servers/my` — Мои серверы
-- `GET /servers/public` — Публичные серверы
-- `GET /servers/:identifier` — Сервер по username/ID
-- `POST /servers/:id/join` — Вступить
-- `POST /servers/:id/channels` — Создать канал
-- `POST /servers/:serverId/channels/:channelId/messages` — Сообщение в канал
 
 ---
 
@@ -439,7 +429,7 @@ ws://localhost:5000/ws
 - `typing:start` / `typing:stop` — Индикатор набора
 - `chat:read` — Прочтение чата
 - `message:delivered` — Доставка сообщения
-- `server:subscribe` / `server:unsubscribe` — Подписка на сервер
+- `chat:subscribe` / `chat:unsubscribe` — Подписка на чат
 
 **Сервер → Клиент:**
 - `new_post` — Новый пост
@@ -448,7 +438,7 @@ ws://localhost:5000/ws
 - `chat:read_update` — Прочтение чата
 - `presence:update` — Статус онлайн
 - `channel:new_message` — Сообщение в канале
-- `server:created` / `server:deleted` — Сервер создан/удалён
+- `chat:read_update` — Обновление прочтения
 
 ---
 
@@ -471,7 +461,7 @@ ws://localhost:5000/ws
 Единый формат ошибок API.
 
 ### 6. Централизованная проверка прав
-Система ролей и прав доступа для серверов.
+Система ролей и прав доступа для чатов.
 
 ---
 
@@ -492,7 +482,7 @@ npm install
 node migrate.js                    # Основные таблицы
 node migrate-rate-limit.js         # Rate limiting
 node migrate-audit.js              # Audit логи
-node migrate-communities.js        # Серверы (communities)
+node migrate-communities.js        # Группы (communities)
 
 # Запуск
 npm run dev
@@ -543,6 +533,6 @@ MIT License
 
 - [Features Inventory](./docs/FEATURES_INVENTORY.md) — Полный список функций
 - [Error Handling](./docs/ERROR_HANDLING.md) — Система обработки ошибок
-- [Servers Module](./docs/SERVERS_MODULE.md) — Документация по модулю серверов
+- [Groups Module](./docs/GROUPS_MODULE.md) — Документация по модулю групп
 - [Project UI](./docs/PROJECT_UI/) — UI/UX документация
 - [API Documentation](./backend/API.md) — API endpoints

@@ -7,7 +7,7 @@
 [![React](https://img.shields.io/badge/React-18.3.1-blue.svg)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-blue.svg)](https://www.typescriptlang.org/)
 
-**LUME** 是一款基于 Node.js + React 技术栈构建的现代社交网络，集成了动态信息流、私信系统、用户认证、管理面板、内容审核与 **服务器（communities）** 及频道等功能。
+**LUME** 是一款基于 Node.js + React 技术栈构建的现代社交网络，集成了动态信息流、私信系统、用户认证、管理面板、内容审核与 **群组/频道聊天**（Messages）等功能。
 
 ---
 
@@ -33,7 +33,7 @@
 ### 核心亮点：
 - 🔄 **实时动态信息流**（WebSocket 实时更新）
 - 💬 **私信聊天**（一对一消息系统）
-- 👥 **服务器（Communities）**，支持频道与角色
+- 👥 **群组与频道**（聊天类型：`group`、`channel`）
 - 👤 **用户资料**（头像、横幅）
 - ✅ **用户认证**（TikTok 视频验证）
 - 🛡️ **内容审核**（举报系统）
@@ -87,7 +87,7 @@ LUME/
 │   ├── src/
 │   │   ├── components/     # UI 组件
 │   │   │   ├── ui/         # shadcn/ui 组件
-│   │   │   ├── servers/    # 服务器组件
+  │   │   │   ├── groups/     # (legacy) 群组组件
 │   │   │   ├── feed/       # 动态组件
 │   │   │   ├── post/       # 帖子组件
 │   │   │   ├── chat/       # 聊天组件
@@ -99,7 +99,7 @@ LUME/
 │   │   ├── pages/          # 页面
 │   │   │   ├── auth/       # 认证页面
 │   │   │   ├── messages/   # 消息页面
-│   │   │   └── server/     # 服务器页面
+  │   │   │   └── group/      # (legacy) 群组页面
 │   │   ├── services/       # API 客户端、errorHandler、websocket
 │   │   ├── contexts/       # React 上下文 (Auth, Language, Theme, Server)
 │   │   ├── hooks/          # 自定义 hooks (React Query)
@@ -112,8 +112,7 @@ LUME/
 └── Backend (Express + PostgreSQL)
     ├── src/
     │   ├── server.js       # 入口与 WebSocket
-    │   ├── api.js          # API 路由 (Auth, Posts, Messages, Profile)
-    │   ├── servers.js      # 服务器与频道
+    │   ├── api.js          # API 路由 (Auth, Posts, Chats, Messages, Profile)
     │   ├── auth.js         # 认证 (JWT, refresh tokens, cookies)
     │   ├── profile.js      # 用户资料
     │   ├── uploads.js      # 文件上传（Cloudinary）
@@ -131,7 +130,7 @@ LUME/
     ├── uploads/            # （已移除）本地上传目录
     ├── migrate.js          # 主要迁移
     ├── migrate-rate-limit.js # 限流迁移
-    ├── migrate-communities.js # 服务器迁移
+    ├── migrate-communities.js # 群组迁移
     ├── migrate-audit.js    # 审计迁移
     └── package.json
 ```
@@ -140,20 +139,19 @@ LUME/
 
 ## ⚙️ 功能特性
 
-### 1. 服务器（Communities）
+### 1. 群组与频道（Chats）
 
 **功能：**
-- 创建公开/私密服务器
-- 角色体系：Owner (100)、Admin (80)、Moderator (50)、Member (10)
-- 文本频道
-- 私密服务器加入申请
-- 成员管理（踢人、角色变更）
-- 频道实时消息
+- 聊天类型：`group`、`channel`、`private`
+- 创建群组/频道聊天
+- 加入申请（公开频道）
+- 成员与角色管理
+- 实时聊天消息
 - 消息附件上传
 
 **URL 导航：**
-- 公开：`/server/:username/channel/:channelName`
-- 私密：`/server/:id/channel/:channelName`
+- `/messages`
+- `/messages/:chatId`
 
 ### 2. 动态信息流（Feed）
 
@@ -205,14 +203,14 @@ LUME/
 - **CSP 头**：防 XSS
 - **Zod 校验**：严格验证
 - **集中式错误处理**
-- **权限系统**：服务器角色与权限
+- **权限系统**：聊天角色与权限
 
 ### 7. 权限系统（Permissions）
 
-**服务器角色：**
-- **Owner (100)**：最高权限，可删除服务器
-- **Admin (80)**：管理频道与成员
-- **Moderator (50)**：管理消息、踢人
+**聊天角色：**
+- **Owner (100)**：最高权限，可删除聊天
+- **Admin (80)**：管理成员与设置
+- **Moderator (50)**：管理消息
 - **Member (10)**：发送与阅读
 
 **规则：**
@@ -223,7 +221,7 @@ LUME/
 
 **审计事件：**
 - 用户登录/退出
-- 删除帖子、消息、服务器
+- 删除帖子、消息、群组
 - 成员角色变更
 - 踢人/封禁
 - 认证请求
@@ -291,61 +289,52 @@ LUME/
 | ttl_seconds | INTEGER | 有效期 |
 | expires_at | DATETIME | 过期时间 |
 
-### 服务器相关表
+### 聊天相关表
 
-#### `servers`
+#### `chats`
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | INTEGER | 主键 |
 | username | TEXT | 公共 username（唯一） |
-| name | TEXT | 服务器名称 |
+| name | TEXT | 聊天名称 |
 | description | TEXT | 描述 |
-| icon_url | TEXT | 图标 URL |
-| type | TEXT | public/private |
+| avatar | TEXT | 头像 URL |
+| type | TEXT | private/group/channel |
 | owner_id | INTEGER | 拥有者 |
 | created_at | DATETIME | 创建时间 |
 
-#### `server_members`
+#### `chat_members`
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| server_id | INTEGER | 服务器 |
+| chat_id | INTEGER | 聊天 |
 | user_id | INTEGER | 成员 |
 | role_id | INTEGER | 角色 |
 | joined_at | DATETIME | 加入时间 |
 
-#### `server_roles`
+#### `chat_roles`
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | INTEGER | 主键 |
-| server_id | INTEGER | 服务器 |
+| chat_id | INTEGER | 聊天 |
 | name | TEXT | 角色名称 |
 | rank | INTEGER | 排名（优先级） |
 | permissions_json | TEXT | 权限 JSON |
 | is_system | BOOLEAN | 系统角色 |
 
-#### `server_channels`
+#### `messages`
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | INTEGER | 主键 |
-| server_id | INTEGER | 服务器 |
-| name | TEXT | 频道名称 |
-| type | TEXT | text/voice |
-| position | INTEGER | 排序 |
-
-#### `server_messages`
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | INTEGER | 主键 |
-| channel_id | INTEGER | 频道 |
+| chat_id | INTEGER | 聊天 |
 | user_id | INTEGER | 作者 |
 | text | TEXT | 文本 |
 | created_at | DATETIME | 时间 |
 
-#### `server_join_requests`
+#### `chat_join_requests`
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | INTEGER | 主键 |
-| server_id | INTEGER | 服务器 |
+| chat_id | INTEGER | 聊天 |
 | user_id | INTEGER | 申请人 |
 | status | TEXT | pending/approved/rejected |
 | created_at | DATETIME | 时间 |
@@ -408,20 +397,21 @@ http://localhost:5000/api
 - `DELETE /posts/:postId` — 删除帖子
 - `POST /posts/:postId/resonance` — 点赞
 
+#### Chats
+- `GET /chats` — 聊天列表
+- `POST /chats` — 创建聊天
+- `PUT /chats/:chatId` — 更新聊天
+- `POST /chats/:chatId/members` — 添加成员
+- `DELETE /chats/:chatId/members/:userId` — 移除成员
+- `GET /chats/public?query=...` — 公开频道
+- `POST /chats/:chatId/subscribe` — 加入公开频道
+- `GET /chats/:chatId/join-requests` — 加入申请
+- `POST /chats/:chatId/join-requests/:requestId/review` — Approve/reject
+
 #### Messages
-- `GET /messages` — 聊天列表
-- `GET /messages/:userId` — 聊天记录
+- `GET /messages?chatId=...` — 聊天记录
 - `POST /messages` — 发送消息
 - `DELETE /messages/:messageId` — 删除消息
-
-#### Servers
-- `POST /servers` — 创建服务器
-- `GET /servers/my` — 我的服务器
-- `GET /servers/public` — 公共服务器
-- `GET /servers/:identifier` — 通过 username/ID 获取
-- `POST /servers/:id/join` — 加入
-- `POST /servers/:id/channels` — 创建频道
-- `POST /servers/:serverId/channels/:channelId/messages` — 频道消息
 
 ---
 
@@ -440,7 +430,7 @@ ws://localhost:5000/ws
 - `typing:start` / `typing:stop` — 输入指示
 - `chat:read` — 标记已读
 - `message:delivered` — 消息送达
-- `server:subscribe` / `server:unsubscribe` — 订阅服务器
+- `chat:subscribe` / `chat:unsubscribe` — 订阅聊天
 
 **服务器 → 客户端：**
 - `new_post` — 新帖子
@@ -449,7 +439,7 @@ ws://localhost:5000/ws
 - `chat:read_update` — 已读更新
 - `presence:update` — 在线状态
 - `channel:new_message` — 频道消息
-- `server:created` / `server:deleted` — 服务器创建/删除
+- `chat:read_update` — 已读更新
 
 ---
 
@@ -472,7 +462,7 @@ ws://localhost:5000/ws
 API 统一错误格式。
 
 ### 6. 权限控制
-服务器权限系统与角色管理。
+聊天权限系统与角色管理。
 
 ---
 
@@ -493,7 +483,7 @@ npm install
 node migrate.js                    # 主表
 node migrate-rate-limit.js         # 限流
 node migrate-audit.js              # 审计
-node migrate-communities.js        # 服务器
+node migrate-communities.js        # 群组
 
 # 启动
 npm run dev
@@ -544,6 +534,6 @@ MIT License
 
 - [Features Inventory](./docs-cn/FEATURES_INVENTORY.cn.md) — 功能清单
 - [Error Handling](./docs-cn/ERROR_HANDLING.cn.md) — 错误处理
-- [Servers Module](./docs-cn/SERVERS_MODULE.cn.md) — 服务器模块
+- [Groups Module](./docs-cn/GROUPS_MODULE.cn.md) — 群组模块
 - [Project UI](./docs-cn/PROJECT_UI/) — UI/UX 文档
 - [API Documentation](./backend/API.md) — API endpoints

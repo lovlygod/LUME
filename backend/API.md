@@ -23,7 +23,7 @@ All requests (except `/login`, `/register`) require:
 - [Users](#users)
 - [Posts](#posts)
 - [Messages](#messages)
-- [Servers](#servers)
+- [groups](#groups)
 - [Verification](#verification)
 - [Admin](#admin)
 - [Uploads](#uploads)
@@ -636,10 +636,10 @@ Get read status.
 
 ---
 
-## Servers
+## groups
 
-### POST `/servers`
-Create a server.
+### POST `/groups`
+Create a group.
 
 **Content-Type:** `multipart/form-data`
 
@@ -653,8 +653,8 @@ Create a server.
 **Response 201:**
 ```json
 {
-  "message": "Server created successfully",
-  "server": {
+  "message": "group created successfully",
+  "group": {
     "id": 1,
     "name": "Gaming Hub",
     "username": "gaminghub",
@@ -672,13 +672,13 @@ Create a server.
 
 ---
 
-### GET `/servers/my`
-Get my servers.
+### GET `/groups/my`
+Get my groups.
 
 **Response 200:**
 ```json
 {
-  "servers": [
+  "groups": [
     {
       "id": 1,
       "username": "gaminghub",
@@ -696,25 +696,25 @@ Get my servers.
 
 ---
 
-### GET `/servers/public`
-Get public servers.
+### GET `/groups/public`
+Get public groups.
 
 **Response 200:**
 ```json
 {
-  "servers": [...]
+  "groups": [...]
 }
 ```
 
 ---
 
-### GET `/servers/:identifier`
-Get server by username or ID.
+### GET `/groups/:identifier`
+Get group by username or ID.
 
 **Response 200:**
 ```json
 {
-  "server": {
+  "group": {
     "id": 1,
     "username": "gaminghub",
     "name": "Gaming Hub",
@@ -738,12 +738,12 @@ Get server by username or ID.
 ```
 
 **Errors:**
-- `404` - Server not found
+- `404` - group not found
 
 ---
 
-### PUT `/servers/:id`
-Update server (Owner).
+### PUT `/groups/:id`
+Update group (Owner).
 
 **Body:**
 ```json
@@ -757,51 +757,51 @@ Update server (Owner).
 **Response 200:**
 ```json
 {
-  "message": "Server updated"
+  "message": "group updated"
 }
 ```
 
 **Errors:**
 - `403` - Not owner
-- `404` - Server not found
+- `404` - group not found
 
 ---
 
-### DELETE `/servers/:id`
-Delete server (Owner).
+### DELETE `/groups/:id`
+Delete group (Owner).
 
 **Response 200:**
 ```json
 {
-  "message": "Server deleted"
+  "message": "group deleted"
 }
 ```
 
 **Errors:**
 - `403` - Not owner
-- `404` - Server not found
+- `404` - group not found
 
 ---
 
-### POST `/servers/:id/join`
-Join a public server.
+### POST `/groups/:id/join`
+Join a public group.
 
 **Response 200:**
 ```json
 {
-  "message": "Joined server successfully"
+  "message": "Joined group successfully"
 }
 ```
 
 **Errors:**
 - `400` - Already a member
-- `403` - Cannot join private server (use request-join)
-- `404` - Server not found
+- `403` - Cannot join private group (use request-join)
+- `404` - group not found
 
 ---
 
-### POST `/servers/:id/request-join`
-Request to join a private server.
+### POST `/groups/:id/request-join`
+Request to join a private group.
 
 **Response 200:**
 ```json
@@ -813,12 +813,12 @@ Request to join a private server.
 
 **Errors:**
 - `400` - Already a member or pending request
-- `403` - Can only request join to private servers
-- `404` - Server not found
+- `403` - Can only request join to private groups
+- `404` - group not found
 
 ---
 
-### GET `/servers/:id/requests`
+### GET `/groups/:id/requests`
 Get join requests (Owner).
 
 **Response 200:**
@@ -843,7 +843,7 @@ Get join requests (Owner).
 
 ---
 
-### POST `/servers/:id/requests/:requestId/approve`
+### POST `/groups/:id/requests/:requestId/approve`
 Approve request (Owner).
 
 **Response 200:**
@@ -859,7 +859,7 @@ Approve request (Owner).
 
 ---
 
-### POST `/servers/:id/requests/:requestId/reject`
+### POST `/groups/:id/requests/:requestId/reject`
 Reject request (Owner).
 
 **Response 200:**
@@ -875,24 +875,24 @@ Reject request (Owner).
 
 ---
 
-### POST `/servers/:id/leave`
-Leave a server.
+### POST `/groups/:id/leave`
+Leave a group.
 
 **Response 200:**
 ```json
 {
-  "message": "Left server successfully"
+  "message": "Left group successfully"
 }
 ```
 
 **Errors:**
 - `400` - Not a member
 - `403` - Owner cannot leave
-- `404` - Server not found
+- `404` - group not found
 
 ---
 
-### POST `/servers/:id/channels`
+### POST `/groups/:id/channels`
 Create a channel (Admin+).
 
 **Body:**
@@ -917,11 +917,11 @@ Create a channel (Admin+).
 
 **Errors:**
 - `403` - Insufficient rank (Admin+ required)
-- `404` - Server not found
+- `404` - group not found
 
 ---
 
-### GET `/servers/:serverId/channels/:channelId/messages`
+### GET `/groups/:groupId/channels/:channelId/messages`
 Get channel messages.
 
 **Query Parameters:**
@@ -957,7 +957,7 @@ Get channel messages.
 
 ---
 
-### POST `/servers/:serverId/channels/:channelId/messages`
+### POST `/groups/:groupId/channels/:channelId/messages`
 Send a message to a channel.
 
 **Body:**
@@ -982,7 +982,7 @@ Send a message to a channel.
 
 ---
 
-### DELETE `/servers/:serverId/channels/:channelId/messages/:messageId`
+### DELETE `/groups/:groupId/channels/:channelId/messages/:messageId`
 Delete a message (Author/Moderator+).
 
 **Body:**
@@ -1005,8 +1005,8 @@ Delete a message (Author/Moderator+).
 
 ---
 
-### GET `/servers/:id/members`
-Get server members.
+### GET `/groups/:id/members`
+Get group members.
 
 **Response 200:**
 ```json
@@ -1033,7 +1033,7 @@ Get server members.
 
 ---
 
-### PUT `/servers/:serverId/members/:memberId/role`
+### PUT `/groups/:groupId/members/:memberId/role`
 Change member role (Admin+).
 
 **Body:**
@@ -1056,7 +1056,7 @@ Change member role (Admin+).
 
 ---
 
-### DELETE `/servers/:serverId/members/:memberId`
+### DELETE `/groups/:groupId/members/:memberId`
 Kick a member (Moderator+).
 
 **Response 200:**
@@ -1351,11 +1351,11 @@ Get attachment info.
 }
 ```
 
-### 500 Internal Server Error
+### 500 Internal group Error
 ```json
 {
   "error": {
-    "message": "Internal server error",
+    "message": "Internal group error",
     "code": "INTERNAL_ERROR",
     "statusCode": 500
   }
@@ -1394,7 +1394,7 @@ Get user notifications.
 - `reply` - reply to your post
 - `mention` - mention (@username)
 - `reaction` - post reaction (Resonance)
-- `server_invite` - server join request
+- `group_invite` - group join request
 
 ---
 
@@ -1446,5 +1446,5 @@ New notification event.
 
 - [Features Inventory](../docs/FEATURES_INVENTORY.md)
 - [Error Handling](../docs/ERROR_HANDLING.md)
-- [Servers Module](../docs/SERVERS_MODULE.md)
+- [groups Module](../docs/groups_MODULE.md)
 - [README](../README.md)

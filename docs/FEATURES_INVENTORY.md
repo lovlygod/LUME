@@ -2,7 +2,7 @@
 
 English | [Русский](../docs-ru/FEATURES_INVENTORY.ru.md) | [中文](../docs-cn/FEATURES_INVENTORY.cn.md)
 
-**Последнее обновление:** 9 марта 2026 г.
+**Последнее обновление:** 19 марта 2026 г.
 **Статус:** ✅ Актуально
 
 Ниже перечислены **реально реализованные** функции проекта LUME.
@@ -112,46 +112,18 @@ English | [Русский](../docs-ru/FEATURES_INVENTORY.ru.md) | [中文](../do
 
 ---
 
-## 👥 Servers (Communities)
+## 👥 Groups & Channels (Chats)
 
-### Каталог серверов
-- **Маршрут:** `/servers`
-- **Файлы:** `src/pages/ServersPage.tsx`, `src/components/servers/CreateServerDialog.tsx`
+### Чаты (группы и каналы)
+- **Маршруты:** `/messages`, `/messages/:chatId`
+- **Файлы:** `src/pages/Messages.tsx`, `src/pages/messages/MessagesPage.tsx`, `src/pages/messages/components/ChatList.tsx`, `src/pages/messages/components/ChatPanel.tsx`, `src/pages/messages/components/ChatSettingsModal.tsx`, `src/pages/messages/components/CreateChatModal.tsx`
 - **Статус:** ✅ Реализовано
 - **Функции:**
-  - Вкладки: "Обзор" (публичные) и "Мои серверы"
-  - Поиск серверов
-  - Создание сервера (публичный/приватный)
-  - Вступление в сервер
-
-### Страница сервера
-- **Маршруты:** `/server/:identifier`, `/server/:identifier/channel/:channelName`
-- **Файлы:** `src/pages/ServerPage.tsx`, `src/pages/server/components/ServerLayout.tsx`, `src/pages/server/components/ServerSidebar.tsx`, `src/pages/server/components/ChannelHeader.tsx`, `src/pages/server/components/ChannelMessageList.tsx`, `src/pages/server/components/ChannelComposer.tsx`, `src/pages/server/components/ChannelMessageRow.tsx`
-- **Статус:** ✅ Реализовано
-- **Функции:**
-  - Боковая панель с каналами
-  - Чат канала
-  - Real-time сообщения
-  - Загрузка файлов в сообщения
-  - Заявки на вступление (для Owner)
-
-### Настройки сервера
-- **Маршрут:** `/server/:identifier/settings`
-- **Файлы:** `src/pages/ServerSettingsPage.tsx`
-- **Статус:** ✅ Реализовано
-- **Функции:**
-  - Изменение названия, описания, username
-  - Загрузка иконки
-  - Удаление сервера (Owner)
-
-### Участники сервера
-- **Маршрут:** `/server/:identifier/members`
-- **Файлы:** `src/pages/ServerMembersPage.tsx`, `src/pages/server/components/MembersPanel.tsx`
-- **Статус:** ✅ Реализовано
-- **Функции:**
-  - Список участников
-  - Изменение ролей (Owner/Admin)
-  - Кик участников (Owner/Admin/Moderator)
+  - Типы чатов: `group`, `channel`, `private`
+  - Создание группы/канала
+  - Публичные каналы (поиск и join)
+  - Заявки на вступление (approve/reject)
+  - Управление участниками и ролями
 
 ---
 
@@ -261,7 +233,7 @@ English | [Русский](../docs-ru/FEATURES_INVENTORY.ru.md) | [中文](../do
 - **Статус:** ✅ Реализовано
 - **Функции:**
   - Поиск пользователей
-  - Поиск серверов
+  - Поиск чатов/каналов (public)
   - Тренды (популярные хэштеги)
   - Рекомендуемые пользователи
 
@@ -335,17 +307,17 @@ English | [Русский](../docs-ru/FEATURES_INVENTORY.ru.md) | [中文](../do
   - `chat:read_update` — прочтение чата
   - `message:deleted` — сообщение удалено
   - `presence:update` — статус онлайн/оффлайн
-  - `server:created`, `server:deleted`, `server:member_joined`
+  - `chat:read_update`
   - `channel:new_message` — сообщение в канале
 
 ---
 
 ## 📊 React Query Integration
 
-### Хуки для серверов
-- **Файл:** `src/hooks/servers.ts`
+### Хуки для чатов
+- **Файлы:** `src/pages/messages/hooks/*`, `src/hooks/chat.ts`
 - **Статус:** ✅ Реализовано
-- **Хуки:** useMyServers, usePublicServers, useServer, useCreateServer, useUpdateServer, useDeleteServer, useJoinServer, useLeaveServer, useRequestJoin, useApproveJoinRequest, useRejectJoinRequest, useCreateChannel, useServerMembers, useUpdateMemberRole, useKickMember
+- **Хуки:** useChats, useChat, useChatMessages, useSendMessage, useEditMessage, useDeleteMessage, useMarkRead, useChatWs
 
 ### Хуки для чатов
 - **Файл:** `src/hooks/chat.ts`
@@ -387,6 +359,6 @@ English | [Русский](../docs-ru/FEATURES_INVENTORY.ru.md) | [中文](../do
 ## Связанные документы
 
 - [Error Handling](./ERROR_HANDLING.md)
-- [Servers Module](./SERVERS_MODULE.md)
+- [Groups Module](./GROUPS_MODULE.md)
 - [Project UI](./PROJECT_UI/)
 - [README](../README.md)

@@ -2,7 +2,7 @@
 
 [English](../../docs/PROJECT_UI/ROUTES.md) | Русский | [中文](../../docs-cn/PROJECT_UI/ROUTES.cn.md)
 
-**Последнее обновление:** 2026-03-11
+**Последнее обновление:** 2026-03-19
 
 ---
 
@@ -16,7 +16,7 @@ Legal: `/privacy-policy`, `/terms-of-service`, `/cookie-policy`.
 
 ## Защищённые маршруты
 
-`/feed` (поддерживает `?post={id}`), `/explore`, `/messages`, `/messages?userId=...`, `/servers`, `/server/:identifier/...`, `/profile`, `/settings`, `/settings/sessions`, `/verified`, `/admin`.
+`/feed` (поддерживает `?post={id}`), `/explore`, `/messages`, `/messages?userId=...`, `/messages/:chatId`, `/profile`, `/settings`, `/settings/sessions`, `/verified`, `/admin`.
 
 ---
 

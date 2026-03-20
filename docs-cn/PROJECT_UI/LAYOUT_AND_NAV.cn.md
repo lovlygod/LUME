@@ -2,7 +2,7 @@
 
 中文 | [Русский](../../docs-ru/PROJECT_UI/LAYOUT_AND_NAV.ru.md) | [English](../../docs/PROJECT_UI/LAYOUT_AND_NAV.md)
 
-**最后更新：** 2026-03-11
+**最后更新：** 2026-03-19
 
 ---
 
@@ -19,7 +19,7 @@
 ### 导航项
 
 **已登录：**
-- Home, Explore, Messages, Servers, Profile, Verified
+- Home, Explore, Messages, Profile, Verified
 
 **未登录：**
 - Home, Explore, Login, Register
@@ -41,7 +41,7 @@
 - `/messages/:chatId`
 
 以下页面显示：
-- `/feed`, `/explore`, `/profile`, `/servers`
+- `/feed`, `/explore`, `/profile`
 
 ---
 

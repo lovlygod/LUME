@@ -65,7 +65,7 @@ const { logger } = require('./logger');
 const { audit } = require('./audit');
 
 logger.auth.login(userId, true, req.ip);
-logger.server.created(serverId, userId, name);
+logger.group.created(groupId, userId, name);
 logger.post.created(postId, userId);
 
 audit.login(userId, true, ip, userAgent);
@@ -142,10 +142,10 @@ Notifications are fetched and marked as read in `src/components/NotificationsPan
 ```javascript
 const { createServerSchema } = require('./validation');
 
-router.post('/servers', authenticateToken, asyncHandler(async (req, res) => {
-  const result = createServerSchema.safeParse(req.body);
+router.post('/groups', authenticateToken, asyncHandler(async (req, res) => {
+  const result = createGroupSchema.safeParse(req.body);
   if (!result.success) {
-    throw new ValidationError('Invalid server data', {
+    throw new ValidationError('Invalid group data', {
       fields: result.error.flatten().fieldErrors,
     });
   }
@@ -201,7 +201,7 @@ const ERROR_MESSAGES = {
 
 ## Related documents
 
-- [Servers Module](./SERVERS_MODULE.md)
+- [Groups Module](./GROUPS_MODULE.md)
 - [WebSocket Architecture](./WEBSOCKET_ARCHITECTURE.md)
 - [Features Inventory](./FEATURES_INVENTORY.md)
 - [Project UI](./PROJECT_UI/)

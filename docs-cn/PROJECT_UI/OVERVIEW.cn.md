@@ -2,7 +2,7 @@
 
 中文 | [Русский](../../docs-ru/PROJECT_UI/OVERVIEW.ru.md) | [English](../../docs/PROJECT_UI/OVERVIEW.md)
 
-**最后更新：** 2026-03-11
+**最后更新：** 2026-03-19
 
 ---
 
@@ -23,11 +23,6 @@ LUME
 │   ├── /messages         — Messenger
 │   │   └── /messages/:chatId
 │   ├── /messages?userId=... — 通过 query 参数打开聊天
-│   ├── /servers          — 服务器目录
-│   ├── /server/:identifier
-│   │   ├── /channel/:channelName
-│   │   ├── /settings
-│   │   └── /members
 │   ├── /profile          — 我的资料
 │   ├── /profile/:userId  — 用户资料
 │   ├── /verified         — 认证
@@ -59,8 +54,8 @@ LUME
 
 ```
 Landing → Login → Feed
-Feed → Explore / Messages / Servers / Profile / Settings / Admin
-Servers → Server → Channel / Members / Settings
+Feed → Explore / Messages / Profile / Settings / Admin
+Messages → Chat list → Chat panel
 ```
 
 ---
@@ -72,10 +67,6 @@ Servers → Server → Channel / Members / Settings
 | Feed | `src/pages/Index.tsx` | AppLayout |
 | Explore | `src/pages/Explore.tsx` | AppLayout |
 | Messages | `src/pages/Messages.tsx` | AppLayout |
-| Servers | `src/pages/ServersPage.tsx` | AppLayout |
-| Server | `src/pages/ServerPage.tsx` | AppLayout |
-| Server Settings | `src/pages/ServerSettingsPage.tsx` | AppLayout |
-| Server Members | `src/pages/ServerMembersPage.tsx` | AppLayout |
 | Profile | `src/pages/Profile.tsx` | AppLayout |
 | User Profile | `src/pages/UserProfile.tsx` | AppLayout |
 | Verified | `src/pages/Verified.tsx` | AppLayout |
