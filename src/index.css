@@ -186,6 +186,14 @@
     font-family: "JetBrains Mono", monospace;
   }
 
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
   .transition-smooth {
     transition: all var(--glass-transition);
   }

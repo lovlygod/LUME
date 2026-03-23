@@ -41,6 +41,7 @@ import { errorHandler, ApiError } from './errorHandler';
 type ApiPost = Post & {
   user_id?: string | number;
   image_url?: string;
+  image_urls?: string[];
   created_at?: string;
   createdAt?: string;
 };
@@ -51,6 +52,7 @@ const normalizePost = (post: ApiPost): Post => {
     userId: (post.userId ?? post.user_id ?? "").toString(),
     text: post.text,
     imageUrl: post.imageUrl ?? post.image_url,
+    imageUrls: post.imageUrls ?? post.image_urls,
     timestamp: post.timestamp ?? post.createdAt ?? post.created_at ?? new Date().toISOString(),
     replies: post.replies ?? 0,
     reposts: post.reposts ?? 0,
@@ -310,13 +312,15 @@ export const postsAPI = {
     return { posts: response.posts.map(normalizePost) };
   },
 
-  createPost: async (postData: { text?: string; image?: File }): Promise<{ message: string; postId: number; post?: Post }> => {
-    if (postData.image) {
+  createPost: async (postData: { text?: string; images?: File[] }): Promise<{ message: string; postId: number; post?: Post }> => {
+    if (postData.images && postData.images.length > 0) {
       const formData = new FormData();
       if (postData.text) {
         formData.append('text', postData.text);
       }
-      formData.append('image', postData.image);
+      postData.images.forEach((file) => {
+        formData.append('images', file);
+      });
 
       const response = await fetch(`${API_BASE_URL}/posts`, {
         method: 'POST',
@@ -333,12 +337,12 @@ export const postsAPI = {
       }
 
       return response.json();
-    } else {
-      return apiRequest('/posts', {
-        method: 'POST',
-        body: JSON.stringify(postData),
-      });
     }
+
+    return apiRequest('/posts', {
+      method: 'POST',
+      body: JSON.stringify(postData),
+    });
   },
 
   deletePost: async (postId: string): Promise<{ message: string }> => {

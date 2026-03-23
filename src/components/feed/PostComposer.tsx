@@ -12,8 +12,8 @@ const PostComposer = () => {
   const [isFocused, setIsFocused] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [posting, setPosting] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user: authUser } = useAuth();
@@ -45,26 +45,26 @@ const PostComposer = () => {
 
   const charCount = text.length;
   const isNearLimit = charCount > 380;
-  const canPost = (text.trim() || selectedImage) && !posting;
+  const canPost = (text.trim() || selectedImages.length > 0) && !posting;
 
   const handleSubmit = async () => {
     if (!canPost || !user) return;
 
     setPosting(true);
     try {
-      const postData: { text?: string; image?: File } = {};
+      const postData: { text?: string; images?: File[] } = {};
       if (text.trim()) {
         postData.text = text;
       }
-      if (selectedImage) {
-        postData.image = selectedImage;
+      if (selectedImages.length > 0) {
+        postData.images = selectedImages;
       }
 
       await postsAPI.createPost(postData);
 
       setText('');
-      setImagePreview(null);
-      setSelectedImage(null);
+      setImagePreviews([]);
+      setSelectedImages([]);
 
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
@@ -85,23 +85,30 @@ const PostComposer = () => {
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedImage(file);
+    const files = Array.from(e.target.files || []).filter((file) => file.type.startsWith('image/'));
+    if (files.length === 0) return;
+
+    const availableSlots = Math.max(0, 5 - selectedImages.length);
+    const nextFiles = files.slice(0, availableSlots);
+    if (nextFiles.length === 0) return;
+
+    nextFiles.forEach((file) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        setImagePreviews((prev) => [...prev, reader.result as string]);
       };
       reader.readAsDataURL(file);
-    }
-  };
+    });
 
-  const removeImage = () => {
-    setImagePreview(null);
-    setSelectedImage(null);
+    setSelectedImages((prev) => [...prev, ...nextFiles]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const removeImage = (index: number) => {
+    setImagePreviews((prev) => prev.filter((_, idx) => idx !== index));
+    setSelectedImages((prev) => prev.filter((_, idx) => idx !== index));
   };
 
   const currentUser = user || authUser;
@@ -145,27 +152,31 @@ const PostComposer = () => {
 
           {/* Image Preview */}
           <AnimatePresence>
-            {imagePreview && (
+            {imagePreviews.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="mt-3 relative inline-block max-w-full"
+                className="mt-3 flex flex-wrap gap-3"
               >
-                <img
-                  src={imagePreview}
-                  alt="Preview"
-                  className="max-h-64 rounded-2xl object-cover border border-white/10"
-                />
-                <motion.button
-                  type="button"
-                  onClick={removeImage}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="absolute -top-2 -right-2 bg-white/10 rounded-full p-1.5 shadow-lg"
-                >
-                  <X className="h-3.5 w-3.5 text-white" />
-                </motion.button>
+                {imagePreviews.map((preview, index) => (
+                  <div key={`${preview}-${index}`} className="relative">
+                    <img
+                      src={preview}
+                      alt={`Preview ${index + 1}`}
+                      className="h-28 w-28 rounded-2xl object-cover border border-white/10"
+                    />
+                    <motion.button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="absolute -top-2 -right-2 bg-white/10 rounded-full p-1.5 shadow-lg"
+                    >
+                      <X className="h-3.5 w-3.5 text-white" />
+                    </motion.button>
+                  </div>
+                ))}
               </motion.div>
             )}
           </AnimatePresence>
@@ -188,6 +199,7 @@ const PostComposer = () => {
                 ref={fileInputRef}
                 className="hidden"
                 accept="image/*"
+                multiple
                 onChange={handleImageChange}
               />
             </div>

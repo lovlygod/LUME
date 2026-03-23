@@ -17,7 +17,9 @@ type PostItem = {
   userId?: string | number;
   text?: string;
   image_url?: string;
+  image_urls?: string[];
   imageUrl?: string;
+  imageUrls?: string[];
   timestamp?: string;
   replies?: number;
   resonance?: number;
@@ -612,6 +614,7 @@ const ProfilePage = () => {
             userId={String(pinnedPost.user_id || pinnedPost.userId)}
             text={pinnedPost.text}
             imageUrl={pinnedPost.image_url || pinnedPost.imageUrl}
+            imageUrls={pinnedPost.image_urls || pinnedPost.imageUrls}
             timestamp={pinnedPost.timestamp}
             replies={pinnedPost.replies}
             resonance={pinnedPost.resonance}
@@ -650,6 +653,7 @@ const ProfilePage = () => {
                 userId={String(post.user_id || post.userId)}
                 text={post.text}
                 imageUrl={post.image_url || post.imageUrl}
+                imageUrls={post.image_urls || post.imageUrls}
                 timestamp={post.timestamp}
                 replies={post.replies}
                 resonance={post.resonance}

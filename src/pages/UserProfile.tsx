@@ -25,7 +25,9 @@ const UserProfile = () => {
     userId?: string | number;
     text?: string;
     image_url?: string;
+    image_urls?: string[];
     imageUrl?: string;
+    imageUrls?: string[];
     timestamp?: string;
     replies?: number;
     resonance?: number;
@@ -348,6 +350,7 @@ const UserProfile = () => {
                 userId={String(post.user_id || post.userId)}
                 text={post.text}
                 imageUrl={post.image_url || post.imageUrl}
+                imageUrls={post.image_urls || post.imageUrls}
                 timestamp={post.timestamp}
                 replies={post.replies}
                 resonance={post.resonance}

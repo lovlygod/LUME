@@ -125,6 +125,53 @@ const normalizeStickerSlug = (value) => String(value || '')
 
 const isRemoteUrl = (value) => /^https?:\/\//i.test(String(value || ''));
 
+const ensurePostImagesSchema = async () => {
+  const runStatement = (sql) => new Promise((resolve, reject) => {
+    db.exec(sql, (err) => {
+      if (err) return reject(err);
+      resolve();
+    });
+  });
+
+  await runStatement(`
+    CREATE TABLE IF NOT EXISTS post_images (
+      id BIGSERIAL PRIMARY KEY,
+      post_id BIGINT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+      image_url TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
+  await runStatement('CREATE INDEX IF NOT EXISTS idx_post_images_post_id ON post_images(post_id)');
+};
+
+const fetchPostImagesMap = (postIds) => new Promise((resolve) => {
+  if (!Array.isArray(postIds) || postIds.length === 0) {
+    resolve(new Map());
+    return;
+  }
+
+  const placeholders = postIds.map((_, index) => `$${index + 1}`).join(', ');
+  db.all(
+    `SELECT post_id, image_url FROM post_images WHERE post_id IN (${placeholders}) ORDER BY id ASC`,
+    postIds,
+    (err, rows) => {
+      if (err || !rows) {
+        resolve(new Map());
+        return;
+      }
+      const map = new Map();
+      rows.forEach((row) => {
+        const key = String(row.post_id);
+        const list = map.get(key) || [];
+        list.push(row.image_url);
+        map.set(key, list);
+      });
+      resolve(map);
+    }
+  );
+});
+
 const ensureUniqueStickerSlug = async (baseSlug) => {
   const safeBase = baseSlug || 'sticker-pack';
   let candidate = safeBase;
@@ -694,7 +741,7 @@ router.get('/profile', authenticateToken, (req, res) => {
 });
 
 // Get user's posts
-router.get('/users/:userId/posts', authenticateToken, (req, res) => {
+router.get('/users/:userId/posts', authenticateToken, async (req, res) => {
   const userId = req.params.userId;
 
   const query = `
@@ -705,15 +752,19 @@ router.get('/users/:userId/posts', authenticateToken, (req, res) => {
     ORDER BY p.timestamp DESC
   `;
 
-  db.all(query, [parseInt(userId)], (err, posts) => {
+  db.all(query, [parseInt(userId)], async (err, posts) => {
     if (err) {
       return res.status(500).json({ error: 'Database error' });
     }
 
+    const postIds = (posts || []).map((post) => post.id);
+    const imagesMap = await fetchPostImagesMap(postIds);
+
     // Преобразуем user_id в строку для корректной работы на frontend
-    const formattedPosts = posts.map(post => ({
+    const formattedPosts = (posts || []).map(post => ({
       ...post,
-      user_id: post.user_id.toString()
+      user_id: post.user_id.toString(),
+      imageUrls: imagesMap.get(String(post.id)) || undefined,
     }));
 
     res.json({ posts: formattedPosts });
@@ -2714,7 +2765,7 @@ router.get('/messages/search', authenticateToken, asyncHandler(async (req, res) 
 }));
 
 // Get posts for feed
-router.get('/posts', authenticateToken, (req, res) => {
+router.get('/posts', authenticateToken, async (req, res) => {
   const query = `
     SELECT p.id, p.user_id, p.text, p.image_url, p.timestamp, p.replies_count AS replies, p.reposts_count AS reposts, p.resonance_count AS resonance, u.name, u.username, u.avatar, u.verified
     FROM posts p
@@ -2723,15 +2774,19 @@ router.get('/posts', authenticateToken, (req, res) => {
     LIMIT 50
   `;
 
-  db.all(query, [], (err, posts) => {
+  db.all(query, [], async (err, posts) => {
     if (err) {
       return res.status(500).json({ error: 'Database error' });
     }
 
+    const postIds = (posts || []).map((post) => post.id);
+    const imagesMap = await fetchPostImagesMap(postIds);
+
     // Преобразуем user_id в строку для корректной работы на frontend
-    const formattedPosts = posts.map(post => ({
+    const formattedPosts = (posts || []).map(post => ({
       ...post,
-      user_id: post.user_id.toString()
+      user_id: post.user_id.toString(),
+      imageUrls: imagesMap.get(String(post.id)) || undefined,
     }));
 
     res.json({ posts: formattedPosts });
@@ -2794,17 +2849,21 @@ router.get('/posts/recommended', authenticateToken, asyncHandler(async (req, res
     });
   });
   
-  const formattedPosts = posts.map(post => ({
+  const postIds = (posts || []).map((post) => post.id);
+  const imagesMap = await fetchPostImagesMap(postIds);
+
+  const formattedPosts = (posts || []).map(post => ({
     ...post,
     user_id: post.user_id.toString(),
     id: post.id.toString(),
+    imageUrls: imagesMap.get(String(post.id)) || undefined,
   }));
   
   res.json({ posts: formattedPosts });
 }));
 
 // Get following feed (posts from users you follow)
-router.get('/posts/following', authenticateToken, (req, res) => {
+router.get('/posts/following', authenticateToken, async (req, res) => {
   const userId = req.user.userId;
 
   const query = `
@@ -2817,14 +2876,18 @@ router.get('/posts/following', authenticateToken, (req, res) => {
     LIMIT 50
   `;
 
-  db.all(query, [userId], (err, posts) => {
+  db.all(query, [userId], async (err, posts) => {
     if (err) {
       return res.status(500).json({ error: 'Database error' });
     }
 
-    const formattedPosts = posts.map(post => ({
+    const postIds = (posts || []).map((post) => post.id);
+    const imagesMap = await fetchPostImagesMap(postIds);
+
+    const formattedPosts = (posts || []).map(post => ({
       ...post,
-      user_id: post.user_id.toString()
+      user_id: post.user_id.toString(),
+      imageUrls: imagesMap.get(String(post.id)) || undefined,
     }));
 
     res.json({ posts: formattedPosts });
@@ -2832,11 +2895,12 @@ router.get('/posts/following', authenticateToken, (req, res) => {
 });
 
 // Create a new post with WebSocket broadcast
-router.post('/posts', authenticateToken, upload.single('image'), (req, res) => {
+router.post('/posts', authenticateToken, upload.array('images', 5), (req, res) => {
   const userId = req.user.userId;
   const { text } = req.body;
+  const files = Array.isArray(req.files) ? req.files : [];
 
-  if (!text && !req.file) {
+  if (!text && files.length === 0) {
     return res.status(400).json({ error: 'Either text or image is required' });
   }
 
@@ -2844,7 +2908,10 @@ router.post('/posts', authenticateToken, upload.single('image'), (req, res) => {
     return res.status(400).json({ error: 'Post text exceeds 420 characters' });
   }
 
-  const imageUrl = req.file ? (req.file.path || req.file.secure_url || req.file.url) : null;
+  const imageUrls = files
+    .map((file) => file.path || file.secure_url || file.url)
+    .filter(Boolean);
+  const imageUrl = imageUrls.length > 0 ? imageUrls[0] : null;
 
   let query;
   let params;
@@ -2871,41 +2938,60 @@ router.post('/posts', authenticateToken, upload.single('image'), (req, res) => {
 
     const postId = this.lastID;
 
-    // Get user info for the post
-    const userQuery = 'SELECT name, username, avatar, verified FROM users WHERE id = $1';
-    db.get(userQuery, [userId], (err, user) => {
-      if (err) console.error('Error getting user:', err);
+    ensurePostImagesSchema()
+      .then(() => new Promise((resolve) => {
+        if (imageUrls.length === 0) {
+          resolve();
+          return;
+        }
+        const placeholders = imageUrls.map((_, index) => `($1, $${index + 2})`).join(', ');
+        db.run(
+          `INSERT INTO post_images (post_id, image_url) VALUES ${placeholders}`,
+          [postId, ...imageUrls],
+          () => resolve()
+        );
+      }))
+      .catch((error) => {
+        console.error('Failed to store post images:', error);
+      })
+      .finally(() => {
+        // Get user info for the post
+        const userQuery = 'SELECT name, username, avatar, verified FROM users WHERE id = $1';
+        db.get(userQuery, [userId], (err, user) => {
+          if (err) console.error('Error getting user:', err);
 
-      const newPost = {
-        id: postId,
-        userId: userId.toString(),
-        text: text || '',
-        imageUrl,
-        timestamp: new Date().toISOString(),
-        replies: 0,
-        reposts: 0,
-        resonance: 0,
-        name: user?.name,
-        username: user?.username,
-        avatar: user?.avatar,
-        verified: user?.verified === 1
-      };
+          const newPost = {
+            id: postId,
+            userId: userId.toString(),
+            text: text || '',
+            imageUrl,
+            imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
+            timestamp: new Date().toISOString(),
+            replies: 0,
+            reposts: 0,
+            resonance: 0,
+            name: user?.name,
+            username: user?.username,
+            avatar: user?.avatar,
+            verified: user?.verified === 1
+          };
 
-      // Broadcast new post to all connected clients
-      const broadcast = req.app.get('broadcast');
-      if (broadcast) {
-        broadcast({
-          type: 'new_post',
-          data: newPost
+          // Broadcast new post to all connected clients
+          const broadcast = req.app.get('broadcast');
+          if (broadcast) {
+            broadcast({
+              type: 'new_post',
+              data: newPost
+            });
+          }
+
+          res.json({
+            message: 'Post created successfully',
+            postId,
+            post: newPost
+          });
         });
-      }
-
-      res.json({
-        message: 'Post created successfully',
-        postId,
-        post: newPost
       });
-    });
   });
 });
 

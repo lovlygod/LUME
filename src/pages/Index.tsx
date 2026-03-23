@@ -264,18 +264,19 @@ const Index = () => {
       <div className="space-y-[16px]">
         {posts.length > 0 ? (
           posts.map((post) => (
-            <Post
-              key={post.id}
-              id={post.id.toString()}
-              dataPostId={post.id.toString()}
-              userId={String(post.userId)}
-              text={post.text}
-              imageUrl={post.imageUrl}
-              timestamp={post.timestamp}
-              replies={post.replies}
-              resonance={post.resonance}
-              name={post.name}
-              username={post.username}
+              <Post
+                key={post.id}
+                id={post.id.toString()}
+                dataPostId={post.id.toString()}
+                userId={String(post.userId)}
+                text={post.text}
+                imageUrl={post.imageUrl}
+                imageUrls={post.imageUrls}
+                timestamp={post.timestamp}
+                replies={post.replies}
+                resonance={post.resonance}
+                name={post.name}
+                username={post.username}
               avatar={post.avatar}
               verified={post.verified}
             />
@@ -295,5 +296,4 @@ const Index = () => {
 };
 
 export default Index;
-
 

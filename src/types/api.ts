@@ -42,6 +42,7 @@ export interface Post {
   userId: string;
   text?: string;
   imageUrl?: string;
+  imageUrls?: string[];
   timestamp: string;
   replies: number;
   reposts: number;
@@ -63,5 +64,4 @@ export interface Comment {
   avatar?: string;
   verified: boolean;
 }
-
 
