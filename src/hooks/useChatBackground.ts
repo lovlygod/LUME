@@ -97,7 +97,7 @@ export const useChatBackground = () => {
     if (background === "default") {
       return {
         backgroundImage: "none",
-        backgroundColor: "#0E0E11",
+        backgroundColor: "var(--chat-bg-default)",
       } as const;
     }
 
@@ -114,7 +114,7 @@ export const useChatBackground = () => {
     if (!imageUrl) {
       return {
         backgroundImage: "none",
-        backgroundColor: "#0E0E11",
+        backgroundColor: "var(--chat-bg-default)",
       } as const;
     }
 
@@ -124,7 +124,7 @@ export const useChatBackground = () => {
 
     return {
       backgroundImage: `url(${imageUrl})`,
-      backgroundColor: "#0E0E11",
+      backgroundColor: "var(--chat-bg-default)",
       backgroundRepeat: background === "custom" ? "no-repeat" : "repeat",
       backgroundSize: background === "custom" ? customSize : "600px",
       backgroundPosition: background === "custom"

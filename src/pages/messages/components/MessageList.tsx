@@ -340,7 +340,7 @@ const MessageList = ({
                 </button>
               )}
               <div
-                className={`relative w-fit break-words ${
+                className={`relative w-fit break-words message-bubble ${
                   isStickerMessage
                     ? "bg-transparent border-0 shadow-none"
                     : "rounded-[20px] border border-white/10 bg-white/5"

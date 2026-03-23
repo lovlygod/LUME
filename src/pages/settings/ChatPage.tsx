@@ -197,7 +197,7 @@ const ChatPage = () => {
                       : "border-white/10 hover:border-white/30"
                   }`}
                 >
-                  <div className="h-full w-full bg-[#0E0E11]" />
+                  <div className="h-full w-full bg-[var(--chat-bg-default)]" />
                   <span className="absolute bottom-3 left-3 text-xs font-medium text-white">
                     {t("settings.chatBackgroundDefault")}
                   </span>

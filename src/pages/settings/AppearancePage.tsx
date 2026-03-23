@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Save, Snowflake } from "lucide-react";
+import { Save, Snowflake, Sun } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
@@ -10,15 +10,18 @@ const AppearancePage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [settings, setSettings] = useState({
+    theme: "dark" as "dark" | "light",
     snowEffect: false,
     snowVariant: "dots" as "dots" | "flakes" | "hearts",
   });
 
   useEffect(() => {
+    const savedTheme = (localStorage.getItem("theme") as "dark" | "light" | null) || "dark";
     const savedSnow = localStorage.getItem("snowEffect") === "true";
     const savedSnowVariant =
       (localStorage.getItem("snowEffectVariant") as "dots" | "flakes" | "hearts" | null) || "dots";
     setSettings({
+      theme: savedTheme,
       snowEffect: savedSnow,
       snowVariant: savedSnowVariant,
     });
@@ -29,6 +32,10 @@ const AppearancePage = () => {
     try {
       localStorage.setItem("snowEffect", String(settings.snowEffect));
       localStorage.setItem("snowEffectVariant", settings.snowVariant);
+      localStorage.setItem("theme", settings.theme);
+      document.documentElement.classList.remove("dark", "light");
+      document.documentElement.classList.add(settings.theme);
+      window.dispatchEvent(new CustomEvent("themeChange", { detail: settings.theme }));
       window.dispatchEvent(
         new CustomEvent("snowEffectChange", {
           detail: { enabled: settings.snowEffect, variant: settings.snowVariant },
@@ -59,6 +66,49 @@ const AppearancePage = () => {
       </div>
 
       <div className="p-6 space-y-6">
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 text-foreground">
+            <Sun className="h-5 w-5" />
+            <h2 className="text-lg font-semibold">{t("settings.theme")}</h2>
+          </div>
+
+          <div className="card-glass p-5 space-y-4 rounded-[24px]">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center">
+                  <Sun className="h-5 w-5 text-white/60" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-white">{t("settings.theme")}</p>
+                  <p className="text-xs text-secondary">{t("settings.themeDescription")}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSettings(prev => ({ ...prev, theme: "dark" }))}
+                  className={`px-4 py-2 rounded-full text-xs font-medium transition-smooth ${
+                    settings.theme === "dark"
+                      ? "bg-white/10 text-white"
+                      : "bg-white/5 text-secondary hover:text-white"
+                  }`}
+                >
+                  {t("settings.dark")}
+                </button>
+                <button
+                  onClick={() => setSettings(prev => ({ ...prev, theme: "light" }))}
+                  className={`px-4 py-2 rounded-full text-xs font-medium transition-smooth ${
+                    settings.theme === "light"
+                      ? "bg-white/10 text-white"
+                      : "bg-white/5 text-secondary hover:text-white"
+                  }`}
+                >
+                  {t("settings.light")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="space-y-4">
           <div className="flex items-center gap-2 text-foreground">
             <Snowflake className="h-5 w-5" />
