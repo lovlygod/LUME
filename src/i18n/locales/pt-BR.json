@@ -118,6 +118,7 @@
   "settings": {
     "title": "Configurações",
     "subtitle": "Gerencie as preferências da sua conta",
+    "backToSettings": "Voltar às configurações",
     "appearance": "Aparência",
     "theme": "Tema",
     "themeDescription": "Escolha o tema preferido",
@@ -183,6 +184,24 @@
     "chatBackgroundCustomApplied": "Fundo personalizado aplicado",
     "chatBackgroundCustomError": "Falha ao enviar fundo personalizado",
     "doubleClickHeart": "Reagir com ❤️"
+    ,
+    "sections": {
+      "appearance": {
+        "description": "Tema, efeitos de neve e ajustes visuais."
+      },
+      "privacy": {
+        "description": "Controle quem pode ver seu conteúdo e enviar mensagens."
+      },
+      "chat": {
+        "description": "Ações de duplo clique e fundos do chat."
+      },
+      "language": {
+        "description": "Idioma da interface e localidade."
+      },
+      "danger": {
+        "description": "Exclusão de conta e ações sensíveis."
+      }
+    }
   },
   "stickers": {
     "myStickers": "Meus stickers",

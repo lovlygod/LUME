@@ -118,6 +118,7 @@
   "settings": {
     "title": "Settings",
     "subtitle": "Manage your account preferences",
+    "backToSettings": "Back to settings",
     "appearance": "Appearance",
     "theme": "Theme",
     "themeDescription": "Choose your preferred theme",
@@ -183,6 +184,24 @@
     "chatBackgroundCustomApplied": "Custom background applied",
     "chatBackgroundCustomError": "Failed to upload custom background",
     "doubleClickHeart": "React with ❤️"
+    ,
+    "sections": {
+      "appearance": {
+        "description": "Theme, snow effects, and visual tweaks."
+      },
+      "privacy": {
+        "description": "Control who can see your content and message you."
+      },
+      "chat": {
+        "description": "Double click actions and chat backgrounds."
+      },
+      "language": {
+        "description": "Interface language and locale settings."
+      },
+      "danger": {
+        "description": "Account deletion and sensitive actions."
+      }
+    }
   },
   "stickers": {
     "myStickers": "My Stickers",

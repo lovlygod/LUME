@@ -182,7 +182,7 @@ const SessionsPage = () => {
             onClick={() => navigate("/settings")}
             className="px-4 py-2 rounded-full text-xs font-medium bg-white/5 text-secondary hover:text-white transition"
           >
-            {t("sessions.backToSettings")}
+            {t("settings.backToSettings")}
           </button>
           <button
             onClick={() => setLogoutAllOpen(true)}

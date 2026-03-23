@@ -118,6 +118,7 @@
   "settings": {
     "title": "Настройки",
     "subtitle": "Управление предпочтениями аккаунта",
+    "backToSettings": "Назад к настройкам",
     "appearance": "Внешний вид",
     "theme": "Тема",
     "themeDescription": "Выберите предпочитаемую тему",
@@ -183,6 +184,24 @@
     "chatBackgroundCustomApplied": "Пользовательский фон применён",
     "chatBackgroundCustomError": "Не удалось загрузить пользовательский фон",
     "doubleClickHeart": "Реакция ❤️"
+    ,
+    "sections": {
+      "appearance": {
+        "description": "Тема, снег и визуальные эффекты."
+      },
+      "privacy": {
+        "description": "Кто может видеть контент и писать вам."
+      },
+      "chat": {
+        "description": "Действия двойного клика и фон чата."
+      },
+      "language": {
+        "description": "Язык интерфейса и локаль."
+      },
+      "danger": {
+        "description": "Удаление аккаунта и чувствительные действия."
+      }
+    }
   },
   "sessions": {
     "title": "Активные сессии",

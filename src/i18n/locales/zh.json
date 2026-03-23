@@ -118,6 +118,7 @@
   "settings": {
     "title": "设置",
     "subtitle": "管理你的账号偏好",
+    "backToSettings": "返回设置",
     "appearance": "外观",
     "theme": "主题",
     "themeDescription": "选择你喜欢的主题",
@@ -183,6 +184,24 @@
     "chatBackgroundCustomApplied": "自定义背景已应用",
     "chatBackgroundCustomError": "上传自定义背景失败",
     "doubleClickHeart": "用 ❤️ 反应"
+    ,
+    "sections": {
+      "appearance": {
+        "description": "主题、雪花特效与视觉调整。"
+      },
+      "privacy": {
+        "description": "控制谁可以查看内容并向你发消息。"
+      },
+      "chat": {
+        "description": "双击操作与聊天背景。"
+      },
+      "language": {
+        "description": "界面语言与区域设置。"
+      },
+      "danger": {
+        "description": "账户删除与敏感操作。"
+      }
+    }
   },
   "stickers": {
     "myStickers": "我的贴纸",

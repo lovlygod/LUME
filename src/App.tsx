@@ -12,6 +12,11 @@ import UserProfile from "./pages/UserProfile";
 import Verified from "./pages/Verified";
 import AdminPanel from "./pages/AdminPanel";
 import Settings from "./pages/Settings";
+import AppearancePage from "./pages/settings/AppearancePage";
+import PrivacyPage from "./pages/settings/PrivacyPage";
+import ChatPage from "./pages/settings/ChatPage";
+import LanguagePage from "./pages/settings/LanguagePage";
+import DangerPage from "./pages/settings/DangerPage";
 import SessionsPage from "./pages/settings/SessionsPage";
 import NotFound from "./pages/NotFound";
 import Register from "./pages/auth/Register";
@@ -73,6 +78,11 @@ const AppContent = () => {
           <Route path="/explore" element={<Explore />} />
           <Route path="/verified" element={<Verified />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/settings/appearance" element={<AppearancePage />} />
+          <Route path="/settings/privacy" element={<PrivacyPage />} />
+          <Route path="/settings/chat" element={<ChatPage />} />
+          <Route path="/settings/language" element={<LanguagePage />} />
+          <Route path="/settings/danger" element={<DangerPage />} />
           <Route path="/settings/sessions" element={<SessionsPage />} />
           <Route path="/admin" element={<AdminPanel />} />
         </Route>
