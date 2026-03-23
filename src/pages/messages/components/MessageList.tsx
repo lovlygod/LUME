@@ -49,6 +49,7 @@ interface MessageListProps {
   activeImageSrc: string | null;
   onCloseImage: () => void;
   onLoadMore: () => void;
+  onCommand?: (command: string) => void;
 }
 
 const MessageList = ({
@@ -77,6 +78,7 @@ const MessageList = ({
   activeImageSrc,
   onCloseImage,
   onLoadMore,
+  onCommand,
 }: MessageListProps) => {
   const parentRef = useRef<HTMLDivElement | null>(null);
   const lastMessageIdRef = useRef<string | null>(null);
@@ -93,11 +95,15 @@ const MessageList = ({
   const [dragTransition, setDragTransition] = useState<string>("");
   const isMobile = useIsMobile();
   const dragThreshold = isMobile ? 40 : 60;
-  const dragMax = 120;
-
   const visibleMessages = useMemo(
     () => messages.filter((msg) => !msg.deletedForAll && !msg.deletedForMe),
     [messages]
+  );
+
+  const dragMax = 120;
+  const isStickerBotChat = useMemo(
+    () => chatType === "private" && visibleMessages.some((msg) => msg.sender?.username === "stickers"),
+    [chatType, visibleMessages]
   );
 
   const rowVirtualizer = useVirtualizer({
@@ -180,7 +186,7 @@ const MessageList = ({
   };
 
   const updateDrag = (clientX: number, clientY: number) => {
-    if (!dragState?.isDragging) return;
+    if (!dragState?.isDragging || isStickerBotChat) return;
     const deltaX = clientX - dragState.startX;
     const deltaY = clientY - dragState.startY;
     if (Math.abs(deltaY) > Math.abs(deltaX)) {
@@ -197,7 +203,7 @@ const MessageList = ({
   };
 
   const endDrag = (msg: Message) => {
-    if (!dragState?.isDragging || dragState.messageId !== msg.id) return;
+    if (!dragState?.isDragging || dragState.messageId !== msg.id || isStickerBotChat) return;
     const shouldTrigger = dragState.dragX >= dragThreshold;
     setDragTransition("transform 0.2s ease");
 
@@ -267,8 +273,19 @@ const MessageList = ({
                 }
                 onReply(msg);
               }}
+              onClick={(event) => {
+                const target = event.target as HTMLElement | null;
+                if (target?.closest("button")) {
+                  event.stopPropagation();
+                  return;
+                }
+              }}
               onContextMenu={(event) => {
                 event.preventDefault();
+                const target = event.target as HTMLElement | null;
+                if (target?.closest("button")) {
+                  return;
+                }
                 if (window.getSelection()?.toString()) {
                   return;
                 }
@@ -342,43 +359,43 @@ const MessageList = ({
                       (msg.attachments && msg.attachments.some((a) => a.type === "image"))
                       ? "p-1.5"
                       : "px-3 py-1.5"
-                } ${isOwnMessage ? "" : "cursor-grab active:cursor-grabbing"}`}
+                } ${isOwnMessage || isStickerBotChat ? "" : "cursor-grab active:cursor-grabbing"}`}
                 style={{
                   transform: `translateX(${dragX}px)`,
                   transition: isDragging ? "none" : dragTransition || "transform 0.2s ease",
                 }}
                 onMouseDown={(event) => {
-                  if (isOwnMessage || event.button !== 0) return;
+                  if (isOwnMessage || isStickerBotChat || event.button !== 0) return;
                   beginDrag(msg.id, event.clientX, event.clientY);
                 }}
                 onMouseMove={(event) => {
-                  if (isOwnMessage) return;
+                  if (isOwnMessage || isStickerBotChat) return;
                   updateDrag(event.clientX, event.clientY);
                 }}
                 onMouseUp={() => {
-                  if (isOwnMessage) return;
+                  if (isOwnMessage || isStickerBotChat) return;
                   endDrag(msg);
                 }}
                 onMouseLeave={() => {
-                  if (isOwnMessage) return;
+                  if (isOwnMessage || isStickerBotChat) return;
                   endDrag(msg);
                 }}
                 onTouchStart={(event) => {
-                  if (isOwnMessage || event.touches.length !== 1) return;
+                  if (isOwnMessage || isStickerBotChat || event.touches.length !== 1) return;
                   const touch = event.touches[0];
                   beginDrag(msg.id, touch.clientX, touch.clientY);
                 }}
                 onTouchMove={(event) => {
-                  if (isOwnMessage || event.touches.length !== 1) return;
+                  if (isOwnMessage || isStickerBotChat || event.touches.length !== 1) return;
                   const touch = event.touches[0];
                   updateDrag(touch.clientX, touch.clientY);
                 }}
                 onTouchEnd={() => {
-                  if (isOwnMessage) return;
+                  if (isOwnMessage || isStickerBotChat) return;
                   endDrag(msg);
                 }}
               >
-                {!isOwnMessage && (
+                {!isOwnMessage && !isStickerBotChat && (
                   <ReplySwipeIndicator dragX={dragX} threshold={dragThreshold} />
                 )}
                 {replyTarget && (
@@ -498,10 +515,12 @@ const MessageList = ({
                       ))}
                     </div>
                   ) : null}
-                  {msg.text && msg.text.trim() && msg.type !== "moment_image" && !isVoiceMessage && !isStickerMessage && (
+                  {msg.text && msg.type !== "moment_image" && !isVoiceMessage && !isStickerMessage && (
                     <div className={`${msg.attachments && msg.attachments.some((a) => a.type === "image") ? "px-3 pt-2" : ""}`}>
                       <p className="break-words whitespace-pre-wrap leading-[1.25]">
-                        {renderSafeTextWithLinks(msg.text)}
+                        {renderSafeTextWithLinks(msg.text.replace(String.fromCharCode(11), ""), {
+                          onCommand,
+                        })}
                       </p>
                     </div>
                   )}

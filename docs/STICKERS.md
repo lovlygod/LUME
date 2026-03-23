@@ -8,7 +8,7 @@ This document covers the sticker system end-to-end: UI components, data model, b
 
 ## Overview
 
-Stickers are sent as dedicated message type (`sticker`). The client loads sticker packs, allows users to pick a sticker, and sends it as a message. Stickers are stored as assets in the frontend repo and synced into the backend database at startup. Users can also create packs through the Sticker Bot and share them via deep links.
+Stickers are sent as dedicated message type (`sticker`). The client loads sticker packs, allows users to pick a sticker, and sends it as a message. Stickers are stored as assets in the frontend repo and synced into the backend database at startup.
 
 ---
 
@@ -86,7 +86,7 @@ Sticker assets live in:
 src/assets/stickers/<PackName>/<StickerName>.png
 ```
 
-Sticker Bot uploads are stored in Cloudinary and persisted in the database (no local `backend/sticker-uploads/`).
+Sticker uploads are stored in Cloudinary and persisted in the database (no local `backend/sticker-uploads/`).
 
 ---
 
@@ -98,7 +98,6 @@ The backend ensures tables and syncs assets on startup (see [`backend/src/api.js
 - `stickers` — sticker records with `file_path`
 - `user_sticker_packs` — many-to-many between users and packs
 - `messages.sticker_id` — foreign key to `stickers`
-- `sticker_bot_sessions` — state machine for bot-driven pack creation
 
 The sync process:
 1. Scan asset directories
@@ -149,16 +148,6 @@ Body:
 
 Returns the PNG file. Includes caching and CSP headers to prevent content sniffing.
 
-### Sticker Bot session
-`GET /api/stickers/bot/session`
-
-### Sticker Bot start
-`POST /api/stickers/bot/start`
-
-### Sticker Bot upload
-`POST /api/stickers/bot/upload`
-
-Multipart field: `stickers` (PNG/WEBP/GIF, max 512KB each, max 60 files).
 
 ---
 
@@ -168,7 +157,6 @@ Multipart field: `stickers` (PNG/WEBP/GIF, max 512KB each, max 60 files).
 - Message list rendering: [`src/pages/messages/components/MessageList.tsx`](../src/pages/messages/components/MessageList.tsx:1)
 - Data loading and state: [`src/pages/messages/MessagesPage.tsx`](../src/pages/messages/MessagesPage.tsx:1)
 - Deep link page: [`src/pages/stickers/AddStickerPackPage.tsx`](../src/pages/stickers/AddStickerPackPage.tsx:1)
-- Sticker bot panel (preview + upload): [`src/pages/stickers/StickerBotPanel.tsx`](../src/pages/stickers/StickerBotPanel.tsx:1)
 
 Key behaviors:
 - Sticker packs are fetched when the picker opens.
@@ -180,12 +168,6 @@ Deep link UX:
 - Shows pack name, description, sticker grid, and Add button.
 - After adding, navigates to `/messages?addStickerPack=<id>` which opens the preview modal.
 
-Sticker bot UX:
-- Chat with user `@stickers` (ID `999`).
-- `/newpack` → set pack name
-- `/upload` → get upload endpoint
-- Upload files (PNG/WEBP/GIF)
-- `/publish` → creates pack and replies with deep link
 
 ---
 

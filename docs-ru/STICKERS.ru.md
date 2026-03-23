@@ -8,7 +8,7 @@
 
 ## Обзор
 
-Стикеры отправляются как отдельный тип сообщения (`sticker`). Клиент загружает наборы, позволяет выбрать стикер и отправляет его как сообщение. Ассеты лежат в репозитории фронтенда и синхронизируются с базой данных при старте сервера. Пользовательские наборы создаются через Sticker Bot и распространяются через deep link.
+Стикеры отправляются как отдельный тип сообщения (`sticker`). Клиент загружает наборы, позволяет выбрать стикер и отправляет его как сообщение. Ассеты лежат в репозитории фронтенда и синхронизируются с базой данных при старте сервера.
 
 ---
 
@@ -86,7 +86,7 @@ export interface StickerPack {
 src/assets/stickers/<PackName>/<StickerName>.png
 ```
 
-Загрузки Sticker Bot хранятся в Cloudinary и сохраняются в БД (локальной директории `backend/sticker-uploads/` больше нет).
+Загрузки стикеров хранятся в Cloudinary и сохраняются в БД (локальной директории `backend/sticker-uploads/` больше нет).
 
 ---
 
@@ -98,7 +98,6 @@ src/assets/stickers/<PackName>/<StickerName>.png
 - `stickers` — записи стикеров с `file_path`
 - `user_sticker_packs` — связь пользователь ⇄ пак
 - `messages.sticker_id` — внешний ключ на `stickers`
-- `sticker_bot_sessions` — состояние сценария Sticker Bot
 
 Процесс синхронизации:
 1. Скан ассетов
@@ -141,16 +140,6 @@ Body:
 
 Возвращает PNG; включает кэширование и CSP-заголовки.
 
-### Sticker Bot session
-`GET /api/stickers/bot/session`
-
-### Sticker Bot start
-`POST /api/stickers/bot/start`
-
-### Sticker Bot upload
-`POST /api/stickers/bot/upload`
-
-Multipart поле: `stickers` (PNG/WEBP/GIF, max 512KB, max 60 файлов).
 
 ---
 
@@ -160,7 +149,6 @@ Multipart поле: `stickers` (PNG/WEBP/GIF, max 512KB, max 60 файлов).
 - Список сообщений: [`src/pages/messages/components/MessageList.tsx`](../src/pages/messages/components/MessageList.tsx:1)
 - Загрузка данных/стейт: [`src/pages/messages/MessagesPage.tsx`](../src/pages/messages/MessagesPage.tsx:1)
 - Deep link страница: [`src/pages/stickers/AddStickerPackPage.tsx`](../src/pages/stickers/AddStickerPackPage.tsx:1)
-- Sticker Bot панель (preview + upload): [`src/pages/stickers/StickerBotPanel.tsx`](../src/pages/stickers/StickerBotPanel.tsx:1)
 
 Ключевые поведения:
 - Пакеты загружаются при открытии пикера.
@@ -172,12 +160,6 @@ Deep link UX:
 - Экран показывает имя, описание, превью стикеров и кнопку добавления.
 - После добавления переход в `/messages?addStickerPack=<id>` для открытия модалки.
 
-Sticker Bot UX:
-- Чат с пользователем `@stickers` (ID `999`).
-- `/newpack` → задать имя
-- `/upload` → получить endpoint для загрузки
-- Загрузить PNG/WEBP/GIF
-- `/publish` → создать набор и получить deep link
 
 ---
 

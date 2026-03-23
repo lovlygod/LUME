@@ -461,6 +461,7 @@ export const messagesAPI = {
     return apiRequest(`/chats/username/${encodeURIComponent(username)}`, { method: 'GET' });
   },
 
+
   getChatByPublicNumber: async (publicNumber: string): Promise<{ chat: Chat & { membersCount?: number; joinStatus?: string | null } }> => {
     return apiRequest(`/chats/public-number/${encodeURIComponent(publicNumber)}`, { method: 'GET' });
   },
@@ -641,35 +642,6 @@ export const stickersAPI = {
       method: 'POST',
       body: JSON.stringify({ packId }),
     });
-  },
-  startBot: async (): Promise<{ message: string }> => {
-    return apiRequest('/stickers/bot/start', {
-      method: 'POST',
-    });
-  },
-  getBotSession: async (): Promise<{ step: string; packName: string | null; stickers: Array<{ name: string; url?: string | null }>; limits: { maxStickers: number; maxFileSize: number } }> => {
-    return apiRequest('/stickers/bot/session', {
-      method: 'GET',
-    });
-  },
-  uploadBotStickers: async (files: File[]): Promise<{ stickers: Array<{ name: string; url?: string | null }>; count: number; max: number }> => {
-    const formData = new FormData();
-    files.forEach((file) => formData.append('stickers', file));
-    const response = await fetch(`${API_BASE_URL}/stickers/bot/upload`, {
-      method: 'POST',
-      body: formData,
-      credentials: 'include',
-      headers: {
-        ...(getCsrfToken() ? { 'X-CSRF-Token': getCsrfToken() as string } : {}),
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-    }
-
-    return response.json();
   },
 };
 

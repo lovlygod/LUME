@@ -33,7 +33,6 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ImageViewer } from "@/components/media/ImageViewer";
 import StickerModal from "@/components/stickers/StickerModal";
-import StickerBotPanel from "@/pages/stickers/StickerBotPanel";
 import TypingIndicator from "@/components/chat/TypingIndicator";
 import MessageContextMenu from "@/components/chat/MessageContextMenu";
 
@@ -307,7 +306,8 @@ const MessagesPage = () => {
           return;
         }
         if (chatId.startsWith("@")) {
-          const res = await messagesAPI.getChatByUsername(chatId.slice(1));
+          const username = chatId.slice(1);
+          const res = await messagesAPI.getChatByUsername(username);
           if (cancelled) return;
           setPublicChannel({
             id: res.chat.id,
@@ -344,6 +344,22 @@ const MessagesPage = () => {
             setChannelMeta(null);
             setJoinStatus(null);
           }
+          return;
+        }
+
+        const matchedChat = (chatsData?.chats || []).find(
+          (chat) => String(chat.id) === String(chatId)
+        );
+        if (!matchedChat) {
+          setPublicChannel(null);
+          setChannelMeta(null);
+          setJoinStatus(null);
+          return;
+        }
+        if (matchedChat.type !== "channel" || !matchedChat.isPublic) {
+          setPublicChannel(null);
+          setChannelMeta(null);
+          setJoinStatus(null);
           return;
         }
 
@@ -555,8 +571,10 @@ const MessagesPage = () => {
     await Promise.all(tasks);
   };
 
-  const handleSendMessage = async () => {
-    if ((!msgText.trim() && attachments.length === 0 && !momentFile) || !activeChatId || !canSendMessages) return;
+  const handleSendMessage = async (overrideText?: string) => {
+    const resolvedOverride = typeof overrideText === "string" ? overrideText : undefined;
+    const effectiveText = (resolvedOverride ?? msgText).trim();
+    if ((!effectiveText && attachments.length === 0 && !momentFile) || !activeChatId || !canSendMessages) return;
 
     if (momentFile) {
       try {
@@ -578,7 +596,7 @@ const MessagesPage = () => {
       return;
     }
 
-    const trimmed = msgText.trim();
+    const trimmed = effectiveText;
     const attachmentIds = attachments.map((att) => att.id).filter(Boolean);
     sendMessage.mutate({
       chatId: activeChatId,
@@ -600,6 +618,13 @@ const MessagesPage = () => {
       ...(replyTo?.id ? { replyToMessageId: replyTo.id } : {}),
     });
     setStickersOpen(false);
+  };
+
+  const handleCommandClick = (command: string) => {
+    if (!command) return;
+    if (!activeChatId || !canSendMessages) return;
+    const normalized = command.startsWith("/") ? command : `/${command}`;
+    handleSendMessage(normalized);
   };
 
   const handleOpenStickerModal = async (sticker: Sticker) => {
@@ -1017,6 +1042,7 @@ const MessagesPage = () => {
                               .catch(() => null);
                           }
                         }}
+                        onCommand={handleCommandClick}
                       />
                     )}
                   </div>
@@ -1151,9 +1177,6 @@ const MessagesPage = () => {
                   onBrowseStickerPacks={() => setStickersOpen(true)}
                   t={t}
                 />
-                {String(selectedChatId) === "999" && (
-                  <StickerBotPanel onUploaded={() => void 0} />
-                )}
               </div>
 
               <ImageViewer

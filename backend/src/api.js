@@ -87,18 +87,6 @@ const router = express.Router();
 const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || '').trim().toLowerCase();
 
 const STICKERS_BASE_DIR = path.resolve(__dirname, '../../src/assets/stickers');
-const STICKER_BOT_ID = 999;
-const STICKER_BOT_USERNAME = 'stickers';
-const STICKER_BOT_STEPS = {
-  IDLE: 'idle',
-  CREATING_PACK: 'creating_pack',
-  UPLOADING: 'uploading',
-  READY_TO_PUBLISH: 'ready_to_publish'
-};
-const STICKER_BOT_LIMITS = {
-  maxStickers: 60,
-  maxFileSize: 512 * 1024
-};
 
 const INVITE_TOKEN_LENGTH = 16;
 const INVITE_TOKEN_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
@@ -127,14 +115,6 @@ const isChatUsernameValid = (value) => /^[a-z0-9]{5,}$/i.test(String(value || ''
 const stickerFileCache = new Map();
 const STICKER_CACHE_MAX = 200;
 
-const normalizeStickerFileName = (value) => String(value || '')
-  .trim()
-  .replace(/\s+/g, '_')
-  .replace(/[^a-zA-Z0-9_-]/g, '_')
-  .toLowerCase();
-
-const buildStickerKey = (packName, stickerName) => `${normalizeStickerFileName(packName)}_${normalizeStickerFileName(stickerName)}`;
-
 const normalizeStickerSlug = (value) => String(value || '')
   .trim()
   .toLowerCase()
@@ -162,6 +142,7 @@ const ensureUniqueStickerSlug = async (baseSlug) => {
     candidate = `${safeBase}-${counter}`;
   }
 };
+
 
 const resolveStickerAssetPath = (filePath) => {
   const safePath = path.normalize(filePath).replace(/^([/\\])+/, '');
@@ -250,15 +231,6 @@ const ensureStickerSchema = async () => {
   await runStatement('CREATE INDEX IF NOT EXISTS idx_stickers_pack_id ON stickers(pack_id)');
   await runStatement('CREATE UNIQUE INDEX IF NOT EXISTS idx_sticker_packs_slug ON sticker_packs(slug)');
   await runStatement('CREATE INDEX IF NOT EXISTS idx_user_sticker_packs_user_id ON user_sticker_packs(user_id)');
-  await runStatement(`
-    CREATE TABLE IF NOT EXISTS sticker_bot_sessions (
-      user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-      step TEXT NOT NULL DEFAULT 'idle',
-      pack_name TEXT,
-      stickers_temp TEXT,
-      updated_at TIMESTAMPTZ DEFAULT NOW()
-    )
-  `);
 };
 
 const ensureStickerData = async () => {
@@ -752,9 +724,6 @@ router.get('/users/:userId/posts', authenticateToken, (req, res) => {
 router.get('/users', authenticateToken, asyncHandler(async (req, res) => {
   const { q } = req.query;
 
-  await ensureStickerSchema();
-  await getOrCreateStickerBotUser(req);
-
   let query = '';
   let params = [];
 
@@ -978,6 +947,7 @@ router.post('/chats', authenticateToken, asyncHandler(async (req, res) => {
   });
   console.log('[chats] create owner member', { ownerId, chatId });
 
+
   const memberIds = type === 'private'
     ? cleanUserIds
     : cleanUserIds.filter((id) => String(id) !== String(ownerId));
@@ -1010,6 +980,7 @@ router.post('/chats', authenticateToken, asyncHandler(async (req, res) => {
 
   res.status(201).json({ chatId: chatId.toString() });
 }));
+
 
 // List public channels (search)
 router.get('/chats/public', authenticateToken, asyncHandler(async (req, res) => {
@@ -2086,340 +2057,6 @@ router.get('/stickers/:id', asyncHandler(async (req, res) => {
   });
 }));
 
-router.post('/stickers/bot/start', authenticateToken, asyncHandler(async (req, res) => {
-  await ensureStickerSchema();
-  await getOrCreateStickerBotUser(req);
-  const senderId = req.user.userId;
-  await resetStickerBotSession(senderId);
-  await sendBotMessage(req, senderId, STICKER_BOT_HELP);
-  res.json({ message: 'Sticker bot started' });
-}));
-
-// ==================== Sticker Bot ====================
-
-const getStickerBotSession = (userId) => new Promise((resolve) => {
-  db.get(
-    'SELECT user_id, step, pack_name, stickers_temp FROM sticker_bot_sessions WHERE user_id = $1',
-    [userId],
-    (err, row) => {
-      if (err) return resolve({ user_id: userId, step: STICKER_BOT_STEPS.IDLE, pack_name: null, stickers_temp: '[]' });
-      resolve(row || { user_id: userId, step: STICKER_BOT_STEPS.IDLE, pack_name: null, stickers_temp: '[]' });
-    }
-  );
-});
-
-const upsertStickerBotSession = (userId, updates) => new Promise((resolve) => {
-  const step = updates.step || STICKER_BOT_STEPS.IDLE;
-  const packName = updates.packName ?? null;
-  const stickersTemp = updates.stickersTemp ?? '[]';
-  db.run(
-    `INSERT INTO sticker_bot_sessions (user_id, step, pack_name, stickers_temp, updated_at)
-     VALUES ($1, $2, $3, $4, NOW())
-     ON CONFLICT(user_id) DO UPDATE SET step = $2, pack_name = $3, stickers_temp = $4, updated_at = NOW()`
-    ,
-    [userId, step, packName, stickersTemp],
-    () => resolve()
-  );
-});
-
-const resetStickerBotSession = async (userId) => {
-  await upsertStickerBotSession(userId, { step: STICKER_BOT_STEPS.IDLE, packName: null, stickersTemp: '[]' });
-};
-
-const getOrCreateStickerBotUser = (req) => new Promise((resolve) => {
-  db.get('SELECT id, username, name, avatar, banner FROM users WHERE username = $1', [STICKER_BOT_USERNAME], (err, row) => {
-    if (row?.id) {
-      const desiredAvatar = `${getPublicBaseUrl(req)}/assets/stickers-bot/stickers-bot-avatar.jpg`;
-      const desiredBanner = `${getPublicBaseUrl(req)}/assets/stickers-bot/stickers-bot-banner.png`;
-      if (row.avatar !== desiredAvatar || row.banner !== desiredBanner) {
-        db.run(
-          'UPDATE users SET avatar = $1, banner = $2 WHERE id = $3',
-          [desiredAvatar, desiredBanner, row.id],
-          () => resolve(row)
-        );
-      } else {
-        resolve(row);
-      }
-      return;
-    }
-    db.run(
-      'INSERT INTO users (id, username, name, verified, avatar, banner) VALUES ($1, $2, $3, $4, $5, $6)',
-      [
-        STICKER_BOT_ID,
-        STICKER_BOT_USERNAME,
-        'Sticker Bot',
-        1,
-        `${getPublicBaseUrl(req)}/assets/stickers-bot/stickers-bot-avatar.jpg`,
-        `${getPublicBaseUrl(req)}/assets/stickers-bot/stickers-bot-banner.png`
-      ],
-      function(insertErr) {
-        if (insertErr) {
-          return resolve({ id: STICKER_BOT_ID, username: STICKER_BOT_USERNAME, name: 'Sticker Bot' });
-        }
-        resolve({ id: STICKER_BOT_ID, username: STICKER_BOT_USERNAME, name: 'Sticker Bot' });
-      }
-    );
-  });
-});
-
-const sendBotMessage = (req, receiverId, text) => new Promise((resolve) => {
-  const senderId = STICKER_BOT_ID;
-  const ensureChatQuery = `
-    SELECT c.id
-    FROM chats c
-    JOIN chat_members cm1 ON cm1.chat_id = c.id AND cm1.user_id = $1
-    JOIN chat_members cm2 ON cm2.chat_id = c.id AND cm2.user_id = $2
-    WHERE c.type = 'private'
-    LIMIT 1
-  `;
-
-  db.get(ensureChatQuery, [senderId, receiverId], (chatErr, chat) => {
-    if (chatErr) return resolve();
-
-    const ensureChat = (chatId) => {
-      const insertMessageQuery = `
-        INSERT INTO messages (chat_id, sender_id, text, type)
-        VALUES ($1, $2, $3, 'text')
-      `;
-      db.run(insertMessageQuery, [chatId, senderId, text], function(err) {
-        if (err) return resolve();
-        const messageId = this.lastID;
-        const sendChatMessage = req.app.get('sendChatMessage');
-        const senderQuery = 'SELECT name, username, avatar, verified FROM users WHERE id = $1';
-        if (sendChatMessage) {
-          db.get(senderQuery, [senderId], (senderErr, sender) => {
-            const senderData = senderErr ? { name: 'Sticker Bot', username: STICKER_BOT_USERNAME, avatar: null, verified: 1 } : sender;
-            sendChatMessage({
-              id: messageId,
-              chatId: String(chatId),
-              senderId: senderId.toString(),
-              text,
-              type: 'text',
-              timestamp: new Date().toISOString(),
-              attachments: [],
-              replyToMessageId: null,
-              sender: senderData
-            });
-          });
-        }
-        resolve();
-      });
-    };
-
-    if (chat?.id) {
-      return ensureChat(chat.id);
-    }
-
-    db.run(
-      `INSERT INTO chats (type, title, owner_id) VALUES ('private', NULL, $1)`,
-      [senderId],
-      function(insertErr) {
-        if (insertErr) return resolve();
-        const newChatId = this.lastID;
-        db.run(
-          `INSERT INTO chat_members (chat_id, user_id, role) VALUES ($1, $2, 'owner')`,
-          [newChatId, senderId],
-          () => {
-            db.run(
-              `INSERT INTO chat_members (chat_id, user_id, role) VALUES ($1, $2, 'member')`,
-              [newChatId, receiverId],
-              () => ensureChat(newChatId)
-            );
-          }
-        );
-      }
-    );
-  });
-});
-
-const STICKER_BOT_HELP = `Привет! Я помогу создать стикеры.\n\nКоманды:\n/newpack — создать набор\n/addsticker — добавить в существующий\n/upload — загрузить стикеры\n/publish — опубликовать`;
-
-const handleStickerBotCommand = async (req, senderId, text) => {
-  await ensureStickerSchema();
-  await getOrCreateStickerBotUser(req);
-  const session = await getStickerBotSession(senderId);
-  const trimmed = (text || '').trim();
-
-  if (trimmed.startsWith('/start')) {
-    await resetStickerBotSession(senderId);
-    await sendBotMessage(req, senderId, STICKER_BOT_HELP);
-    return true;
-  }
-
-  if (trimmed.startsWith('/newpack')) {
-    await upsertStickerBotSession(senderId, { step: STICKER_BOT_STEPS.CREATING_PACK, packName: null, stickersTemp: '[]' });
-    await sendBotMessage(req, senderId, 'Введите название набора:');
-    return true;
-  }
-
-  if (trimmed.startsWith('/addsticker')) {
-    if (!session.pack_name) {
-      await sendBotMessage(req, senderId, 'Сначала создайте набор через /newpack.');
-      return true;
-    }
-    await upsertStickerBotSession(senderId, { step: STICKER_BOT_STEPS.UPLOADING, packName: session.pack_name, stickersTemp: session.stickers_temp || '[]' });
-    await sendBotMessage(req, senderId, 'Отправьте стикеры (PNG, WEBP, GIF) через /upload.');
-    return true;
-  }
-
-  if (trimmed.startsWith('/upload')) {
-    if (!session.pack_name) {
-      await sendBotMessage(req, senderId, 'Сначала создайте набор через /newpack.');
-      return true;
-    }
-    await upsertStickerBotSession(senderId, { step: STICKER_BOT_STEPS.UPLOADING, packName: session.pack_name, stickersTemp: session.stickers_temp || '[]' });
-    const uploadUrl = `${getPublicBaseUrl(req)}/api/stickers/bot/upload`;
-    await sendBotMessage(req, senderId, `Загрузите стикеры (PNG, WEBP, GIF) через ${uploadUrl} (multipart поле stickers).`);
-    return true;
-  }
-
-  if (trimmed.startsWith('/publish')) {
-    const stickersTemp = JSON.parse(session.stickers_temp || '[]');
-    if (!session.pack_name) {
-      await sendBotMessage(req, senderId, 'Название набора не задано. Используйте /newpack.');
-      return true;
-    }
-    if (!stickersTemp.length) {
-      await sendBotMessage(req, senderId, 'Добавьте хотя бы один стикер перед публикацией.');
-      return true;
-    }
-    if (stickersTemp.length > STICKER_BOT_LIMITS.maxStickers) {
-      await sendBotMessage(req, senderId, `Слишком много стикеров. Максимум ${STICKER_BOT_LIMITS.maxStickers}.`);
-      return true;
-    }
-
-    const slugBase = normalizeStickerSlug(session.pack_name);
-    const slug = await ensureUniqueStickerSlug(slugBase);
-    const prepared = [];
-    for (const item of stickersTemp) {
-      const originalName = path.parse(item.originalFile || item.name || '').name;
-      const safeName = normalizeStickerFileName(originalName || item.name || 'sticker') || `sticker-${Date.now()}`;
-      if (!item.url) {
-        continue;
-      }
-      prepared.push({
-        name: originalName || item.name || safeName,
-        filePath: item.url
-      });
-    }
-
-    const createdPackId = await new Promise((resolve, reject) => {
-      db.run(
-        'INSERT INTO sticker_packs (name, slug, description, author) VALUES ($1, $2, $3, $4)',
-        [session.pack_name, slug, `Sticker pack ${session.pack_name}`, STICKER_BOT_USERNAME],
-        function(err) {
-          if (err) return reject(err);
-          resolve(this.lastID);
-        }
-      );
-    }).catch(() => null);
-
-    if (!createdPackId) {
-      await sendBotMessage(req, senderId, 'Не удалось создать набор. Попробуйте позже.');
-      return true;
-    }
-
-    for (const item of prepared) {
-      await new Promise((resolve) => {
-        db.run(
-          'INSERT INTO stickers (pack_id, name, file_path) VALUES ($1, $2, $3)',
-          [createdPackId, item.name, item.filePath],
-          () => resolve()
-        );
-      });
-    }
-
-    const packLink = `${getPublicBaseUrl(req)}/addstickers/${slug}`;
-    await resetStickerBotSession(senderId);
-    await sendBotMessage(req, senderId, `Набор опубликован! Ссылка: ${packLink}`);
-    return true;
-  }
-
-  if (session.step === STICKER_BOT_STEPS.CREATING_PACK && trimmed) {
-    await upsertStickerBotSession(senderId, { step: STICKER_BOT_STEPS.UPLOADING, packName: trimmed, stickersTemp: '[]' });
-    const uploadUrl = `${getPublicBaseUrl(req)}/api/stickers/bot/upload`;
-    await sendBotMessage(req, senderId, `Отправьте стикеры (PNG, WEBP, GIF) через ${uploadUrl} (multipart поле stickers).`);
-    return true;
-  }
-
-  return false;
-};
-
-router.post('/stickers/bot/upload', authenticateToken, stickerUpload.array('stickers', STICKER_BOT_LIMITS.maxStickers), asyncHandler(async (req, res) => {
-  const senderId = req.user.userId;
-  const session = await getStickerBotSession(senderId);
-  if (!session.pack_name) {
-    return res.status(400).json({ error: 'Pack name not set. Use /newpack first.' });
-  }
-  if (session.step !== STICKER_BOT_STEPS.UPLOADING) {
-    return res.status(400).json({ error: 'Sticker upload not ожидается. Используйте /addsticker.' });
-  }
-  const files = req.files || [];
-  if (!files.length) {
-    return res.status(400).json({ error: 'No stickers uploaded' });
-  }
-
-  const existing = JSON.parse(session.stickers_temp || '[]');
-  if (existing.length + files.length > STICKER_BOT_LIMITS.maxStickers) {
-    files.forEach((file) => fs.unlinkSync(file.path));
-    return res.status(400).json({ error: `Max ${STICKER_BOT_LIMITS.maxStickers} stickers per pack` });
-  }
-
-  const added = files.map((file) => {
-    const originalName = path.parse(file.originalname).name;
-    return {
-      name: originalName || file.filename,
-      tempFile: file.filename,
-      originalFile: file.originalname,
-      url: file.path
-    };
-  });
-
-  const updatedTemp = [...existing, ...added].map((item) => ({
-    ...item,
-    url: item.url || item.path || null
-  }));
-
-  await upsertStickerBotSession(senderId, {
-    step: updatedTemp.length ? STICKER_BOT_STEPS.READY_TO_PUBLISH : STICKER_BOT_STEPS.UPLOADING,
-    packName: session.pack_name,
-    stickersTemp: JSON.stringify(updatedTemp)
-  });
-
-  await sendBotMessage(req, senderId, `Загружено стикеров: ${updatedTemp.length}. Когда будете готовы, используйте /publish.`);
-
-  res.json({
-    stickers: updatedTemp,
-    count: updatedTemp.length,
-    max: STICKER_BOT_LIMITS.maxStickers
-  });
-}));
-
-router.get('/stickers/bot/session', authenticateToken, asyncHandler(async (req, res) => {
-  const session = await getStickerBotSession(req.user.userId);
-  const stickersTemp = JSON.parse(session.stickers_temp || '[]');
-  res.json({
-    step: session.step,
-    packName: session.pack_name,
-    stickers: stickersTemp,
-    limits: STICKER_BOT_LIMITS
-  });
-}));
-
-router.get('/stickers/bot/temp/:filename', authenticateToken, asyncHandler(async (req, res) => {
-  const filename = req.params.filename;
-  if (!filename) {
-    return res.status(400).json({ error: 'Invalid filename' });
-  }
-  const safeName = path.basename(filename);
-  const session = await getStickerBotSession(req.user.userId);
-  const stickersTemp = JSON.parse(session.stickers_temp || '[]');
-  const item = stickersTemp.find((sticker) => sticker.tempFile === safeName || sticker.url?.includes(safeName));
-  if (!item?.url) {
-    return res.status(404).json({ error: 'Sticker not found' });
-  }
-  res.json({ url: item.url });
-}));
 
 
 // Get messages for a chat
@@ -2567,13 +2204,6 @@ router.post('/messages', authenticateToken, asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'chatId is required' });
   }
 
-  if (String(chatId) === String(STICKER_BOT_ID)) {
-    const handled = await handleStickerBotCommand(req, senderId, text || '');
-    if (handled) {
-      return res.json({ message: 'Sticker bot handled' });
-    }
-  }
-
   const member = await new Promise((resolve) => {
     db.get(
       'SELECT cm.role, c.type FROM chat_members cm JOIN chats c ON c.id = cm.chat_id WHERE cm.chat_id = $1 AND cm.user_id = $2',
@@ -2592,6 +2222,7 @@ router.post('/messages', authenticateToken, asyncHandler(async (req, res) => {
   if (member.type === 'channel' && !['owner', 'admin'].includes(member.role)) {
     return res.status(403).json({ error: 'Only admins can write to channel' });
   }
+
 
   const messageText = text || '';
   const attachments = Array.isArray(attachmentIds) ? attachmentIds : [];
@@ -2717,7 +2348,7 @@ router.post('/messages', authenticateToken, asyncHandler(async (req, res) => {
                   continueWithMessage(messageId, sender, []);
                 }
 
-                function continueWithMessage(msgId, senderData, atts) {
+                async function continueWithMessage(msgId, senderData, atts) {
                   const formattedAttachments = atts.map(att => ({
                     id: att.id.toString(),
                     type: att.type,
