@@ -1,5 +1,5 @@
 import sendSoundUrl from "@/assets/sounds/message-send.mp3";
-import receiveSoundUrl from "@/assets/sounds/message-receive.mp3";
+import receiveSoundUrl from "@/assets/sounds/message_incoming.mp3";
 
 const SEND_VOLUME = 0.24;
 const RECEIVE_VOLUME = 0.28;
