@@ -321,7 +321,7 @@ const SidebarLeft = () => {
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    transition={{ duration: 0, ease: [0.4, 0, 0.2, 1] }}
+                    transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
                     className="absolute bottom-full left-0 right-0 mb-2 glass-panel rounded-2xl overflow-hidden z-50"
                   >
                     <div className="p-2">
