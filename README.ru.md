@@ -86,7 +86,7 @@ LUME/
 │   ├── src/
 │   │   ├── components/     # UI компоненты
 │   │   │   ├── ui/         # shadcn/ui компоненты
-  │   │   │   ├── groups/     # (legacy) Компоненты групп
+│   │   │   ├── groups/     # (legacy) Компоненты групп
 │   │   │   ├── feed/       # Компоненты ленты
 │   │   │   ├── post/       # Компоненты постов
 │   │   │   ├── chat/       # Компоненты чатов
@@ -98,7 +98,7 @@ LUME/
 │   │   ├── pages/          # Страницы приложения
 │   │   │   ├── auth/       # Auth страницы
 │   │   │   ├── messages/   # Страницы сообщений
-  │   │   │   └── group/      # (legacy) Страницы групп
+│   │   │   └── group/      # (legacy) Страницы групп
 │   │   ├── services/       # API клиент, errorHandler, websocket
 │   │   ├── contexts/       # React контексты (Auth, Language, Theme, Server)
 │   │   ├── hooks/          # Кастомные хуки (React Query)
