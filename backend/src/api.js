@@ -15,6 +15,7 @@ const { getPublicBaseUrl } = require('./utils/baseUrl');
 const path = require('path');
 const fs = require('fs');
 const db = require('./db');
+const { pool } = db;
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const os = require('os');
@@ -24,6 +25,9 @@ const { verifyCSRFToken } = require('./csrf');
 const { indexMessage } = require('./search/messagesSearch');
 const developerPlatformRoutes = require('./developerPlatform');
 const developerApiRoutes = require('./developerApi');
+const registerChatRoutes = require('./routes/chatRoutes');
+const registerSocialRoutes = require('./routes/socialRoutes');
+const registerE2EERoutes = require('./routes/e2eeRoutes');
 
 // Helper function to extract @mentions from text
 function extractMentions(text) {
@@ -45,8 +49,6 @@ async function createMentionNotifications(text, authorId, options, req) {
   const createNotification = req.app.get('createNotification');
   if (!createNotification) return;
   
-  // Find mentioned users
-  const db = require('./db');
   const placeholders = mentions.map((_, idx) => `$${idx + 1}`).join(',');
   
   await new Promise((resolve) => {
@@ -86,7 +88,14 @@ async function createMentionNotifications(text, authorId, options, req) {
 const router = express.Router();
 const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || '').trim().toLowerCase();
 
-const STICKERS_BASE_DIR = path.resolve(__dirname, '../../src/assets/stickers');
+const AUTH_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: true,
+  sameSite: 'none',
+  path: '/',
+};
+
+const STICKERS_BASE_DIR = path.resolve(__dirname, 'assets/stickers');
 
 const INVITE_TOKEN_LENGTH = 16;
 const INVITE_TOKEN_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
@@ -250,6 +259,12 @@ const ensureStickerSchema = async () => {
     )
   `);
 
+  // Миграция для старых инсталляций, где таблица уже существует без slug
+  await runStatement(`
+    ALTER TABLE sticker_packs
+    ADD COLUMN IF NOT EXISTS slug TEXT
+  `);
+
   await runStatement(`
     CREATE TABLE IF NOT EXISTS stickers (
       id BIGSERIAL PRIMARY KEY,
@@ -282,6 +297,26 @@ const ensureStickerSchema = async () => {
 
 const ensureStickerData = async () => {
   await ensureStickerSchema();
+
+  await new Promise((resolve) => {
+    db.all(
+      `SELECT column_name, data_type
+       FROM information_schema.columns
+       WHERE table_name = 'sticker_packs'
+       ORDER BY ordinal_position`,
+      (err, rows) => {
+        if (err) {
+          console.warn('[Startup][StickerSchema] Failed to inspect sticker_packs columns:', err.message);
+          return resolve();
+        }
+
+        const columns = (rows || []).map((r) => `${r.column_name}:${r.data_type}`).join(', ');
+        console.info(`[Startup][StickerSchema] sticker_packs columns => ${columns || 'none'}`);
+        resolve();
+      }
+    );
+  });
+
   const assets = scanStickerAssets();
   if (assets.length === 0) return;
 
@@ -330,7 +365,6 @@ const ensureStickerData = async () => {
 };
 
 const momentUpload = uploadMemoryImage;
-const stickerUpload = uploadStickers;
 
 // Test route - самый первый роут
 
@@ -354,8 +388,8 @@ router.post('/refresh', asyncHandler(async (req, res) => {
   const refreshToken = req.cookies?.refreshToken;
 
   if (!refreshToken) {
-    res.clearCookie('refreshToken', { path: '/', sameSite: 'none', secure: true });
-    res.clearCookie('token', { path: '/', sameSite: 'none', secure: true });
+    res.clearCookie('refreshToken', AUTH_COOKIE_OPTIONS);
+    res.clearCookie('token', AUTH_COOKIE_OPTIONS);
     return res.status(204).end();
   }
 
@@ -364,8 +398,8 @@ router.post('/refresh', asyncHandler(async (req, res) => {
 
   if (!tokenData) {
     logger.auth.tokenRefresh(null, false);
-    res.clearCookie('refreshToken', { path: '/', sameSite: 'none', secure: true });
-    res.clearCookie('token', { path: '/', sameSite: 'none', secure: true });
+    res.clearCookie('refreshToken', AUTH_COOKIE_OPTIONS);
+    res.clearCookie('token', AUTH_COOKIE_OPTIONS);
     throw new AuthError('Invalid or expired refresh token', 'INVALID_REFRESH_TOKEN');
   }
 
@@ -390,11 +424,8 @@ router.post('/refresh', asyncHandler(async (req, res) => {
 
   // Set new access token cookie
   res.cookie('token', accessToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'none',
+    ...AUTH_COOKIE_OPTIONS,
     maxAge: 24 * 60 * 60 * 1000,
-    path: '/'
   });
 
   // Log successful token refresh
@@ -402,7 +433,6 @@ router.post('/refresh', asyncHandler(async (req, res) => {
 
   res.json({
     message: 'Token refreshed successfully',
-    token: accessToken
   });
 }));
 
@@ -415,8 +445,8 @@ router.post('/logout', authenticateToken, asyncHandler(async (req, res) => {
   }
 
   // Clear cookies
-  res.clearCookie('refreshToken', { path: '/', sameSite: 'none', secure: true });
-  res.clearCookie('token', { path: '/', sameSite: 'none', secure: true });
+  res.clearCookie('refreshToken', AUTH_COOKIE_OPTIONS);
+  res.clearCookie('token', AUTH_COOKIE_OPTIONS);
 
   // Log logout
   logger.auth.logout(req.user.userId, req.ip);
@@ -433,9 +463,6 @@ router.get('/csrf-token', (req, res) => {
 // CSRF protection for state-changing requests
 router.post('*', (req, res, next) => {
   const csrfExclusions = new Set(['/login', '/register', '/refresh', '/logout', '/csrf-token']);
-  if (req.path.startsWith('/developer/')) {
-    return next();
-  }
   if (csrfExclusions.has(req.path)) {
     return next();
   }
@@ -455,11 +482,106 @@ router.use('/developer', developerPlatformRoutes);
 // Developer public API routes
 router.use('/developer-api', developerApiRoutes);
 
+registerChatRoutes(router, {
+  db,
+  authenticateToken,
+  asyncHandler,
+  normalizeUsername,
+  isChatUsernameValid,
+  generateInviteToken,
+  generatePublicNumber,
+});
+
+registerSocialRoutes(router, {
+  db,
+  authenticateToken,
+  asyncHandler,
+  ValidationError,
+  fileUpload,
+  uploadFile,
+  momentUpload,
+  crypto,
+});
+
+registerE2EERoutes(router, {
+  db,
+  authenticateToken,
+  asyncHandler,
+});
+
 // Profile routes (protected)
 router.get('/profile/:userId', authenticateToken, getUserProfile);
 router.put('/profile', authenticateToken, updateUserProfile);
+router.put('/profile/privacy', authenticateToken, (req, res) => {
+  const userId = req.user.userId;
+  const { postPrivacy, messagePrivacy } = req.body;
+
+  const validPost = ['public', 'followers'];
+  const validMsg = ['everyone', 'followers'];
+
+  if (postPrivacy && !validPost.includes(postPrivacy)) {
+    return res.status(400).json({ error: 'Invalid postPrivacy value' });
+  }
+  if (messagePrivacy && !validMsg.includes(messagePrivacy)) {
+    return res.status(400).json({ error: 'Invalid messagePrivacy value' });
+  }
+
+  db.run(
+    `INSERT INTO user_privacy_settings (user_id, post_privacy, message_privacy)
+     VALUES ($1, $2, $3)
+     ON CONFLICT(user_id)
+     DO UPDATE SET post_privacy = $4, message_privacy = $5, updated_at = NOW()`,
+    [userId, postPrivacy || 'public', messagePrivacy || 'everyone', postPrivacy || 'public', messagePrivacy || 'everyone'],
+    (err) => {
+      if (err) {
+        console.error('Error saving privacy settings:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json({ message: 'Privacy settings saved', postPrivacy, messagePrivacy });
+    }
+  );
+});
 router.post('/profile/avatar', authenticateToken, upload.single('avatar'), uploadAvatar);
 router.post('/profile/banner', authenticateToken, upload.single('banner'), uploadBanner);
+
+router.put('/profile/settings', authenticateToken, (req, res) => {
+  const userId = req.user.userId;
+  const { theme, snowEffect, snowVariant } = req.body;
+
+  const validThemes = ['dark', 'light'];
+  const validVariants = ['dots', 'flakes', 'hearts'];
+
+  const themeVal = validThemes.includes(theme) ? theme : 'dark';
+  const snowVal = typeof snowEffect === 'boolean' ? (snowEffect ? 1 : 0) : (snowEffect ? 1 : 0);
+  const variantVal = validVariants.includes(snowVariant) ? snowVariant : 'dots';
+
+  db.run(
+    `INSERT INTO user_settings (user_id, theme, snow_effect, snow_variant)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT(user_id)
+     DO UPDATE SET theme = $5, snow_effect = $6, snow_variant = $7, updated_at = NOW()`,
+    [userId, themeVal, snowVal, variantVal, themeVal, snowVal, variantVal],
+    (err) => {
+      if (err) {
+        console.error('Error saving user settings:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json({ message: 'Settings saved' });
+    }
+  );
+});
+
+router.get('/profile/settings', authenticateToken, (req, res) => {
+  const userId = req.user.userId;
+  db.get('SELECT theme, snow_effect, snow_variant FROM user_settings WHERE user_id = $1', [userId], (err, row) => {
+    if (err) return res.status(500).json({ error: 'Database error' });
+    res.json(row ? {
+      theme: row.theme,
+      snowEffect: row.snow_effect === 1,
+      snowVariant: row.snow_variant,
+    } : { theme: 'dark', snowEffect: false, snowVariant: 'dots' });
+  });
+});
 
 // Sessions: list active sessions
 router.get('/sessions', authenticateToken, asyncHandler(async (req, res) => {
@@ -660,36 +782,52 @@ router.delete('/profile', authenticateToken, (req, res) => {
       'DELETE FROM users WHERE id = $1'
     ];
 
-    const runDelete = (index) => {
-      if (index >= deleteQueries.length) {
-        // All deletions complete
-        const broadcast = req.app.get('broadcast');
-        if (broadcast) {
-          // Notify all clients that this user was deleted
-          broadcast({
-            type: 'user_deleted',
-            data: { userId: userId.toString() }
+    pool.connect().then((client) => {
+      client.query('BEGIN').then(() => {
+        const runDelete = (index) => {
+          if (index >= deleteQueries.length) {
+            client.query('COMMIT').then(() => {
+              client.release();
+              const broadcast = req.app.get('broadcast');
+              if (broadcast) {
+                broadcast({
+                  type: 'user_deleted',
+                  data: { userId: userId.toString() }
+                });
+              }
+              return res.json({ message: 'Account deleted permanently' });
+            }).catch((err) => {
+              client.query('ROLLBACK').then(() => client.release());
+              console.error('Commit error:', err);
+              return res.status(500).json({ error: 'Failed to delete account' });
+            });
+            return;
+          }
+
+          const query = deleteQueries[index];
+          const params = query.includes('follower_id = $1 OR following_id')
+            ? [userId, userId]
+            : [userId];
+
+          client.query(query, params).then(() => {
+            runDelete(index + 1);
+          }).catch((err) => {
+            console.error('Delete error at step', index, ':', err);
+            client.query('ROLLBACK').then(() => client.release());
+            return res.status(500).json({ error: 'Failed to delete account' });
           });
-        }
+        };
 
-        return res.json({ message: 'Account deleted permanently' });
-      }
-
-      const query = deleteQueries[index];
-      const params = query.includes('follower_id = $1 OR following_id')
-        ? [userId, userId]
-        : [userId];
-
-      db.run(query, params, (err) => {
-        if (err) {
-          console.error('Delete error at step', index, ':', err);
-          return res.status(500).json({ error: 'Failed to delete account' });
-        }
-        runDelete(index + 1);
+        runDelete(0);
+      }).catch((err) => {
+        client.release();
+        console.error('Begin error:', err);
+        return res.status(500).json({ error: 'Failed to delete account' });
       });
-    };
-
-    runDelete(0);
+    }).catch((err) => {
+      console.error('Pool connect error:', err);
+      return res.status(500).json({ error: 'Failed to delete account' });
+    });
   });
 });
 
@@ -699,7 +837,7 @@ router.get('/profile', authenticateToken, (req, res) => {
 
   const query = `
     SELECT id, email, name, username, bio, city, website, pinned_post_id,
-           avatar, banner, verified, followers_count, join_date, created_at
+           avatar, banner, verified, followers_count, join_date, created_at, role
     FROM users
     WHERE id = $1
   `;
@@ -728,12 +866,14 @@ router.get('/profile', authenticateToken, (req, res) => {
           city: user.city,
           website: user.website,
           pinned_post_id: user.pinned_post_id ? user.pinned_post_id.toString() : null,
+          pinnedPostId: user.pinned_post_id ? user.pinned_post_id.toString() : null,
           avatar: user.avatar,
           banner: user.banner,
           verified: user.verified === 1,
           followers_count: user.followers_count || 0,
           following_count: followingCount,
-          joinDate: user.join_date
+          joinDate: user.join_date,
+          role: user.role || 'user'
         }
       });
     });
@@ -786,7 +926,8 @@ router.get('/users', authenticateToken, asyncHandler(async (req, res) => {
       ORDER BY verified DESC, name ASC
       LIMIT 20
     `;
-    params = [`%${q}%`, `%${q}%`];
+    const escaped = q.replace(/[%_\\]/g, '\\$&');
+    params = [`%${escaped}%`, `%${escaped}%`];
   } else {
     query = `
       SELECT id, name, username, bio, avatar, verified
@@ -810,228 +951,6 @@ router.get('/users', authenticateToken, asyncHandler(async (req, res) => {
     res.json({ users: formattedUsers });
   });
 }));
-
-// Get chat list for current user
-router.get('/chats', authenticateToken, (req, res) => {
-  const userId = req.user.userId;
-  console.log('[chats] list request', { userId });
-  const query = `
-    SELECT c.id, c.type, c.title, c.avatar, c.owner_id, c.is_public, c.is_private, c.username, c.invite_token, c.public_number, c.created_at,
-           cm.role,
-           lm.text as last_message_text, lm.type as last_message_type, lm.created_at as last_message_time
-    FROM chat_members cm
-    JOIN chats c ON c.id = cm.chat_id
-    LEFT JOIN LATERAL (
-      SELECT m.text, m.type, m.created_at
-      FROM messages m
-      WHERE m.chat_id = c.id AND m.deleted_for_all_at IS NULL
-      ORDER BY m.created_at DESC
-      LIMIT 1
-    ) lm ON true
-    WHERE cm.user_id = $1
-    ORDER BY lm.created_at DESC NULLS LAST, c.created_at DESC
-  `;
-
-  db.all(query, [userId], async (err, rows) => {
-    if (err) {
-      console.error('Database error getting chats:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    console.log('[chats] list rows', { userId, count: rows?.length || 0 });
-
-    const chatIds = rows.map(row => row.id);
-    const membersByChat = new Map();
-
-    if (chatIds.length) {
-      const placeholders = chatIds.map((_, i) => `$${i + 1}`).join(',');
-      const membersQuery = `
-        SELECT cm.chat_id, cm.user_id, cm.role, u.name, u.username, u.avatar, u.verified
-        FROM chat_members cm
-        JOIN users u ON u.id = cm.user_id
-        WHERE cm.chat_id IN (${placeholders})
-      `;
-      const members = await new Promise((resolve) => {
-        db.all(membersQuery, chatIds, (membersErr, memberRows) => {
-          if (membersErr) return resolve([]);
-          resolve(memberRows || []);
-        });
-      });
-      console.log('[chats] list members', { userId, chatCount: chatIds.length, memberCount: (members || []).length });
-      (members || []).forEach((member) => {
-        if (!membersByChat.has(member.chat_id)) {
-          membersByChat.set(member.chat_id, []);
-        }
-        membersByChat.get(member.chat_id).push(member);
-      });
-    }
-
-    const formatted = rows.map((row) => {
-      const members = membersByChat.get(row.id) || [];
-      const isPrivate = row.type === 'private';
-      const otherMember = isPrivate
-        ? members.find((m) => String(m.user_id) !== String(userId))
-        : null;
-      const title = row.title || (otherMember?.name || otherMember?.username || 'Chat');
-      const avatar = row.avatar || otherMember?.avatar || null;
-
-      const publicNumber = row.public_number ? String(row.public_number) : null;
-
-      return {
-        id: row.id.toString(),
-        routeId: publicNumber || row.id.toString(),
-        type: row.type,
-        title,
-        avatar,
-        ownerId: row.owner_id ? row.owner_id.toString() : null,
-        isPublic: !!row.is_public,
-        isPrivate: !!row.is_private,
-        username: row.username || null,
-        inviteToken: row.invite_token || null,
-        publicNumber: row.public_number ? String(row.public_number) : null,
-        role: row.role,
-        members: members.map((member) => ({
-          id: member.user_id.toString(),
-          role: member.role,
-          name: member.name,
-          username: member.username,
-          avatar: member.avatar,
-          verified: member.verified === 1,
-        })),
-        lastMessage: row.last_message_text || '',
-        lastMessageType: row.last_message_type || 'text',
-        timestamp: row.last_message_time || row.created_at,
-      };
-    });
-
-    res.json({ chats: formatted });
-  });
-});
-
-// Create chat (group/channel/private)
-router.post('/chats', authenticateToken, asyncHandler(async (req, res) => {
-  const ownerId = req.user.userId;
-  const { type = 'group', title = null, userIds = [], isPublic = false, username = null, avatar = null } = req.body || {};
-  console.log('[chats] create request', { ownerId, type, title, userIds, isPublic, username, avatar });
-
-  if (!['private', 'group', 'channel'].includes(type)) {
-    return res.status(400).json({ error: 'Invalid chat type' });
-  }
-
-  const cleanUserIds = Array.isArray(userIds)
-    ? Array.from(new Set(userIds.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0)))
-    : [];
-
-  if (type === 'private') {
-    if (cleanUserIds.length !== 1) {
-      return res.status(400).json({ error: 'Private chat requires exactly one userId' });
-    }
-    const otherUserId = cleanUserIds[0];
-    const existingChat = await new Promise((resolve) => {
-      const query = `
-        SELECT c.id
-        FROM chats c
-        JOIN chat_members cm1 ON cm1.chat_id = c.id AND cm1.user_id = $1
-        JOIN chat_members cm2 ON cm2.chat_id = c.id AND cm2.user_id = $2
-        WHERE c.type = 'private'
-        LIMIT 1
-      `;
-      db.get(query, [ownerId, otherUserId], (err, row) => {
-        if (err) return resolve(null);
-        resolve(row || null);
-      });
-    });
-    if (existingChat?.id) {
-      console.log('[chats] create existing private', { ownerId, otherUserId, chatId: existingChat.id });
-      return res.json({ chatId: existingChat.id.toString(), existing: true });
-    }
-  }
-
-  const normalizedUsername = isPublic ? normalizeUsername(username) : null;
-  if (isPublic && !normalizedUsername) {
-    return res.status(400).json({ error: 'Username is required for public chats' });
-  }
-  if (isPublic && normalizedUsername && !isChatUsernameValid(normalizedUsername)) {
-    return res.status(400).json({ error: { message: 'Username can only contain English letters and numbers', code: 'CHAT_USERNAME_INVALID' } });
-  }
-
-  const isPrivateChat = !isPublic;
-  const inviteToken = isPrivateChat ? generateInviteToken() : null;
-
-  const publicNumberPrefix = type === 'channel' ? '-100' : type === 'group' ? '-200' : null;
-  const publicNumberValue = publicNumberPrefix ? `${publicNumberPrefix}${generatePublicNumber()}` : null;
-
-  const chatId = await new Promise((resolve, reject) => {
-    const insertChat = () => {
-      const tokenValue = isPrivateChat ? generateInviteToken() : null;
-      const numberValue = publicNumberPrefix ? `${publicNumberPrefix}${generatePublicNumber()}` : null;
-      db.run(
-        `INSERT INTO chats (type, title, avatar, owner_id, is_public, is_private, username, invite_token, public_number)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
-        ,
-        [type, title, avatar, ownerId, !!isPublic, isPrivateChat, normalizedUsername, tokenValue, numberValue],
-        function(err) {
-          if (err) {
-            if (err && err.code === 'SQLITE_CONSTRAINT') {
-              return insertChat();
-            }
-            return reject(err);
-          }
-          resolve(this.lastID);
-        }
-      );
-    };
-    insertChat();
-  });
-  console.log('[chats] create inserted', { ownerId, chatId });
-
-  await new Promise((resolve) => {
-    db.run(
-      `INSERT INTO chat_members (chat_id, user_id, role) VALUES ($1, $2, 'owner')`,
-      [chatId, ownerId],
-      (err) => {
-        if (err) {
-          console.error('[chats] create owner member error', { ownerId, chatId, error: err });
-        }
-        resolve();
-      }
-    );
-  });
-  console.log('[chats] create owner member', { ownerId, chatId });
-
-
-  const memberIds = type === 'private'
-    ? cleanUserIds
-    : cleanUserIds.filter((id) => String(id) !== String(ownerId));
-
-  await Promise.all(memberIds.map((userId) => new Promise((resolve) => {
-    db.run(
-      `INSERT INTO chat_members (chat_id, user_id, role) VALUES ($1, $2, 'member') ON CONFLICT DO NOTHING`,
-      [chatId, userId],
-      (err) => {
-        if (err) {
-          console.error('[chats] create member error', { chatId, userId, error: err });
-        }
-        resolve();
-      }
-    );
-  })));
-  console.log('[chats] create members added', { chatId, memberIds });
-
-  db.all(
-    'SELECT user_id, role FROM chat_members WHERE chat_id = $1',
-    [chatId],
-    (verifyErr, verifyRows) => {
-      if (verifyErr) {
-        console.error('[chats] create verify members error', { chatId, error: verifyErr });
-      } else {
-        console.log('[chats] create verify members', { chatId, members: verifyRows || [] });
-      }
-    }
-  );
-
-  res.status(201).json({ chatId: chatId.toString() });
-}));
-
 
 // List public channels (search)
 router.get('/chats/public', authenticateToken, asyncHandler(async (req, res) => {
@@ -1917,7 +1836,7 @@ router.get('/stickers/slug/:slug', authenticateToken, asyncHandler(async (req, r
   });
 }));
 
-router.get('/stickers/public/slug/:slug', asyncHandler(async (req, res) => {
+router.get('/stickers/public/slug/:slug', authenticateToken, asyncHandler(async (req, res) => {
   await ensureStickerData();
   const slug = normalizeStickerSlug(req.params.slug || '');
   if (!slug) {
@@ -2058,7 +1977,7 @@ router.post('/stickers/add-pack', authenticateToken, asyncHandler(async (req, re
   );
 }));
 
-router.get('/stickers/:id', asyncHandler(async (req, res) => {
+router.get('/stickers/:id', authenticateToken, asyncHandler(async (req, res) => {
   const stickerId = req.params.id;
   if (!stickerId || !Number.isInteger(Number(stickerId))) {
     return res.status(400).json({ error: 'Invalid sticker id' });
@@ -2114,7 +2033,6 @@ router.get('/stickers/:id', asyncHandler(async (req, res) => {
 router.get('/chats/:chatId/messages', authenticateToken, (req, res) => {
   const currentUserId = req.user.userId;
   const chatId = req.params.chatId;
-  console.log('[messages] list request', { currentUserId, chatId });
 
   const memberQuery = `
     SELECT cm.role, c.type
@@ -2132,7 +2050,9 @@ router.get('/chats/:chatId/messages', authenticateToken, (req, res) => {
       console.warn('[messages] access denied', { currentUserId, chatId });
       return res.status(403).json({ error: 'Access denied' });
     }
-    console.log('[messages] access granted', { currentUserId, chatId, role: membership.role, type: membership.type });
+
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 100);
+    const offset = Math.max(parseInt(req.query.offset) || 0, 0);
 
     const messageQuery = `
       SELECT m.*, u.name, u.username, u.avatar, u.verified,
@@ -2143,18 +2063,19 @@ router.get('/chats/:chatId/messages', authenticateToken, (req, res) => {
              s.pack_id as sticker_pack_id,
              s.name as sticker_name,
              s.file_path as sticker_file_path
-       FROM messages m
-       JOIN users u ON m.sender_id = u.id
-       LEFT JOIN stickers s ON s.id = m.sticker_id
-       LEFT JOIN message_deletions md ON md.message_id = m.id AND md.user_id = $1
-       LEFT JOIN moments mo ON mo.id = m.moment_id
-       LEFT JOIN moment_views mv ON mv.moment_id = mo.id AND mv.user_id = $2
-       WHERE m.chat_id = $3
-         AND m.deleted_for_all_at IS NULL
-       ORDER BY m.created_at ASC
-    `;
+        FROM messages m
+        JOIN users u ON m.sender_id = u.id
+        LEFT JOIN stickers s ON s.id = m.sticker_id
+        LEFT JOIN message_deletions md ON md.message_id = m.id AND md.user_id = $1
+        LEFT JOIN moments mo ON mo.id = m.moment_id
+        LEFT JOIN moment_views mv ON mv.moment_id = mo.id AND mv.user_id = $2
+        WHERE m.chat_id = $3
+          AND m.deleted_for_all_at IS NULL
+        ORDER BY m.created_at ASC
+        LIMIT $4 OFFSET $5
+     `;
 
-    db.all(messageQuery, [currentUserId, currentUserId, chatId], (err, messages) => {
+    db.all(messageQuery, [currentUserId, currentUserId, chatId, limit, offset], (err, messages) => {
       if (err) {
         console.error('[messages] messageQuery error:', err);
         return res.status(500).json({ error: 'Database error' });
@@ -2240,7 +2161,7 @@ router.get('/chats/:chatId/messages', authenticateToken, (req, res) => {
             }
           })() : null
         }));
-        res.json({ messages: formattedMessages });
+        res.json({ messages: formattedMessages, hasMore: msgs.length === limit });
       }
     });
   });
@@ -2683,7 +2604,7 @@ router.get('/messages/search', authenticateToken, asyncHandler(async (req, res) 
   `;
 
   const chats = await new Promise((resolve, reject) => {
-    db.all(getChatsQuery, [userId, userId], (err, rows) => {
+    db.all(getChatsQuery, [userId], (err, rows) => {
       if (err) reject(err);
       else resolve(rows);
     });
@@ -2818,7 +2739,7 @@ router.get('/posts/recommended', authenticateToken, asyncHandler(async (req, res
     });
   });
   
-  const engagedUserIds = engagedUsers.map(u => u.engaged_user_id).join(',');
+  const engagedUserIds = engagedUsers.map(u => u.engaged_user_id);
   
   // Smart algorithm: posts from engaged users + trending posts
   let query = `
@@ -2831,8 +2752,11 @@ router.get('/posts/recommended', authenticateToken, asyncHandler(async (req, res
     WHERE p.timestamp >= NOW() - INTERVAL '14 days'
   `;
   
-  if (engagedUserIds) {
-    query += ` AND p.user_id IN (${engagedUserIds})`;
+  let queryParams = [];
+  
+  if (engagedUserIds.length > 0) {
+    query += ` AND p.user_id = ANY($1::int[])`;
+    queryParams.push(engagedUserIds);
   }
   
   // Order by engagement score (resonance*2 + comments*3 + reposts)
@@ -2843,7 +2767,7 @@ router.get('/posts/recommended', authenticateToken, asyncHandler(async (req, res
   `;
   
   const posts = await new Promise((resolve, reject) => {
-    db.all(query, (err, rows) => {
+    db.all(query, queryParams, (err, rows) => {
       if (err) reject(err);
       else resolve(rows);
     });
@@ -3102,14 +3026,12 @@ router.get('/posts/:postId/resonance', authenticateToken, (req, res) => {
   const userId = req.user.userId;
   const postId = req.params.postId;
 
-  // Check if user has liked the post
   const checkQuery = 'SELECT id FROM likes WHERE user_id = $1 AND post_id = $2';
   db.get(checkQuery, [userId, postId], (err, like) => {
     if (err) {
       return res.status(500).json({ error: 'Database error' });
     }
 
-    // Get resonance count
     db.get('SELECT resonance_count FROM posts WHERE id = $1', [postId], (err, post) => {
       if (err) {
         return res.status(500).json({ error: 'Database error' });
@@ -3121,6 +3043,53 @@ router.get('/posts/:postId/resonance', authenticateToken, (req, res) => {
       });
     });
   });
+});
+
+// Batch resonance status for multiple posts
+router.post('/posts/resonance/batch', authenticateToken, (req, res) => {
+  const userId = req.user.userId;
+  const { postIds } = req.body;
+
+  if (!Array.isArray(postIds) || postIds.length === 0 || postIds.length > 50) {
+    return res.status(400).json({ error: 'postIds must be a non-empty array (max 50)' });
+  }
+
+  const numericIds = postIds.map(Number).filter(Number.isFinite);
+  if (numericIds.length === 0) {
+    return res.status(400).json({ error: 'Invalid post IDs' });
+  }
+
+  const placeholders = numericIds.map((_, i) => `$${i + 2}`).join(',');
+  db.all(
+    `SELECT post_id FROM likes WHERE user_id = $1 AND post_id IN (${placeholders})`,
+    [userId, ...numericIds],
+    (err, likes) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      const likedSet = new Set((likes || []).map(l => l.post_id.toString()));
+      const postPlaceholders = numericIds.map((_, i) => `$${i + 1}`).join(',');
+      db.all(
+        `SELECT id, resonance_count FROM posts WHERE id IN (${postPlaceholders})`,
+        numericIds,
+        (err2, posts) => {
+          if (err2) {
+            return res.status(500).json({ error: 'Database error' });
+          }
+
+          const resultMap = {};
+          (posts || []).forEach(p => {
+            resultMap[p.id.toString()] = {
+              resonance: p.resonance_count || 0,
+              liked: likedSet.has(p.id.toString()),
+            };
+          });
+          res.json({ statuses: resultMap });
+        }
+      );
+    }
+  );
 });
 
 // Get comments for a post
@@ -3365,6 +3334,16 @@ router.post('/profile/verification-request', authenticateToken, (req, res) => {
     return res.status(400).json({ error: 'Reason and TikTok video URL are required' });
   }
 
+  let videoHostname = '';
+  try {
+    videoHostname = new URL(tiktokVideoUrl).hostname;
+  } catch {
+    return res.status(400).json({ error: 'Invalid video URL format' });
+  }
+  if (!['tiktok.com', 'www.tiktok.com'].includes(videoHostname) && !videoHostname.endsWith('.tiktok.com')) {
+    return res.status(400).json({ error: 'Must be a valid TikTok video URL' });
+  }
+
   const checkUserQuery = 'SELECT created_at FROM users WHERE id = $1';
 
   db.get(checkUserQuery, [userId], (err, user) => {
@@ -3383,7 +3362,7 @@ router.post('/profile/verification-request', authenticateToken, (req, res) => {
     const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
 
     if (daysDiff < 5) {
-      return res.status(400).json({ error: 'Вы должны находиться на платформе не менее 5 дней, чтобы получить верификацию' });
+      return res.status(400).json({ error: { message: 'You must be on the platform for at least 5 days to get verified', code: 'MIN_DAYS' } });
     }
 
     // Check if user already has an active verification
@@ -3435,23 +3414,25 @@ router.post('/profile/verification-request', authenticateToken, (req, res) => {
   });
 });
 
-const isAdminUser = (username) => {
-  if (!username || !ADMIN_USERNAME) return false;
-  return String(username).toLowerCase() === ADMIN_USERNAME;
+const isAdminUser = (user) => {
+  if (!user) return false;
+  return user.role === 'admin';
 };
+
+const ADMIN_CHECK_QUERY = 'SELECT username, role FROM users WHERE id = $1';
 
 // Admin: Get all verification requests
 router.get('/admin/verification-requests', authenticateToken, (req, res) => {
   const userId = req.user.userId;
 
-  const checkUserQuery = 'SELECT username FROM users WHERE id = $1';
+  const checkUserQuery = ADMIN_CHECK_QUERY;
 
   db.get(checkUserQuery, [userId], (err, user) => {
     if (err) {
       return res.status(500).json({ error: 'Database error' });
     }
 
-    if (!user || !isAdminUser(user.username)) {
+    if (!user || !isAdminUser(user)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -3480,14 +3461,14 @@ router.post('/admin/review-verification-request/:requestId', authenticateToken, 
     return res.status(400).json({ error: 'Invalid status. Must be approved or rejected.' });
   }
 
-  const checkUserQuery = 'SELECT username FROM users WHERE id = $1';
+  const checkUserQuery = ADMIN_CHECK_QUERY;
 
   db.get(checkUserQuery, [userId], (err, user) => {
     if (err) {
       return res.status(500).json({ error: 'Database error' });
     }
 
-    if (!user || !isAdminUser(user.username)) {
+    if (!user || !isAdminUser(user)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -3558,14 +3539,14 @@ router.post('/admin/review-verification-request/:requestId', authenticateToken, 
 router.get('/admin/users', authenticateToken, (req, res) => {
   const userId = req.user.userId;
 
-  const checkUserQuery = 'SELECT username FROM users WHERE id = $1';
+  const checkUserQuery = ADMIN_CHECK_QUERY;
 
   db.get(checkUserQuery, [userId], (err, user) => {
     if (err) {
       return res.status(500).json({ error: 'Database error' });
     }
 
-    if (!user || !isAdminUser(user.username)) {
+    if (!user || !isAdminUser(user)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -3667,14 +3648,14 @@ router.post('/posts/:postId/report', authenticateToken, (req, res) => {
 router.get('/admin/post-reports', authenticateToken, (req, res) => {
   const userId = req.user.userId;
 
-  const checkUserQuery = 'SELECT username FROM users WHERE id = $1';
+  const checkUserQuery = ADMIN_CHECK_QUERY;
 
   db.get(checkUserQuery, [userId], (err, user) => {
     if (err) {
       return res.status(500).json({ error: 'Database error' });
     }
 
-    if (!user || !isAdminUser(user.username)) {
+    if (!user || !isAdminUser(user)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -3703,7 +3684,7 @@ router.post('/admin/post-reports/:reportId', authenticateToken, (req, res) => {
   const reportId = req.params.reportId;
   const { action, reviewNotes } = req.body; // action: 'delete_post' or 'dismiss'
 
-  const checkUserQuery = 'SELECT username FROM users WHERE id = $1';
+  const checkUserQuery = ADMIN_CHECK_QUERY;
 
   db.get(checkUserQuery, [userId], (err, user) => {
     if (err) {
@@ -3711,7 +3692,7 @@ router.post('/admin/post-reports/:reportId', authenticateToken, (req, res) => {
       return res.status(500).json({ error: 'Database error' });
     }
 
-    if (!user || !isAdminUser(user.username)) {
+    if (!user || !isAdminUser(user)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -3798,242 +3779,6 @@ router.post('/admin/post-reports/:reportId', authenticateToken, (req, res) => {
   });
 });
 
-// ==================== ONBOARDING ====================
-
-// Get onboarding suggestions (verified users to follow)
-router.get('/onboarding/suggestions', authenticateToken, (req, res) => {
-  const currentUserId = req.user.userId;
-
-  const query = `
-    SELECT u.id, u.name, u.username, u.bio, u.avatar, u.verified, u.followers_count
-    FROM users u
-    WHERE u.is_verified = 1 OR u.verified = 1
-      AND u.id != $1
-      AND u.id NOT IN (
-        SELECT following_id FROM followers WHERE follower_id = $2
-      )
-    ORDER BY u.followers_count DESC, u.created_at DESC
-    LIMIT 30
-  `;
-
-  db.all(query, [currentUserId, currentUserId], (err, users) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    const formattedUsers = users.map(user => ({
-      ...user,
-      id: user.id.toString()
-    }));
-
-    res.json({ users: formattedUsers });
-  });
-});
-
-// Batch follow users
-router.post('/follow/batch', authenticateToken, (req, res) => {
-  const currentUserId = req.user.userId;
-  const { userIds } = req.body;
-  const createNotification = req.app.get('createNotification');
-
-  if (!Array.isArray(userIds) || userIds.length === 0) {
-    return res.status(400).json({ error: 'userIds array is required' });
-  }
-
-  if (userIds.length > 50) {
-    return res.status(400).json({ error: 'Cannot follow more than 50 users at once' });
-  }
-
-  // Filter out self and duplicates
-  const uniqueUserIds = [...new Set(userIds)].filter(id => String(id) !== String(currentUserId));
-
-  if (uniqueUserIds.length === 0) {
-    return res.json({ message: 'No users to follow', followed: [] });
-  }
-
-  const placeholders = uniqueUserIds.map((_, index) => `$${index + 2}`).join(',');
-
-  // Get users that are already being followed
-  const checkQuery = `
-    SELECT following_id FROM followers
-    WHERE follower_id = $1 AND following_id IN (${placeholders})
-  `;
-
-  db.all(checkQuery, [currentUserId, ...uniqueUserIds], (err, existing) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    const existingIds = existing.map(row => row.following_id);
-    const toFollow = uniqueUserIds.filter(id => !existingIds.includes(id));
-
-    if (toFollow.length === 0) {
-      return res.json({ message: 'Already following all selected users', followed: [] });
-    }
-
-    // Insert new follows in a transaction
-    const dbInstance = require('./db');
-    dbInstance.get('SELECT name, username, avatar FROM users WHERE id = $1', [currentUserId], (err, actor) => {
-      const actorName = actor?.name || actor?.username || 'Someone';
-
-      dbInstance.serialize(() => {
-        dbInstance.run('BEGIN TRANSACTION');
-
-        const insertQuery = 'INSERT INTO followers (follower_id, following_id) VALUES ($1, $2)';
-        const followed = [];
-        let completed = 0;
-
-        toFollow.forEach((targetUserId) => {
-          dbInstance.run(insertQuery, [currentUserId, targetUserId], function(err) {
-            if (err) {
-              console.error('Error following user:', err);
-            } else {
-              followed.push({ id: targetUserId.toString() });
-              // Increment followers_count
-              dbInstance.run(
-                'UPDATE users SET followers_count = followers_count + 1 WHERE id = $1',
-                [targetUserId],
-                (err) => { if (err) console.error('Error updating followers_count:', err); }
-              );
-
-              if (createNotification) {
-                createNotification({
-                  userId: targetUserId,
-                  type: 'follow',
-                  actorId: currentUserId,
-                  actorUsername: actor?.username || null,
-                  actorAvatar: actor?.avatar || null,
-                  targetId: targetUserId,
-                  targetType: 'user',
-                  message: `${actorName} подписался на вас`,
-                  url: `/profile/${currentUserId}`,
-                }).catch(err => {
-                  console.error('[API] Error creating notification:', err);
-                });
-              }
-            }
-            completed++;
-            if (completed === toFollow.length) {
-              dbInstance.run('COMMIT', (err) => {
-                if (err) {
-                  console.error('Error committing transaction:', err);
-                  return res.status(500).json({ error: 'Transaction failed' });
-                }
-                res.json({
-                  message: `Successfully followed ${followed.length} users`,
-                  followed
-                });
-              });
-            }
-          });
-        });
-      });
-    });
-  });
-});
-
-// Unfollow user
-router.delete('/follow/:userId', authenticateToken, (req, res) => {
-  const currentUserId = req.user.userId;
-  const targetUserId = req.params.userId;
-
-  const deleteQuery = 'DELETE FROM followers WHERE follower_id = $1 AND following_id = $2';
-
-  db.run(deleteQuery, [currentUserId, targetUserId], function(err) {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    // Decrement followers_count
-    db.run(
-      'UPDATE users SET followers_count = followers_count - 1 WHERE id = $1 AND followers_count > 0',
-      [targetUserId],
-      (err) => { if (err) console.error('Error updating followers_count:', err); }
-    );
-
-    res.json({ message: 'Unfollowed successfully' });
-  });
-});
-
-// Check if following user
-router.get('/follow/status/:userId', authenticateToken, (req, res) => {
-  const currentUserId = req.user.userId;
-  const targetUserId = req.params.userId;
-
-  const checkQuery = 'SELECT id FROM followers WHERE follower_id = $1 AND following_id = $2';
-
-  db.get(checkQuery, [currentUserId, targetUserId], (err, follow) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    res.json({ following: !!follow });
-  });
-});
-
-// Get user's followers
-router.get('/users/:userId/followers', authenticateToken, (req, res) => {
-  const userId = req.params.userId;
-
-  const query = `
-    SELECT u.id, u.name, u.username, u.avatar, u.verified, u.followers_count, f.created_at
-    FROM followers f
-    JOIN users u ON f.follower_id = u.id
-    WHERE f.following_id = $1
-    ORDER BY f.created_at DESC
-    LIMIT 50
-  `;
-
-  db.all(query, [userId], (err, followers) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    const formatted = followers.map(f => ({
-      id: f.id.toString(),
-      name: f.name,
-      username: f.username,
-      avatar: f.avatar,
-      verified: f.verified === 1,
-      followers_count: f.followers_count,
-      followedAt: f.created_at
-    }));
-
-    res.json({ followers: formatted, total: formatted.length });
-  });
-});
-
-// Get user's following (who they follow)
-router.get('/users/:userId/following', authenticateToken, (req, res) => {
-  const userId = req.params.userId;
-
-  const query = `
-    SELECT u.id, u.name, u.username, u.avatar, u.verified, u.followers_count, f.created_at
-    FROM followers f
-    JOIN users u ON f.following_id = u.id
-    WHERE f.follower_id = $1
-    ORDER BY f.created_at DESC
-    LIMIT 50
-  `;
-
-  db.all(query, [userId], (err, following) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    const formatted = following.map(f => ({
-      id: f.id.toString(),
-      name: f.name,
-      username: f.username,
-      avatar: f.avatar,
-      verified: f.verified === 1,
-      followers_count: f.followers_count,
-      followedAt: f.created_at
-    }));
-
-    res.json({ following: formatted, total: formatted.length });
-  });
-});
 
 // ==================== USER PROFILE ====================
 
@@ -4071,6 +3816,7 @@ router.get('/users/:userId', authenticateToken, (req, res) => {
           city: user.city,
           website: user.website,
           pinned_post_id: user.pinned_post_id ? user.pinned_post_id.toString() : null,
+          pinnedPostId: user.pinned_post_id ? user.pinned_post_id.toString() : null,
           avatar: user.avatar,
           banner: user.banner,
           verified: user.verified === 1,
@@ -4197,11 +3943,6 @@ router.delete('/users/me/pin', authenticateToken, (req, res) => {
     res.json({ message: 'Post unpinned successfully' });
   });
 });
-
-// ==================== UPLOADS ====================
-
-// Upload file (image or document)
-router.post('/uploads', authenticateToken, fileUpload.single('file'), uploadFile);
 
 // ==================== MOMENTS (ONE-TIME PHOTO) ====================
 
@@ -4340,76 +4081,10 @@ router.post('/moments', authenticateToken, momentUpload.single('file'), asyncHan
   res.json({ messageId, momentId, thumbDataUrl, ttlSeconds: ttlValue, expiresAt });
 }));
 
-router.post('/moments/:id/open', authenticateToken, asyncHandler(async (req, res) => {
-  const userId = req.user.userId;
-  const momentId = parseInt(req.params.id);
-
-  const moment = await new Promise((resolve, reject) => {
-    db.get('SELECT * FROM moments WHERE id = $1', [momentId], (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
-
-  if (!moment) {
-    throw new ValidationError('Moment not found');
-  }
-
-  if (moment.revoked_at) {
-    return res.status(410).json({ error: 'Moment revoked' });
-  }
-
-  if (moment.expires_at && new Date(moment.expires_at).getTime() < Date.now()) {
-    return res.status(410).json({ error: 'Moment expired' });
-  }
-
-  if (!moment.receiver_id) {
-    return res.status(403).json({ error: 'Access denied' });
-  }
-
-  const memberRow = await new Promise((resolve) => {
-    db.get('SELECT 1 FROM chat_members WHERE chat_id = $1 AND user_id = $2', [moment.receiver_id, userId], (err, row) => {
-      if (err) return resolve(null);
-      resolve(row || null);
-    });
-  });
-
-  if (!memberRow) {
-    return res.status(403).json({ error: 'Access denied' });
-  }
-
-  const viewed = await new Promise((resolve, reject) => {
-    db.get('SELECT * FROM moment_views WHERE moment_id = $1 AND user_id = $2', [momentId, userId], (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
-
-  if (viewed) {
-    return res.status(410).json({ error: 'Moment already viewed' });
-  }
-
-  const token = crypto.randomBytes(24).toString('hex');
-  const expiresAt = new Date(Date.now() + 60 * 1000).toISOString();
-
-  await new Promise((resolve, reject) => {
-    db.run(
-      'INSERT INTO moment_tokens (moment_id, user_id, token, expires_at) VALUES ($1, $2, $3, $4)',
-      [momentId, userId, token, expiresAt],
-      (err) => {
-        if (err) reject(err);
-        else resolve();
-      }
-    );
-  });
-
-  res.json({ token, expiresAt });
-}));
-
 router.get('/moments/:id/content', authenticateToken, asyncHandler(async (req, res) => {
   const userId = req.user.userId;
   const momentId = parseInt(req.params.id);
-  const token = String(req.query.token || '');
+  const token = String(req.headers['authorization']?.replace(/^Bearer\s+/i, '') || req.query.token || '');
 
   if (!token) {
     return res.status(403).json({ error: 'Token required' });
@@ -4774,7 +4449,7 @@ router.delete('/messages/:messageId', authenticateToken, (req, res) => {
 // Servers module removed
 
 // Link Preview (Open Graph)
-router.post('/link-preview', asyncHandler(async (req, res) => {
+router.post('/link-preview', authenticateToken, asyncHandler(async (req, res) => {
   const { url } = req.body;
 
   if (!url || typeof url !== 'string') {
@@ -4794,50 +4469,6 @@ router.post('/link-preview', asyncHandler(async (req, res) => {
 // ========== NOTIFICATIONS ==========
 
 // Get user notifications
-router.get('/notifications', authenticateToken, asyncHandler(async (req, res) => {
-  const userId = req.user.userId;
-  const { limit = 50, unreadOnly = false } = req.query;
-
-  const safeLimit = Math.min(parseInt(limit, 10) || 20, 50);
-  const offset = Math.max(parseInt(req.query.offset || '0', 10) || 0, 0);
-  const query = unreadOnly === 'true'
-    ? `SELECT n.*, COALESCE(u.username, n.actor_username) as actor_username, COALESCE(u.avatar, n.actor_avatar) as actor_avatar
-       FROM notifications n
-       LEFT JOIN users u ON n.actor_id = u.id
-       WHERE n.user_id = $1 AND n.read = 0
-       ORDER BY n.created_at DESC LIMIT $2 OFFSET $3`
-    : `SELECT n.*, COALESCE(u.username, n.actor_username) as actor_username, COALESCE(u.avatar, n.actor_avatar) as actor_avatar
-       FROM notifications n
-       LEFT JOIN users u ON n.actor_id = u.id
-       WHERE n.user_id = $1
-       ORDER BY n.created_at DESC LIMIT $2 OFFSET $3`;
-
-  const params = [userId, safeLimit, offset];
-
-  const notifications = await new Promise((resolve, reject) => {
-    db.all(query, params, (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows);
-    });
-  });
-
-  const formattedNotifications = notifications.map(notification => ({
-    id: notification.id.toString(),
-    type: notification.type,
-    actor_id: notification.actor_id ? notification.actor_id.toString() : null,
-    actor_username: notification.actor_username,
-    actor_avatar: notification.actor_avatar,
-    target_id: notification.target_id ? notification.target_id.toString() : null,
-    target_type: notification.target_type,
-    message: notification.message,
-    created_at: notification.created_at,
-    read: notification.read === 1,
-    url: notification.url,
-  }));
-
-  res.json({ notifications: formattedNotifications, limit: safeLimit, offset });
-}));
-
 // Mark notification as read
 router.post('/notifications/read', authenticateToken, asyncHandler(async (req, res) => {
   const userId = req.user.userId;
@@ -4904,6 +4535,69 @@ router.post('/notifications/:id/read', authenticateToken, asyncHandler(async (re
 
   res.json({ message: 'Notification marked as read' });
 }));
+
+router.post('/messages/:messageId/reaction', authenticateToken, (req, res) => {
+  const userId = req.user.userId;
+  const messageId = parseInt(req.params.messageId);
+  const { reaction } = req.body;
+
+  if (!messageId || !Number.isFinite(messageId)) {
+    return res.status(400).json({ error: 'Invalid message ID' });
+  }
+
+  db.get(
+    'SELECT id FROM chat_members cm JOIN messages m ON m.chat_id = cm.chat_id WHERE m.id = $1 AND cm.user_id = $2',
+    [messageId, userId],
+    (err, membership) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      if (!membership) return res.status(403).json({ error: 'Not a member of this chat' });
+
+      db.get(
+        'SELECT id FROM message_reactions WHERE message_id = $1 AND user_id = $2',
+        [messageId, userId],
+        (err2, existing) => {
+          if (err2) return res.status(500).json({ error: 'Database error' });
+
+          if (existing) {
+            db.run('DELETE FROM message_reactions WHERE id = $1', [existing.id], (err3) => {
+              if (err3) return res.status(500).json({ error: 'Database error' });
+              res.json({ reacted: false, reaction: null });
+            });
+          } else {
+            db.run(
+              'INSERT INTO message_reactions (message_id, user_id, reaction) VALUES ($1, $2, $3) RETURNING id',
+              [messageId, userId, reaction || 'heart'],
+              function(err3) {
+                if (err3) return res.status(500).json({ error: 'Database error' });
+                res.json({ reacted: true, reaction: reaction || 'heart' });
+              }
+            );
+          }
+        }
+      );
+    }
+  );
+});
+
+router.get('/messages/:messageId/reactions', authenticateToken, (req, res) => {
+  const messageId = parseInt(req.params.messageId);
+
+  db.all(
+    `SELECT mr.reaction, mr.user_id, u.username, u.name FROM message_reactions mr
+     JOIN users u ON u.id = mr.user_id
+     WHERE mr.message_id = $1`,
+    [messageId],
+    (err, reactions) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      res.json({ reactions: (reactions || []).map(r => ({
+        reaction: r.reaction,
+        userId: r.user_id.toString(),
+        username: r.username,
+        name: r.name,
+      }))});
+    }
+  );
+});
 
 module.exports = router;
 module.exports.ensureStickerData = ensureStickerData;
