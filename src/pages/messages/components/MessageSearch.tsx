@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
 import { messagesAPI } from "@/services/api";
 import type { Chat } from "@/types/messages";
 import { normalizeImageUrl } from "@/lib/utils";
@@ -41,6 +42,11 @@ export const MessageSearch = ({ onResultClick, t, chats }: MessageSearchProps) =
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dropdownStyle, setDropdownStyle] = useState<{ top: number; left: number; width: number }>({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
 
   const navigate = useNavigate();
   const searchRef = useRef<HTMLDivElement>(null);
@@ -97,6 +103,30 @@ export const MessageSearch = ({ onResultClick, t, chats }: MessageSearchProps) =
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const updateDropdownPosition = () => {
+      const inputWrap = searchRef.current;
+      if (!inputWrap) return;
+      const rect = inputWrap.getBoundingClientRect();
+      setDropdownStyle({
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+      });
+    };
+
+    updateDropdownPosition();
+    window.addEventListener("resize", updateDropdownPosition);
+    window.addEventListener("scroll", updateDropdownPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updateDropdownPosition);
+      window.removeEventListener("scroll", updateDropdownPosition, true);
+    };
+  }, [isOpen]);
 
   const handleResultClick = (result: SearchResult, chatMatch?: Chat) => {
     // Переход к чату с сообщением
@@ -172,15 +202,26 @@ export const MessageSearch = ({ onResultClick, t, chats }: MessageSearchProps) =
         )}
       </div>
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="absolute top-full left-0 right-0 mt-2 rounded-[20px] border border-white/10 bg-black/70 backdrop-blur-[24px] shadow-xl overflow-hidden z-50 message-search-dropdown"
-          >
+      {typeof document !== "undefined" &&
+        createPortal(
+          <AnimatePresence>
+            {isOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="fixed rounded-[20px] border border-white/20 shadow-2xl ring-1 ring-white/10 overflow-hidden z-[120]"
+                style={{
+                  top: `${dropdownStyle.top}px`,
+                  left: `${dropdownStyle.left}px`,
+                  width: `${dropdownStyle.width}px`,
+                  backdropFilter: "blur(98px)",
+                  WebkitBackdropFilter: "blur(98px)",
+                  background: "rgba(0, 0, 0, 0.35)",
+                }}
+              >
+                <div className="relative bg-transparent">
             {error ? (
               <div className="px-4 py-3 text-sm text-red-200">
                 {error}
@@ -203,7 +244,7 @@ export const MessageSearch = ({ onResultClick, t, chats }: MessageSearchProps) =
                     <div className="flex items-start gap-3">
                       {/* Аватар контакта */}
                         <img
-                          src={normalizeImageUrl(result.user.avatar)}
+                          src={normalizeImageUrl(result.user.avatar || undefined) || undefined}
                           alt={result.user.name}
                           className="w-10 h-10 rounded-full object-cover flex-shrink-0"
                         />
@@ -244,9 +285,12 @@ export const MessageSearch = ({ onResultClick, t, chats }: MessageSearchProps) =
                 )})}
               </div>
             )}
-          </motion.div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
         )}
-      </AnimatePresence>
     </div>
   );
 };
