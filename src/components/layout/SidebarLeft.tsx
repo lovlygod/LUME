@@ -19,6 +19,7 @@ import NotificationsPanel from "@/components/NotificationsPanel";
 import { Loader } from "@/components/ui/Loader";
 import { wsService } from "@/services/websocket";
 import { apiRequest } from "@/services/api";
+import ProtectedLogo from "@/components/ui/ProtectedLogo";
 
 const SidebarLeft = () => {
   const location = useLocation();
@@ -158,9 +159,7 @@ const SidebarLeft = () => {
         <div className="mb-6 px-2">
           <Link to="/feed" className="inline-block">
             <div className="flex items-center gap-2">
-              <div className="relative">
-                <Loader size={40} />
-              </div>
+              <ProtectedLogo className="h-10 w-10 rounded-xl" />
               <div>
                 <h1 className="font-semibold text-lg tracking-[0.3em] text-white">
                   LUME

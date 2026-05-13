@@ -5,7 +5,7 @@ import { useAuth, validateUsername } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Mail, Lock, User, AtSign, Eye, EyeOff } from 'lucide-react';
 import AuthLayout from '@/layouts/AuthLayout';
-import { Loader } from '@/components/ui/Loader';
+import ProtectedLogo from '@/components/ui/ProtectedLogo';
 
 const Register = () => {
   const { t } = useLanguage();
@@ -100,7 +100,7 @@ const Register = () => {
             transition={{ duration: 0.3 }}
             className="mb-1 mt-1 flex justify-center"
           >
-            <Loader size={48} />
+            <ProtectedLogo className="h-12 w-12 rounded-xl" />
           </motion.div>
           <h1 className="font-semibold text-2xl text-white">
             {t("register")}

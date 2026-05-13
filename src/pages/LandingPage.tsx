@@ -1,6 +1,7 @@
 import { useNavigate, Link } from "react-router-dom";
 import CookieSettingsButton from "@/components/ui/CookieSettingsButton";
 import { Loader } from "@/components/ui/Loader";
+import ProtectedLogo from "@/components/ui/ProtectedLogo";
 import { ArrowRight, MessageCircle, Search, ShieldCheck, User, Radio } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -68,7 +69,7 @@ const LandingPage = () => {
           </div>
           <h1 className="text-4xl font-semibold leading-tight md:text-5xl">
             <span className="inline-flex items-center gap-1">
-              <Loader size={42} />
+              <ProtectedLogo className="h-11 w-11 rounded-xl" />
               <span>LUME</span>
             </span>
             <span className="text-white/80"> — место, где звучат ваши сигналы</span>

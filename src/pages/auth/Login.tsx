@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import AuthLayout from '@/layouts/AuthLayout';
 import { Loader } from '@/components/ui/Loader';
+import ProtectedLogo from '@/components/ui/ProtectedLogo';
 
 const Login = () => {
   const { t } = useLanguage();
@@ -73,7 +74,7 @@ const Login = () => {
             transition={{ duration: 0.3, delay: 0.1 }}
             className="mb-1 mt-1 flex justify-center"
           >
-            <Loader size={48} />
+            <ProtectedLogo className="h-12 w-12 rounded-xl" />
           </motion.div>
           <h1 className="font-semibold text-2xl text-white">
             {t("login")}
