@@ -502,7 +502,6 @@ registerSocialRoutes(router, {
   momentUpload,
   crypto,
 });
-
 registerE2EERoutes(router, {
   db,
   authenticateToken,
@@ -1223,7 +1222,11 @@ router.delete('/chats/:id', authenticateToken, asyncHandler(async (req, res) => 
 router.patch('/chats/:id', authenticateToken, asyncHandler(async (req, res) => {
   const requesterId = req.user.userId;
   const chatIdParam = req.params.id;
-  console.log('[chats] update request', { requesterId, chatIdParam, body: req.body });
+  console.log('[chats] update request', {
+    requesterId,
+    chatIdParam,
+    bodyKeys: req.body && typeof req.body === 'object' ? Object.keys(req.body) : [],
+  });
   const chatId = await new Promise((resolve) => {
     if (String(chatIdParam || '').startsWith('-100') || String(chatIdParam || '').startsWith('-200')) {
       db.get('SELECT id FROM chats WHERE public_number = $1', [chatIdParam], (err, row) => {
@@ -2172,6 +2175,10 @@ router.post('/messages', authenticateToken, asyncHandler(async (req, res) => {
   const senderId = req.user.userId;
   const { chatId, text, attachmentIds, replyToMessageId, stickerId } = req.body;
 
+  if (process.env.E2EE_ENFORCE === 'true' && typeof text === 'string' && text.length > 0) {
+    return res.status(400).json({ error: 'Plaintext message body is disabled when E2EE_ENFORCE=true' });
+  }
+
   if (!chatId) {
     return res.status(400).json({ error: 'chatId is required' });
   }
@@ -2426,6 +2433,10 @@ router.post('/messages', authenticateToken, asyncHandler(async (req, res) => {
 router.post('/messages/voice', authenticateToken, voiceUpload.single('audio'), asyncHandler(async (req, res) => {
   const senderId = req.user.userId;
   const { chatId, duration, replyToMessageId } = req.body;
+
+  if (process.env.E2EE_ENFORCE === 'true') {
+    return res.status(400).json({ error: 'Voice plaintext flow is disabled when E2EE_ENFORCE=true' });
+  }
 
   if (!req.file) {
     return res.status(400).json({ error: 'Audio file is required' });
@@ -3949,6 +3960,10 @@ router.delete('/users/me/pin', authenticateToken, (req, res) => {
 router.post('/moments', authenticateToken, momentUpload.single('file'), asyncHandler(async (req, res) => {
   const senderId = req.user.userId;
   const { chatId, ttlSeconds = 86400 } = req.body;
+
+  if (process.env.E2EE_ENFORCE === 'true') {
+    return res.status(400).json({ error: 'Moment plaintext flow is disabled when E2EE_ENFORCE=true' });
+  }
 
   if (!chatId) {
     throw new ValidationError('chatId is required');

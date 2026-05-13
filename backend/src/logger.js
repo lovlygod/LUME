@@ -10,6 +10,54 @@ const LOG_LEVELS = {
   DEBUG: 'debug',
 };
 
+const SENSITIVE_KEYS = new Set([
+  'password',
+  'passwordHash',
+  'password_hash',
+  'token',
+  'refreshToken',
+  'accessToken',
+  'authorization',
+  'cookie',
+  'text',
+  'message',
+  'linkPreview',
+  'envelope',
+  'privateKey',
+  'identityKey',
+  'signedPrekeySignature',
+  'oneTimePrekeys',
+]);
+
+const MAX_STRING_LEN = 160;
+
+const sanitizeForLogs = (value, key = '') => {
+  if (value === null || value === undefined) return value;
+
+  const normalizedKey = String(key || '').trim();
+  if (normalizedKey && SENSITIVE_KEYS.has(normalizedKey)) {
+    return '[REDACTED]';
+  }
+
+  if (typeof value === 'string') {
+    return value.length > MAX_STRING_LEN ? `${value.slice(0, MAX_STRING_LEN)}…[truncated]` : value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.slice(0, 20).map((item) => sanitizeForLogs(item));
+  }
+
+  if (typeof value === 'object') {
+    const out = {};
+    Object.entries(value).forEach(([k, v]) => {
+      out[k] = sanitizeForLogs(v, k);
+    });
+    return out;
+  }
+
+  return value;
+};
+
 const currentLevel = process.env.LOG_LEVEL || LOG_LEVELS.INFO;
 
 /**
@@ -169,7 +217,13 @@ const logger = {
       logger.error('Database error', { error: error.message, query, category: 'error', type: 'database' });
     },
     validation: (error, path, body) => {
-      logger.warn('Validation error', { error: error.message, path, body, category: 'error', type: 'validation' });
+      logger.warn('Validation error', {
+        error: error.message,
+        path,
+        body: sanitizeForLogs(body),
+        category: 'error',
+        type: 'validation',
+      });
     },
     unhandled: (error, req) => {
       logger.error('Unhandled error', {
@@ -224,5 +278,4 @@ module.exports = {
   auditLog,
   LOG_LEVELS,
 };
-
 
