@@ -824,3 +824,126 @@ export const uploadsAPI = {
     });
   },
 };
+
+export const e2eeAPI = {
+  registerDeviceBundle: async (payload: {
+    deviceId: string;
+    deviceName?: string;
+    identityKey: string;
+    identityKeyAlgo?: string;
+    signedPrekeyId: number;
+    signedPrekeyPublic: string;
+    signedPrekeySignature: string;
+    signedPrekeyAlgo?: string;
+    registrationId?: number | null;
+    oneTimePrekeys?: Array<{ prekeyId: number; publicKey: string; keyAlgo?: string }>;
+  }) => {
+    return apiRequest('/e2ee/devices/register', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getUserDeviceBundles: async (userId: string, deviceId: string) => {
+    const params = new URLSearchParams({ deviceId });
+    return apiRequest<{ devices: unknown[] }>(`/e2ee/users/${encodeURIComponent(userId)}/devices?${params.toString()}`, {
+      method: 'GET',
+    });
+  },
+
+  sendEncryptedEnvelope: async (payload: {
+    chatId: string;
+    senderDeviceId: string;
+    recipientUserId: string;
+    recipientDeviceId: string;
+    messageType?: string;
+    protocolVersion?: number;
+    clientMessageId?: string | null;
+    sentAt?: string | null;
+    envelope: unknown;
+  }) => {
+    return apiRequest<{ ok: boolean; messageId: string }>('/e2ee/messages', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  syncEncryptedMessages: async (params: {
+    deviceId: string;
+    afterId?: string | number;
+    limit?: number;
+  }) => {
+    const query = new URLSearchParams({
+      deviceId: params.deviceId,
+      ...(params.afterId !== undefined ? { afterId: String(params.afterId) } : {}),
+      ...(params.limit !== undefined ? { limit: String(params.limit) } : {}),
+    });
+    return apiRequest<{ items: unknown[]; nextCursor: string }>(`/e2ee/messages/sync?${query.toString()}`, {
+      method: 'GET',
+    });
+  },
+
+  sendDeliveryReceipt: async (payload: { messageId: string; deviceId: string; status?: 'delivered' }) => {
+    return apiRequest<{ ok: boolean }>(`/e2ee/messages/${encodeURIComponent(payload.messageId)}/receipt`, {
+      method: 'POST',
+      body: JSON.stringify({ deviceId: payload.deviceId, status: payload.status || 'delivered' }),
+    });
+  },
+
+  getMyDevices: async () => {
+    return apiRequest<{ devices: unknown[] }>('/e2ee/devices', { method: 'GET' });
+  },
+
+  verifyDevice: async (payload: {
+    verifierDeviceId: string;
+    targetUserId: string;
+    targetDeviceId: string;
+    status: 'trusted' | 'untrusted';
+  }) => {
+    return apiRequest<{ ok: boolean }>('/e2ee/devices/verify', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getDeviceTrust: async (verifierDeviceId: string) => {
+    const query = new URLSearchParams({ verifierDeviceId });
+    return apiRequest<{ trust: unknown[] }>(`/e2ee/devices/trust?${query.toString()}`, {
+      method: 'GET',
+    });
+  },
+
+  uploadEncryptedAttachment: async (payload: {
+    messageId?: string | null;
+    senderDeviceId: string;
+    recipientUserId: string;
+    recipientDeviceId: string;
+    storageUrl: string;
+    mimeType?: string | null;
+    ciphertextSize?: number | null;
+    sha256Ciphertext?: string | null;
+    encryptedFileKey: string;
+    encryptedFileNonce?: string | null;
+    protocolVersion?: number;
+  }) => {
+    return apiRequest<{ ok: boolean; attachmentId: string }>('/e2ee/attachments', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  syncEncryptedAttachments: async (params: {
+    deviceId: string;
+    afterId?: string | number;
+    limit?: number;
+  }) => {
+    const query = new URLSearchParams({
+      deviceId: params.deviceId,
+      ...(params.afterId !== undefined ? { afterId: String(params.afterId) } : {}),
+      ...(params.limit !== undefined ? { limit: String(params.limit) } : {}),
+    });
+    return apiRequest<{ items: unknown[]; nextCursor: string }>(`/e2ee/attachments/sync?${query.toString()}`, {
+      method: 'GET',
+    });
+  },
+};
