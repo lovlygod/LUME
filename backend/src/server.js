@@ -379,14 +379,12 @@ wss.on('connection', (ws, req) => {
           ws.subscribedChats = new Set();
         }
         ws.subscribedChats.add(parseInt(data.chatId));
-        console.info('[WS] chat:subscribe', { userId: ws.userId, chatId: data.chatId });
       }
 
       if (data.type === 'chat:unsubscribe' && data.chatId && ws.userId) {
         if (ws.subscribedChats) {
           ws.subscribedChats.delete(parseInt(data.chatId));
         }
-        console.info('[WS] chat:unsubscribe', { userId: ws.userId, chatId: data.chatId });
       }
     } catch (error) {
       console.error('WebSocket message error:', error);

@@ -218,7 +218,7 @@ export const MessageSearch = ({ onResultClick, t, chats }: MessageSearchProps) =
                   width: `${dropdownStyle.width}px`,
                   backdropFilter: "blur(98px)",
                   WebkitBackdropFilter: "blur(98px)",
-                  background: "rgba(0, 0, 0, 0.35)",
+                  background: "var(--background)",
                 }}
               >
                 <div className="relative bg-transparent">

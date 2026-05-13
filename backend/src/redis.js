@@ -31,6 +31,9 @@ let subClient = null;
 let isConnected = false;
 let isConnecting = false;
 let redisDisabled = false;
+let warnedPublishSkip = false;
+let warnedSubscribeSkip = false;
+let warnedRedisUnavailable = false;
 
 /**
  * Создает Redis подключение с обработкой ошибок
@@ -43,15 +46,20 @@ function createRedisClient(name) {
     host: REDIS_HOST,
     port: REDIS_PORT,
     db: REDIS_DB,
+    lazyConnect: true,
+    maxRetriesPerRequest: 1,
+    connectTimeout: 2000,
     retryStrategy: (times) => {
       if (times > 10) {
-        console.info(`[Redis] ${name}: Max retry attempts reached, stopping reconnect`);
+        if (!warnedRedisUnavailable) {
+          warnedRedisUnavailable = true;
+          console.warn('[Redis] Redis unavailable, switching to local mode');
+        }
         retriesExhausted = true;
+        redisDisabled = true;
         return null;
       }
-      const delay = Math.min(times * 100, 3000);
-      console.info(`[Redis] ${name}: Reconnecting in ${delay}ms (attempt ${times})`);
-      return delay;
+      return Math.min(times * 100, 3000);
     },
   };
 
@@ -62,6 +70,7 @@ function createRedisClient(name) {
   const client = new Redis(options);
 
   client.on('connect', () => {
+    warnedRedisUnavailable = false;
     console.info(`[Redis] ${name}: Connected to ${REDIS_HOST}:${REDIS_PORT}`);
   });
 
@@ -73,8 +82,6 @@ function createRedisClient(name) {
   });
 
   client.on('error', (err) => {
-    // После исчерпания ретраев ошибка будет повторяться при закрытом соединении,
-    // не спамим лог и считаем Redis отключенным.
     if (retriesExhausted) {
       if (!redisDisabled) {
         console.warn('[Redis] Disabled after max retry attempts, using local mode only');
@@ -82,21 +89,22 @@ function createRedisClient(name) {
       redisDisabled = true;
       return;
     }
-    console.error(`[Redis] ${name}: Error -`, err.message);
+    if (!warnedRedisUnavailable) {
+      warnedRedisUnavailable = true;
+      console.warn('[Redis] Redis unavailable, continuing in local mode');
+    }
     if (name === 'pub') {
       isConnected = false;
     }
   });
 
   client.on('close', () => {
-    console.info(`[Redis] ${name}: Connection closed`);
     if (name === 'pub') {
       isConnected = false;
     }
   });
 
-  client.on('reconnecting', (delay) => {
-    console.info(`[Redis] ${name}: Reconnecting in ${delay}ms`);
+  client.on('reconnecting', () => {
     if (name === 'pub') {
       isConnected = false;
     }
@@ -127,6 +135,9 @@ async function initRedis() {
     pubClient = createRedisClient('pub');
     subClient = createRedisClient('sub');
 
+    await pubClient.connect();
+    await subClient.connect();
+
     // Ждем готовности pub клиента
     await new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
@@ -138,12 +149,18 @@ async function initRedis() {
         resolve();
       });
 
-      pubClient.on('error', (err) => {
+      pubClient.on('error', () => {
         clearTimeout(timeout);
-        console.warn('[Redis] Failed to connect, continuing in local mode');
         resolve(); // Продолжаем работу без Redis
       });
     });
+
+    if (!isConnected) {
+      try { await subClient.quit(); } catch (_) {}
+      try { await pubClient.quit(); } catch (_) {}
+      subClient = null;
+      pubClient = null;
+    }
 
     isConnecting = false;
     console.info('[Redis] Initialization complete');
@@ -163,9 +180,14 @@ async function initRedis() {
  */
 async function publish(channel, data) {
   if (redisDisabled || !pubClient || !isConnected) {
-    console.info('[Redis] Publish skipped - not connected');
+    if (!warnedPublishSkip) {
+      warnedPublishSkip = true;
+      console.info('[Redis] Publish skipped - not connected (local mode)');
+    }
     return 0;
   }
+
+  warnedPublishSkip = false;
 
   try {
     const message = JSON.stringify({
@@ -190,9 +212,14 @@ async function publish(channel, data) {
  */
 async function subscribe(channel, handler) {
   if (redisDisabled || !subClient) {
-    console.info('[Redis] Subscribe skipped - no client');
+    if (!warnedSubscribeSkip) {
+      warnedSubscribeSkip = true;
+      console.info('[Redis] Subscribe skipped - no client (local mode)');
+    }
     return;
   }
+
+  warnedSubscribeSkip = false;
 
   if (subClient.status !== 'ready' && subClient.status !== 'connect') {
     console.info(`[Redis] Subscribe skipped - client status is ${subClient.status}`);
@@ -223,7 +250,9 @@ async function subscribe(channel, handler) {
     });
     console.info(`[Redis] Subscribed to ${channel}`);
   } catch (error) {
-    console.error('[Redis] Subscribe error:', error.message);
+    if (!String(error?.message || '').includes('Connection is closed')) {
+      console.error('[Redis] Subscribe error:', error.message);
+    }
   }
 }
 
