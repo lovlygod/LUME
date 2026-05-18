@@ -2,14 +2,14 @@
 
 English | [Русский](../docs-ru/PROJECTS_MODULE.ru.md) | [中文](../docs-cn/PROJECTS_MODULE.cn.md)
 
-**Last updated:** 2026-05-18  
+**Last updated:** 2026-05-18
 **Status:** ✅ Implemented
 
 ---
 
 ## Overview
 
-The Projects Module enables teams to create, manage, and showcase their projects. Projects can be linked to workspaces, track tasks, manage team members, and display project information including tech stack, GitHub repos, and demo URLs.
+The Projects Module enables teams to create, manage, and showcase their projects. Projects can track tasks, manage team members, display tech stack, GitHub repos, demo URLs, and be linked to a dedicated chat for team communication.
 
 ---
 
@@ -31,8 +31,9 @@ The Projects Module enables teams to create, manage, and showcase their projects
 
 **Files:**
 - `src/pages/projects/ProjectsPage.tsx` - Project list and creation
-- `src/pages/projects/ProjectDetailPage.tsx` - Project details
-- `src/services/api.ts` - API client methods
+- `src/pages/projects/ProjectDetailPage.tsx` - Project details with tabs (overview, tasks, members, chat, settings)
+- `src/components/projects/ProjectSettingsModal.tsx` - Settings modal with general/members/chat/danger tabs
+- `src/services/api.ts` - API client methods (`projectsAPI`, `projectMembersAPI`)
 
 ---
 
@@ -41,39 +42,43 @@ The Projects Module enables teams to create, manage, and showcase their projects
 ### Project Types
 
 **Public Projects:**
-- Visible in explore
+- Visible in explore/public listings
 - Searchable
 - Can be marked as "looking for members"
 - Open source friendly
+- Any authenticated user can view
 
 **Private Projects:**
-- Workspace members only
+- Visible only to project members
 - Not visible in public listings
 - Internal team projects
 
 ### Project Status
 
-- **Planning** - Initial phase, gathering requirements
-- **Active** - Currently in development
-- **On Hold** - Temporarily paused
-- **Completed** - Finished and deployed
-- **Archived** - No longer maintained
+| Status | Description |
+|--------|-------------|
+| **idea** | Initial concept, planning stage |
+| **building** | Actively being developed |
+| **testing** | In testing/QA phase |
+| **launched** | Live and deployed |
+| **paused** | Temporarily paused |
+| **archived** | No longer maintained |
 
 ### Project Roles
 
 | Role | Permissions |
 |------|-------------|
-| **Owner** | Full control, delete project, manage all members |
-| **Admin** | Manage members, tasks, and settings |
-| **Lead** | Assign tasks, manage development |
-| **Manager** | Coordinate team, manage tasks |
-| **Developer** | Write code, complete tasks |
-| **Frontend** | Frontend development |
-| **Backend** | Backend development |
-| **Bot Developer** | Bot development |
-| **Designer** | UI/UX design |
-| **Tester** | Quality assurance |
-| **Member** | General contributor |
+| **Owner** | Full control, delete project, manage all members, link/unlink chat |
+| **Admin** | Edit project, manage members, create/manage tasks |
+| **Lead** | Edit project, manage members, create/manage tasks |
+| **Manager** | Edit project, manage members, create/manage tasks |
+| **Developer** | View project, complete tasks |
+| **Frontend** | View project, complete frontend tasks |
+| **Backend** | View project, complete backend tasks |
+| **Bot Developer** | View project, complete bot tasks |
+| **Designer** | View project, complete design tasks |
+| **Tester** | View project, complete testing tasks |
+| **Member** | View project, complete tasks |
 
 ---
 
@@ -85,18 +90,15 @@ Create a new project.
 **Body:**
 ```json
 {
-  "workspaceId": "1",
   "name": "Awesome App",
   "slug": "awesome-app",
   "description": "Building the next big thing",
-  "status": "active",
+  "status": "building",
   "visibility": "public",
   "stack": ["React", "Node.js", "PostgreSQL"],
   "tags": ["Web", "SaaS"],
   "githubUrl": "https://github.com/user/awesome-app",
   "demoUrl": "https://awesome-app.com",
-  "logoUrl": "https://example.com/logo.png",
-  "bannerUrl": "https://example.com/banner.png",
   "lookingForMembers": true,
   "isOpenSource": true
 }
@@ -107,19 +109,20 @@ Create a new project.
 {
   "project": {
     "id": "1",
-    "workspace_id": "1",
     "name": "Awesome App",
     "slug": "awesome-app",
     "owner_id": "1",
-    "status": "active",
+    "status": "building",
     "visibility": "public",
     "created_at": "2024-01-01T12:00:00.000Z"
   }
 }
 ```
 
+---
+
 ### GET `/projects/my`
-Get user's projects.
+Get user's projects (owned + member of).
 
 **Response 200:**
 ```json
@@ -129,18 +132,18 @@ Get user's projects.
       "id": "1",
       "name": "Awesome App",
       "slug": "awesome-app",
-      "status": "active",
+      "status": "building",
       "visibility": "public",
-      "role": "owner",
-      "member_count": 3,
-      "task_count": 12
+      "owner_id": "1"
     }
   ]
 }
 ```
 
+---
+
 ### GET `/projects/public`
-Get public projects.
+Get public projects (for explore).
 
 **Response 200:**
 ```json
@@ -151,17 +154,18 @@ Get public projects.
       "name": "Open Source Tool",
       "slug": "open-source-tool",
       "description": "Useful developer tool",
-      "status": "active",
+      "status": "launched",
       "visibility": "public",
       "stack": ["Python", "FastAPI"],
       "tags": ["CLI", "DevTools"],
       "looking_for_members": true,
-      "is_open_source": true,
-      "member_count": 5
+      "is_open_source": true
     }
   ]
 }
 ```
+
+---
 
 ### GET `/projects/:slug`
 Get project by slug.
@@ -171,40 +175,43 @@ Get project by slug.
 {
   "project": {
     "id": "1",
-    "workspace_id": "1",
     "name": "Awesome App",
     "slug": "awesome-app",
     "description": "Building the next big thing",
-    "status": "active",
+    "status": "building",
     "visibility": "public",
     "stack": ["React", "Node.js", "PostgreSQL"],
     "tags": ["Web", "SaaS"],
     "github_url": "https://github.com/user/awesome-app",
     "demo_url": "https://awesome-app.com",
-    "logo_url": "https://example.com/logo.png",
-    "banner_url": "https://example.com/banner.png",
+    "logo_url": "https://res.cloudinary.com/...",
+    "banner_url": null,
     "looking_for_members": true,
     "is_open_source": true,
     "owner_id": "1",
     "created_at": "2024-01-01T12:00:00.000Z",
-    "member_count": 3,
-    "task_count": 12
+    "updated_at": "2024-01-02T12:00:00.000Z"
   }
 }
 ```
 
+---
+
 ### PATCH `/projects/:id`
-Update project (admin/lead/manager only).
+Update project. **Requires:** admin, lead, or manager role.
 
 **Body:**
 ```json
 {
   "name": "Updated Name",
   "description": "New description",
-  "status": "completed",
+  "status": "launched",
   "visibility": "private",
   "stack": ["React", "TypeScript", "PostgreSQL"],
-  "lookingForMembers": false
+  "githubUrl": "https://github.com/user/awesome-app",
+  "demoUrl": "https://awesome-app.com",
+  "lookingForMembers": false,
+  "isOpenSource": true
 }
 ```
 
@@ -219,8 +226,25 @@ Update project (admin/lead/manager only).
 }
 ```
 
+---
+
+### POST `/projects/:id/logo`
+Upload project logo/avatar. **Requires:** admin, lead, or manager role.
+
+**Body:** `multipart/form-data` with `file` field
+
+**Response 200:**
+```json
+{
+  "project": { ... },
+  "logoUrl": "https://res.cloudinary.com/..."
+}
+```
+
+---
+
 ### DELETE `/projects/:id`
-Delete project (owner only).
+Delete project. **Requires:** owner only.
 
 **Response 200:**
 ```json
@@ -229,13 +253,15 @@ Delete project (owner only).
 }
 ```
 
+---
+
 ### POST `/projects/:id/members`
-Add member to project (admin/lead/manager only).
+Add or update project member. **Requires:** admin, lead, or manager role.
 
 **Body:**
 ```json
 {
-  "userId": "2",
+  "userId": 2,
   "role": "developer"
 }
 ```
@@ -247,8 +273,10 @@ Add member to project (admin/lead/manager only).
 }
 ```
 
+---
+
 ### GET `/projects/:id/members`
-Get project members.
+Get all project members.
 
 **Response 200:**
 ```json
@@ -264,15 +292,17 @@ Get project members.
         "id": "1",
         "username": "johndoe",
         "name": "John Doe",
-        "avatar": "..."
+        "avatar": "https://..."
       }
     }
   ]
 }
 ```
 
+---
+
 ### DELETE `/projects/:id/members/:userId`
-Remove member (admin/lead/manager only).
+Remove member from project. **Requires:** admin, lead, or manager role.
 
 **Response 200:**
 ```json
@@ -281,8 +311,25 @@ Remove member (admin/lead/manager only).
 }
 ```
 
+---
+
+### POST `/projects/:id/leave`
+Leave project (member exits voluntarily). **Owner cannot leave.**
+
+**Response 200:**
+```json
+{
+  "message": "Left project"
+}
+```
+
+**Errors:**
+- `403` - Owner cannot leave project
+
+---
+
 ### POST `/projects/:id/invite`
-Generate invite code (admin/lead/manager only).
+Generate project invite code. **Requires:** admin, lead, or manager role.
 
 **Body:**
 ```json
@@ -307,31 +354,131 @@ Generate invite code (admin/lead/manager only).
 
 ---
 
+### POST `/projects/:id/join`
+Join project (self-join for public projects).
+
+**Response 200:**
+```json
+{
+  "message": "Joined project"
+}
+```
+
+---
+
+### POST `/projects/:id/chat`
+Link a chat to the project. **Requires:** owner only.
+
+**Body:**
+```json
+{
+  "chatId": "6"
+}
+```
+
+**Response 200:**
+```json
+{
+  "message": "Chat linked to project"
+}
+```
+
+---
+
+### DELETE `/projects/:id/chat`
+Unlink chat from project. **Requires:** owner only.
+
+**Response 200:**
+```json
+{
+  "message": "Chat unlinked from project"
+}
+```
+
+---
+
+### GET `/projects/:id/chat`
+Get linked chat for project.
+
+**Response 200:**
+```json
+{
+  "chat": {
+    "id": "6",
+    "title": "Project Chat",
+    "username": "project-chat"
+  }
+}
+```
+
+---
+
+### GET `/projects/:id/search-users`
+Search users by username to add as members. **Requires:** admin, lead, or manager role.
+
+**Query:** `?q=john`
+
+**Response 200:**
+```json
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "johndoe",
+      "name": "John Doe",
+      "avatar": "https://..."
+    }
+  ]
+}
+```
+
+---
+
+### GET `/chats/:chatId/project`
+Get project info from chat context. Returns project with user membership info.
+
+**Response 200:**
+```json
+{
+  "project": {
+    "id": "2",
+    "name": "Lume",
+    "slug": "lume",
+    "description": "...",
+    "status": "launched",
+    "member_role": "admin"
+  }
+}
+```
+
+---
+
 ## Validation Rules
 
 ### Create Project
-- `workspaceId`: optional, valid workspace ID
 - `name`: required, 3-100 characters
 - `slug`: required, 3-50 characters, lowercase alphanumeric + hyphens, unique
 - `description`: optional, max 1000 characters
-- `status`: optional, one of: "planning", "active", "on_hold", "completed", "archived"
-- `visibility`: required, one of: "public", "private"
+- `status`: optional, one of: `"idea"`, `"building"`, `"testing"`, `"launched"`, `"paused"`, `"archived"`
+- `visibility`: required, one of: `"public"`, `"private"`
 - `stack`: optional, array of strings, max 20 items
 - `tags`: optional, array of strings, max 10 items
 - `githubUrl`: optional, valid URL
 - `demoUrl`: optional, valid URL
-- `logoUrl`: optional, valid URL
-- `bannerUrl`: optional, valid URL
 - `lookingForMembers`: optional, boolean
 - `isOpenSource`: optional, boolean
 
 ### Update Project
 - All fields optional
 - Same validation as create for provided fields
+- Status must be valid enum value
 
 ### Add Member
-- `userId`: required, valid user ID
+- `userId`: required, valid user ID (integer)
 - `role`: required, one of project roles
+
+### Chat Link
+- `chatId`: required, valid chat ID (string)
 
 ---
 
@@ -339,16 +486,20 @@ Generate invite code (admin/lead/manager only).
 
 ### Project Actions
 
-| Action | Owner | Admin | Lead | Manager | Developer | Designer | Tester | Member |
-|--------|-------|-------|------|---------|-----------|----------|--------|--------|
-| View project | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Edit project | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Delete project | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Add members | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Remove members | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Create tasks | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Assign tasks | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Complete tasks | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Action | Owner | Admin | Lead | Manager | Developer | Frontend | Backend | Bot Dev | Designer | Tester | Member |
+|--------|-------|-------|------|---------|-----------|----------|---------|---------|----------|--------|--------|
+| View project | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Edit project | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Delete project | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Add members | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Remove members | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Search users | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Create tasks | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Assign tasks | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Complete tasks | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Link/unlink chat | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Leave project | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Upload logo | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
 ---
 
@@ -362,8 +513,8 @@ CREATE TABLE projects (
   name VARCHAR(100) NOT NULL,
   slug VARCHAR(50) UNIQUE NOT NULL,
   description TEXT,
-  status VARCHAR(20) DEFAULT 'planning',
-  visibility VARCHAR(20) DEFAULT 'private',
+  status VARCHAR(20) DEFAULT 'idea',
+  visibility VARCHAR(20) DEFAULT 'public',
   stack TEXT[],
   tags TEXT[],
   github_url TEXT,
@@ -412,10 +563,26 @@ Projects serve as containers for tasks. See [Tasks Module](./TASKS_MODULE.md) fo
 
 **Task Workflow:**
 1. Create project
-2. Add team members
-3. Create tasks within project
-4. Assign tasks to members
+2. Add team members (admin/lead/manager)
+3. Create tasks within project (admin/lead/manager)
+4. Assign tasks (admin/lead/manager)
 5. Track progress (todo → in_progress → review → done)
+6. Members complete tasks based on role
+
+---
+
+## Chat Integration
+
+Projects can be linked to a group chat for team communication. When a chat is linked:
+- Only project members can access the chat if the project is private
+- Public project chats are accessible by any user who joins the chat
+- The chat appears in the project detail page under the "Chat" tab
+
+**Chat Link Flow:**
+1. Owner navigates to project settings → Chat tab
+2. Selects an existing group chat from user's chats
+3. Chat is linked and appears in project detail
+4. Members can open the chat from project page
 
 ---
 
@@ -423,6 +590,7 @@ Projects serve as containers for tasks. See [Tasks Module](./TASKS_MODULE.md) fo
 
 - [Tasks Module](./TASKS_MODULE.md)
 - [Workspaces Module](./WORKSPACES_MODULE.md)
+- [Groups Module](./GROUPS_MODULE.md)
 - [Features Inventory](./FEATURES_INVENTORY.md)
-- [Projects UI](./PROJECT_UI/PROJECTS_UI.md)
+- [Projects UI](../PROJECT_UI/PROJECTS_UI.md)
 - [README](../README.md)

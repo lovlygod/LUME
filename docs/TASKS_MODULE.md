@@ -72,7 +72,7 @@ todo → in_progress → review → done
 ## API Endpoints
 
 ### POST `/projects/:projectId/tasks`
-Create a task (admin/lead/manager only).
+Create a task. **Requires:** admin, lead, manager, or owner role.
 
 **Body:**
 ```json
