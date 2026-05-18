@@ -30,6 +30,10 @@ All requests (except `/login`, `/register`) require:
 - [Errors](#errors)
 - [Notifications](#notifications)
 - [WebSocket Events](#websocket-events)
+- [Workspaces](#workspaces)
+- [Projects](#projects)
+- [Tasks](#tasks)
+- [Explore](#explore)
 - [Related Documents](#related-documents)
 
 ---
@@ -1570,11 +1574,10 @@ Create a new project.
 **Body:**
 ```json
 {
-  "workspaceId": "1",
   "name": "Awesome App",
   "slug": "awesome-app",
   "description": "Building the next big thing",
-  "status": "active",
+  "status": "building",
   "visibility": "public",
   "stack": ["React", "Node.js", "PostgreSQL"],
   "tags": ["Web", "SaaS"],
@@ -1585,39 +1588,340 @@ Create a new project.
 }
 ```
 
+**Response 201:**
+```json
+{
+  "project": {
+    "id": "1",
+    "name": "Awesome App",
+    "slug": "awesome-app",
+    "owner_id": "1",
+    "status": "building",
+    "visibility": "public",
+    "created_at": "2024-01-01T12:00:00.000Z"
+  }
+}
+```
+
+---
+
 ### GET `/projects/my`
-Get user's projects.
+Get user's projects (owned + member of).
+
+**Response 200:**
+```json
+{
+  "projects": [
+    {
+      "id": "1",
+      "name": "Awesome App",
+      "slug": "awesome-app",
+      "status": "building",
+      "visibility": "public",
+      "owner_id": "1"
+    }
+  ]
+}
+```
+
+---
 
 ### GET `/projects/public`
-Get public projects.
+Get public projects for explore.
+
+**Response 200:**
+```json
+{
+  "projects": [...]
+}
+```
+
+---
 
 ### GET `/projects/:slug`
 Get project by slug.
 
+**Response 200:**
+```json
+{
+  "project": {
+    "id": "1",
+    "name": "Awesome App",
+    "slug": "awesome-app",
+    "description": "...",
+    "status": "building",
+    "visibility": "public",
+    "stack": ["React", "Node.js"],
+    "tags": ["Web"],
+    "github_url": "https://github.com/...",
+    "demo_url": "https://...",
+    "logo_url": "https://res.cloudinary.com/...",
+    "looking_for_members": true,
+    "is_open_source": true,
+    "owner_id": "1",
+    "created_at": "2024-01-01T12:00:00.000Z"
+  }
+}
+```
+
+---
+
 ### PATCH `/projects/:id`
-Update project (admin/lead/manager only).
+Update project. **Requires:** admin, lead, or manager role.
+
+**Body:**
+```json
+{
+  "name": "Updated Name",
+  "description": "New description",
+  "status": "launched",
+  "visibility": "private",
+  "stack": ["React", "TypeScript"],
+  "githubUrl": "https://github.com/...",
+  "demoUrl": "https://...",
+  "lookingForMembers": false,
+  "isOpenSource": true
+}
+```
+
+**Response 200:**
+```json
+{
+  "project": { ... },
+  "message": "Project updated"
+}
+```
+
+---
+
+### POST `/projects/:id/logo`
+Upload project logo. **Requires:** admin, lead, or manager role.
+
+**Content-Type:** `multipart/form-data`
+
+**Body:**
+- `file`: image file
+
+**Response 200:**
+```json
+{
+  "project": { ... },
+  "logoUrl": "https://res.cloudinary.com/..."
+}
+```
+
+---
 
 ### DELETE `/projects/:id`
-Delete project (owner only).
+Delete project. **Requires:** owner only.
+
+**Response 200:**
+```json
+{
+  "message": "Project deleted"
+}
+```
+
+---
 
 ### POST `/projects/:id/members`
-Add member to project.
+Add or update project member. **Requires:** admin, lead, or manager role.
+
+**Body:**
+```json
+{
+  "userId": 2,
+  "role": "developer"
+}
+```
+
+**Response 201:**
+```json
+{
+  "message": "Project member upserted"
+}
+```
+
+---
 
 ### GET `/projects/:id/members`
-Get project members.
+Get all project members.
+
+**Response 200:**
+```json
+{
+  "members": [
+    {
+      "id": "1",
+      "project_id": "1",
+      "user_id": "1",
+      "role": "owner",
+      "joined_at": "2024-01-01T12:00:00.000Z",
+      "user": {
+        "id": "1",
+        "username": "johndoe",
+        "name": "John Doe",
+        "avatar": "https://..."
+      }
+    }
+  ]
+}
+```
+
+---
 
 ### DELETE `/projects/:id/members/:userId`
-Remove member.
+Remove member from project. **Requires:** admin, lead, or manager role.
+
+**Response 200:**
+```json
+{
+  "message": "Project member removed"
+}
+```
+
+---
+
+### POST `/projects/:id/leave`
+Leave project. **Owner cannot leave.**
+
+**Response 200:**
+```json
+{
+  "message": "Left project"
+}
+```
+
+---
 
 ### POST `/projects/:id/invite`
-Generate invite code.
+Generate invite code. **Requires:** admin, lead, or manager role.
+
+**Body:**
+```json
+{
+  "expiresInHours": 168,
+  "maxUses": 5
+}
+```
+
+**Response 201:**
+```json
+{
+  "invite": {
+    "id": "1",
+    "code": "XYZ789ABC",
+    "project_id": "1",
+    "expires_at": "2024-01-08T12:00:00.000Z",
+    "max_uses": 5
+  }
+}
+```
+
+---
+
+### POST `/projects/:id/join`
+Join a public project.
+
+**Response 200:**
+```json
+{
+  "message": "Joined project"
+}
+```
+
+---
+
+### POST `/projects/:id/chat`
+Link a chat to the project. **Requires:** owner only.
+
+**Body:**
+```json
+{
+  "chatId": "6"
+}
+```
+
+**Response 200:**
+```json
+{
+  "message": "Chat linked to project"
+}
+```
+
+---
+
+### DELETE `/projects/:id/chat`
+Unlink chat from project. **Requires:** owner only.
+
+**Response 200:**
+```json
+{
+  "message": "Chat unlinked from project"
+}
+```
+
+---
+
+### GET `/projects/:id/chat`
+Get linked chat for project.
+
+**Response 200:**
+```json
+{
+  "chat": {
+    "id": "6",
+    "title": "Project Chat",
+    "username": "project-chat"
+  }
+}
+```
+
+---
+
+### GET `/projects/:id/search-users`
+Search users by username. **Requires:** admin, lead, or manager role.
+
+**Query:** `?q=john`
+
+**Response 200:**
+```json
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "johndoe",
+      "name": "John Doe",
+      "avatar": "https://..."
+    }
+  ]
+}
+```
+
+---
+
+### GET `/chats/:chatId/project`
+Get project info from chat context.
+
+**Response 200:**
+```json
+{
+  "project": {
+    "id": "2",
+    "name": "Lume",
+    "slug": "lume",
+    "status": "launched",
+    "member_role": "admin"
+  }
+}
+```
 
 ---
 
 ## Tasks
 
 ### POST `/projects/:projectId/tasks`
-Create a task (admin/lead/manager only).
+Create a task. **Requires:** admin, lead, or manager role.
 
 **Body:**
 ```json
@@ -1626,21 +1930,115 @@ Create a task (admin/lead/manager only).
   "description": "Add JWT-based auth with refresh tokens",
   "status": "todo",
   "priority": "high",
-  "assigneeId": "2"
+  "assigneeId": "2",
+  "sourceMessageId": "123"
 }
 ```
+
+**Response 201:**
+```json
+{
+  "task": {
+    "id": "1",
+    "project_id": "1",
+    "title": "Implement user authentication",
+    "status": "todo",
+    "priority": "high",
+    "assignee_id": "2",
+    "source_message_id": "123",
+    "created_by": "1",
+    "created_at": "2024-01-01T12:00:00.000Z"
+  }
+}
+```
+
+---
 
 ### GET `/projects/:projectId/tasks`
 Get all tasks for a project.
 
+**Response 200:**
+```json
+{
+  "tasks": [
+    {
+      "id": "1",
+      "title": "Implement user authentication",
+      "status": "in_progress",
+      "priority": "high",
+      "assignee_id": "2",
+      "assignee": { "id": "2", "username": "janedoe", "name": "Jane Doe" },
+      "creator": { "id": "1", "username": "johndoe", "name": "John Doe" }
+    }
+  ]
+}
+```
+
+---
+
 ### PATCH `/tasks/:taskId`
 Update a task.
 
+**Permissions:**
+- Admin/Lead/Manager: can update any task
+- Task creator: can update own tasks
+- Assignee: can update assigned tasks
+
+**Body:**
+```json
+{
+  "title": "Updated title",
+  "status": "review",
+  "priority": "medium",
+  "assigneeId": "3"
+}
+```
+
+**Response 200:**
+```json
+{
+  "task": { ... },
+  "message": "Task updated"
+}
+```
+
+---
+
 ### DELETE `/tasks/:taskId`
-Delete a task (admin/lead/manager only).
+Delete a task. **Requires:** admin, lead, or manager role.
+
+**Response 200:**
+```json
+{
+  "message": "Task deleted"
+}
+```
+
+---
 
 ### POST `/tasks/:taskId/comments`
 Add a comment to a task.
+
+**Body:**
+```json
+{
+  "content": "I've started working on this."
+}
+```
+
+**Response 201:**
+```json
+{
+  "comment": {
+    "id": "1",
+    "task_id": "1",
+    "user_id": "2",
+    "content": "I've started working on this.",
+    "created_at": "2024-01-01T12:00:00.000Z",
+    "user": { "id": "2", "username": "janedoe", "name": "Jane Doe" }
+  }
+}
+```
 
 ---
 
