@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import { projectsAPI, tasksAPI, projectMembersAPI, messagesAPI, type ProjectItem, type TaskItem, type ProjectMember } from "@/services/api";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,38 +7,44 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Edit2, Save, X, Camera, ExternalLink, Github } from "lucide-react";
 import CustomSelect from "@/components/ui/CustomSelect";
+import ProjectSettingsModal from "@/components/projects/ProjectSettingsModal";
 import { Textarea } from "@/components/ui/textarea";
 
 const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
 
 type Tab = "overview" | "tasks" | "members" | "chat";
 
-const statusColors: Record<string, string> = {
-  idea: "bg-white/10 border-white/20 text-white/60",
-  building: "bg-white/10 border-white/20 text-white/60",
-  testing: "bg-white/10 border-white/20 text-white/60",
-  launched: "bg-white/10 border-white/20 text-white/60",
-  paused: "bg-white/10 border-white/20 text-white/60",
-  archived: "bg-white/10 border-white/20 text-white/60",
+const priorityColors: Record<string, string> = {
+  low: "bg-green-500/20 text-green-400 border border-green-500/30",
+  medium: "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30",
+  high: "bg-red-500/20 text-red-400 border border-red-500/30",
 };
 
-const priorityColors: Record<string, string> = {
-  low: "bg-white/10 text-white/60",
-  medium: "bg-white/10 text-white/60",
-  high: "bg-white/10 text-white/60",
+const statusColors: Record<string, { bg: string; text: string; dot: string }> = {
+  todo: { bg: "bg-white/10", text: "text-white/60", dot: "bg-white/30" },
+  in_progress: { bg: "bg-blue-500/20", text: "text-blue-400", dot: "bg-blue-500" },
+  review: { bg: "bg-yellow-500/20", text: "text-yellow-400", dot: "bg-yellow-500" },
+  done: { bg: "bg-green-500/20", text: "text-green-400", dot: "bg-green-500" },
 };
 
 const ProjectDetailPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user: currentUser } = useAuth();
   const [project, setProject] = useState<ProjectItem | null>(null);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [members, setMembers] = useState<ProjectMember[]>([]);
-  const [chats, setChats] = useState<Array<{ id: string; title: string | null; type: string }>>([]);
+  const [userChats, setUserChats] = useState<Array<{ id: string; title: string | null; type: string }>>([]);
+  const [linkedChat, setLinkedChat] = useState<{ id: string; title: string | null; username?: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [linkingChat, setLinkingChat] = useState(false);
+
+  const pathParts = location.pathname.split('/');
+  const urlTab = pathParts[pathParts.length - 1];
+  const validTabs = ["overview", "tasks", "members", "chat"];
+  const activeTab: Tab = validTabs.includes(urlTab) ? urlTab as Tab : "overview";
 
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskStatus, setNewTaskStatus] = useState<TaskItem["status"]>("todo");
@@ -47,6 +53,10 @@ const ProjectDetailPage = () => {
   const [submittingTask, setSubmittingTask] = useState(false);
 
   const isOwner = currentUser && project && Number(currentUser.id) === Number(project.owner_id);
+  const isMember = members.some(m => Number(m.user_id) === Number(currentUser?.id));
+  const canManageTasks = isOwner || members.some(m => Number(m.user_id) === Number(currentUser?.id) && ['admin', 'lead', 'manager'].includes(m.role));
+  const [joiningProject, setJoiningProject] = useState(false);
+  const [leavingProject, setLeavingProject] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
@@ -61,6 +71,7 @@ const ProjectDetailPage = () => {
   });
   const [isUpdating, setIsUpdating] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const statusOptions: { value: ProjectItem["status"]; label: string }[] = [
     { value: "idea", label: "Idea" },
@@ -115,15 +126,17 @@ const ProjectDetailPage = () => {
         looking_for_members: proj.looking_for_members || false,
         is_open_source: proj.is_open_source || false,
       });
-      setChats(chatsRes.chats.filter((c) => c.type === "group" || c.type === "channel"));
+      setUserChats(chatsRes.chats.filter((c) => c.type === "group"));
 
       if (proj?.id) {
-        const [tasksRes, membersRes] = await Promise.all([
+        const [tasksRes, membersRes, linkedChatRes] = await Promise.all([
           tasksAPI.getByProject(proj.id),
           projectMembersAPI.getMembers(proj.id),
+          projectsAPI.getChat(proj.id),
         ]);
         setTasks(tasksRes.tasks || []);
         setMembers(membersRes.members || []);
+        setLinkedChat(linkedChatRes.chat || null);
       }
     } catch (error) {
       toast.error(t("projects.errors.load"));
@@ -214,25 +227,13 @@ const ProjectDetailPage = () => {
         <Link to="/projects" className="text-sm text-white/70 hover:text-white">
           ← {t("projects.title")}
         </Link>
-        {isOwner && (
+        {canManageTasks && (
           <button
-            onClick={() => {
-              setEditData({
-                name: project.name,
-                description: project.description || "",
-                status: project.status,
-                stack: project.stack?.join(", ") || "",
-                github_url: project.github_url || "",
-                demo_url: project.demo_url || "",
-                looking_for_members: project.looking_for_members || false,
-                is_open_source: project.is_open_source || false,
-              });
-              setIsEditing(true);
-            }}
+            onClick={() => setSettingsOpen(true)}
             className="btn-glass gap-2"
           >
             <Edit2 className="h-4 w-4" />
-            <span>{t("common.edit")}</span>
+            <span>Настройки</span>
           </button>
         )}
       </div>
@@ -349,6 +350,49 @@ const ProjectDetailPage = () => {
               ))}
             </div>
             <div className="mt-4 flex gap-4">
+              {!isOwner && !isMember && (
+                <button
+                  onClick={async () => {
+                    if (!project?.id) return;
+                    setJoiningProject(true);
+                    try {
+                      await projectsAPI.join(project.id);
+                      toast.success('Вы вступили в проект!');
+                      load();
+                    } catch {
+                      toast.error('Ошибка при вступлении');
+                    } finally {
+                      setJoiningProject(false);
+                    }
+                  }}
+                  disabled={joiningProject}
+                  className="btn-glass px-4 py-2 text-sm"
+                >
+                  {joiningProject ? '...' : 'Вступить в проект'}
+                </button>
+              )}
+              {!isOwner && isMember && (
+                <button
+                  onClick={async () => {
+                    if (!project?.id) return;
+                    if (!confirm('Вы уверены что хотите выйти из проекта?')) return;
+                    setLeavingProject(true);
+                    try {
+                      await projectsAPI.leave(project.id);
+                      toast.success('Вы вышли из проекта');
+                      load();
+                    } catch {
+                      toast.error('Ошибка при выходе');
+                    } finally {
+                      setLeavingProject(false);
+                    }
+                  }}
+                  disabled={leavingProject}
+                  className="btn-glass px-4 py-2 text-sm"
+                >
+                  {leavingProject ? '...' : 'Выйти из проекта'}
+                </button>
+              )}
               {project.github_url && (
                 <a href={project.github_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-white/70 hover:text-white">
                   <Github className="h-4 w-4" />
@@ -379,9 +423,9 @@ const ProjectDetailPage = () => {
 
       <div className="flex gap-2 overflow-x-auto border-b border-white/10 pb-2">
         {tabs.map((tab) => (
-          <button
+          <Link
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            to={`/projects/${slug}/${tab.id}`}
             className={`rounded-xl px-4 py-2 text-sm transition ${
               activeTab === tab.id
                 ? "bg-white/10 text-white"
@@ -389,7 +433,7 @@ const ProjectDetailPage = () => {
             }`}
           >
             {tab.label}
-          </button>
+          </Link>
         ))}
       </div>
 
@@ -446,12 +490,14 @@ const ProjectDetailPage = () => {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium">{t("projects.tasks.title")}</h3>
-            <button
-              onClick={() => setShowTaskForm(!showTaskForm)}
-              className="btn-glass px-4 py-2 text-sm"
-            >
-              {showTaskForm ? t("common.close") : t("projects.tasks.create")}
-            </button>
+            {canManageTasks && (
+              <button
+                onClick={() => setShowTaskForm(!showTaskForm)}
+                className="btn-glass px-4 py-2 text-sm"
+              >
+                {showTaskForm ? t("common.close") : t("projects.tasks.create")}
+              </button>
+            )}
           </div>
 
           {showTaskForm && (
@@ -498,46 +544,69 @@ const ProjectDetailPage = () => {
           {tasks.length === 0 ? (
             <p className="text-white/60">{t("projects.empty.tasks")}</p>
           ) : (
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="space-y-3">
               {(["todo", "in_progress", "review", "done"] as const).map((status) => (
-                <div key={status} className="rounded-3xl border border-white/10 bg-white/5 p-4">
-                  <h4 className="mb-3 text-sm font-medium text-white/80">
-                    {t(`projects.tasks.${status === "in_progress" ? "inProgress" : status}`)} ({tasksByStatus[status].length})
-                  </h4>
+                <div key={status}>
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="text-sm font-medium text-white/60">
+                      {t(`projects.tasks.${status === "in_progress" ? "inProgress" : status}`)}
+                    </span>
+                    <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white/40">
+                      {tasksByStatus[status].length}
+                    </span>
+                  </div>
                   <div className="space-y-2">
-                    {tasksByStatus[status].map((task) => (
-                      <div
-                        key={task.id}
-                        className="rounded-xl border border-white/10 bg-white/5 p-3"
-                      >
-                        <p className="text-sm font-medium">{task.title}</p>
-                        <div className="mt-2 flex items-center justify-between">
-                          <span className={`rounded-full px-2 py-0.5 text-xs ${priorityColors[task.priority]}`}>
-                            {t(`projects.tasks.priority.${task.priority}`)}
-                          </span>
-                          <div className="flex gap-1">
-                            <CustomSelect
-                              value={task.status}
-                              onChange={(value) => handleTaskStatusChange(task.id, value as TaskItem["status"])}
-                              options={[
-                                { value: "todo", label: t("projects.tasks.todo") },
-                                { value: "in_progress", label: t("projects.tasks.inProgress") },
-                                { value: "review", label: t("projects.tasks.review") },
-                                { value: "done", label: t("projects.tasks.done") },
-                              ]}
-                              buttonClassName="rounded border border-white/10 bg-white/5 px-1 py-0.5 text-xs"
-                              dropdownClassName="!min-w-[120px]"
-                            />
-                            <button
-                              onClick={() => handleDeleteTask(task.id)}
-                              className="text-xs text-red-400 hover:text-red-300"
-                            >
-                              ✕
-                            </button>
+                    {tasksByStatus[status].length === 0 ? (
+                      <p className="py-3 text-center text-sm text-white/30">Пусто</p>
+                    ) : (
+                      tasksByStatus[status].map((task) => (
+                        <div
+                          key={task.id}
+                          className="flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 transition-colors hover:bg-white/10"
+                        >
+                          <div className="flex min-w-0 flex-1 items-center gap-3">
+                            <span className={`h-2 w-2 shrink-0 rounded-full ${
+                              status === 'todo' ? 'bg-white/30' :
+                              status === 'in_progress' ? 'bg-blue-400' :
+                              status === 'review' ? 'bg-yellow-400' :
+                              'bg-green-400'
+                            }`}></span>
+                            <p className="truncate text-sm font-medium">{task.title}</p>
+                            <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${priorityColors[task.priority]}`}>
+                              {t(`projects.tasks.priority.${task.priority}`)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {canManageTasks ? (
+                              <>
+                                <CustomSelect
+                                  value={task.status}
+                                  onChange={(value) => handleTaskStatusChange(task.id, value as TaskItem["status"])}
+                                  options={[
+                                    { value: "todo", label: t("projects.tasks.todo") },
+                                    { value: "in_progress", label: t("projects.tasks.inProgress") },
+                                    { value: "review", label: t("projects.tasks.review") },
+                                    { value: "done", label: t("projects.tasks.done") },
+                                  ]}
+                                  buttonClassName="rounded border border-white/10 bg-white/5 px-2 py-1 text-xs hover:bg-white/20"
+                                  dropdownClassName="!min-w-[130px]"
+                                />
+                                <button
+                                  onClick={() => handleDeleteTask(task.id)}
+                                  className="flex h-6 w-6 items-center justify-center rounded border border-white/10 bg-white/5 text-xs text-white/40 hover:border-red-500/50 hover:bg-red-500/20 hover:text-red-400"
+                                >
+                                  ✕
+                                </button>
+                              </>
+                            ) : (
+                              <span className="text-xs text-white/40">
+                                {t(`projects.tasks.${task.status === 'in_progress' ? 'inProgress' : task.status}`)}
+                              </span>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </div>
               ))}
@@ -576,25 +645,156 @@ const ProjectDetailPage = () => {
 
       {activeTab === "chat" && (
         <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-          <h3 className="mb-4 text-lg font-medium">{t("projects.tabs.chat")}</h3>
-          {chats.length === 0 ? (
-            <p className="text-white/60">No chats available</p>
-          ) : (
-            <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
-              {chats.map((chat) => (
+          <h3 className="mb-4 text-lg font-medium">{t("projects.chat.title")}</h3>
+          {linkedChat ? (
+            <div className="space-y-4">
+              <button
+                onClick={() => navigate(linkedChat.username ? `/messages/@${linkedChat.username}` : `/messages/${linkedChat.id}`)}
+                className="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-4 hover:bg-white/10"
+              >
+                <span className="text-lg">#</span>
+                <span className="font-medium">{linkedChat.title || "Чат проекта"}</span>
+                <span className="ml-auto text-sm text-white/60">Открыть →</span>
+              </button>
+              {isOwner && (
                 <button
-                  key={chat.id}
-                  onClick={() => navigate(`/messages/${chat.id}`)}
-                  className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 hover:bg-white/10"
+                  onClick={async () => {
+                    if (!project?.id) return;
+                    setLinkingChat(true);
+                    try {
+                      await projectsAPI.unlinkChat(project.id);
+                      setLinkedChat(null);
+                      toast.success('Чат отвязан');
+                    } catch {
+                      toast.error('Ошибка');
+                    } finally {
+                      setLinkingChat(false);
+                    }
+                  }}
+                  disabled={linkingChat}
+                  className="btn-glass px-4 py-2 text-sm"
                 >
-                  <span className="text-lg">#</span>
-                  <span className="font-medium">{chat.title || "Untitled"}</span>
+                  {linkingChat ? '...' : 'Отвязать'}
                 </button>
-              ))}
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-sm text-white/60">Выберите чат для привязки к проекту:</p>
+              <div className="space-y-2">
+                {userChats.length === 0 ? (
+                  <p className="text-white/40">У вас нет групповых чатов</p>
+                ) : (
+                  userChats.map((chat) => (
+                    <button
+                      key={chat.id}
+                      onClick={async () => {
+                        if (!project?.id) return;
+                        setLinkingChat(true);
+                        try {
+                          await projectsAPI.linkChat(project.id, chat.id);
+                          setLinkedChat({ id: chat.id, title: chat.title });
+                          toast.success('Чат привязан');
+                        } catch {
+                          toast.error('Ошибка');
+                        } finally {
+                          setLinkingChat(false);
+                        }
+                      }}
+                      disabled={linkingChat}
+                      className="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-4 hover:bg-white/10"
+                    >
+                      <span className="text-lg">#</span>
+                      <span className="font-medium">{chat.title || "Без названия"}</span>
+                    </button>
+                  ))
+                )}
+              </div>
             </div>
           )}
         </div>
       )}
+
+      <ProjectSettingsModal
+        projectId={project.id}
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        project={project}
+        members={members}
+        linkedChat={linkedChat}
+        userChats={userChats}
+        currentUserId={currentUser?.id}
+        onSave={async (data) => {
+          if (!project?.id) return;
+          const updated = await projectsAPI.update(project.id, data);
+          setProject(updated.project);
+          setEditData({
+            name: updated.project.name,
+            description: updated.project.description || "",
+            status: updated.project.status as ProjectItem["status"],
+            stack: updated.project.stack?.join(", ") || "",
+            github_url: updated.project.github_url || "",
+            demo_url: updated.project.demo_url || "",
+            looking_for_members: updated.project.looking_for_members || false,
+            is_open_source: updated.project.is_open_source || false,
+          });
+          toast.success(t("projects.toast.updated"));
+        }}
+        onUploadAvatar={async (file) => {
+          if (!project?.id) return;
+          const formData = new FormData();
+          formData.append("file", file);
+          const res = await fetch(`/api/projects/${project.id}/logo`, {
+            method: "POST",
+            body: formData,
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const updated = await projectsAPI.update(project.id, { logo_url: data.logoUrl });
+            setProject(updated.project);
+          }
+        }}
+        onAddMember={async (userId, role) => {
+          if (!project?.id) return;
+          await projectMembersAPI.addMember(project.id, { userId, role });
+          const res = await projectMembersAPI.getMembers(project.id);
+          setMembers(res.members || []);
+          toast.success("Участник добавлен");
+        }}
+        onRemoveMember={async (userId) => {
+          if (!project?.id) return;
+          if (!confirm("Удалить участника?")) return;
+          await projectMembersAPI.removeMember(project.id, userId);
+          const res = await projectMembersAPI.getMembers(project.id);
+          setMembers(res.members || []);
+          toast.success("Участник удален");
+        }}
+        onUpdateMemberRole={async (userId, role) => {
+          if (!project?.id) return;
+          await projectMembersAPI.addMember(project.id, { userId, role });
+          const res = await projectMembersAPI.getMembers(project.id);
+          setMembers(res.members || []);
+        }}
+        onLinkChat={async (chatId) => {
+          if (!project?.id) return;
+          await projectsAPI.linkChat(project.id, chatId);
+          setLinkedChat({ id: chatId, title: userChats.find(c => c.id === chatId)?.title || null });
+          toast.success("Чат привязан");
+        }}
+        onUnlinkChat={async () => {
+          if (!project?.id) return;
+          await projectsAPI.unlinkChat(project.id);
+          setLinkedChat(null);
+          toast.success("Чат отвязан");
+        }}
+        onDeleteProject={async () => {
+          if (!project?.id) return;
+          await projectsAPI.delete(project.id);
+          toast.success("Проект удален");
+          navigate("/projects");
+        }}
+      />
     </div>
   );
 };
