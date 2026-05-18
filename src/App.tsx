@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useTheme } from "./hooks/useTheme";
 import CookieBanner from "@/components/ui/CookieBanner";
 import Index from "./pages/Index";
@@ -77,7 +77,8 @@ const AppContent = () => {
           <Route path="/workspaces" element={<WorkspacesPage />} />
           <Route path="/workspaces/:slug" element={<WorkspaceDetailPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
-          <Route path="/projects/:slug" element={<ProjectDetailPage />} />
+          <Route path="/projects/:slug" element={<Navigate to="overview" replace />} />
+          <Route path="/projects/:slug/:tab" element={<ProjectDetailPage />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/messages/:chatId" element={<Messages />} />
           <Route path="/messages/:chatId/:rest" element={<Messages />} />
