@@ -11,7 +11,7 @@ import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getProfileRoute } from "@/lib/profileRoute";
-import { messagesAPI, profileAPI, uploadsAPI, usersAPI, stickersAPI } from "@/services/api";
+import { messagesAPI, profileAPI, uploadsAPI, usersAPI, stickersAPI, projectsAPI, chatsAPI } from "@/services/api";
 import { messageSounds } from "@/services/messageSounds";
 import { wsService } from "@/services/websocket";
 import { messageQueryKeys } from "./hooks/queryKeys";
@@ -92,6 +92,8 @@ const MessagesPage = () => {
   const [joinStatus, setJoinStatus] = useState<string | null>(null);
   const [channelLoading, setChannelLoading] = useState(false);
   const [publicJoinModalOpen, setPublicJoinModalOpen] = useState(false);
+  const [blockedProject, setBlockedProject] = useState<any>(null);
+  const [joiningProject, setJoiningProject] = useState(false);
   const { backgroundStyle } = useChatBackground();
   const [reactionMap, setReactionMap] = useState<Record<string, boolean>>({});
   const [contextMenuState, setContextMenuState] = useState<{
@@ -140,9 +142,20 @@ const MessagesPage = () => {
       };
     }
 
+    if (displayChat.type === "group" || displayChat.type === "channel") {
+      return {
+        id: displayChat.id,
+        name: displayChat.title || displayChat.username || "Chat",
+        username: displayChat.username || "",
+        avatar: displayChat.avatar || undefined,
+        verified: false,
+        email: "",
+      };
+    }
+
     return null;
   }, [displayChat, currentUser?.id]);
-  const activeChatId = useMemo(() => selectedChat?.id || null, [selectedChat]);
+  const activeChatId = useMemo(() => selectedChat?.id || publicChannel?.id || null, [selectedChat, publicChannel]);
   const { data: messagesData, isLoading: messagesLoading } = useChatMessages(activeChatId);
   const sendMessage = useSendMessage(currentUser?.id);
   const deleteMessage = useDeleteMessage(activeChatId);
@@ -218,12 +231,16 @@ const MessagesPage = () => {
     const isPublicPreview = Boolean(chatId && chatId.startsWith("@"));
     const isInvitePreview = Boolean(inviteToken || inviteParam);
     const isApprovedInvite = Boolean(publicChannel?.role) || joinStatus === "approved";
+    if (blockedProject) {
+      setPublicJoinModalOpen(false);
+      return;
+    }
     if ((isPublicPreview || isInvitePreview) && publicChannel && !selectedChat && !isApprovedInvite) {
       setPublicJoinModalOpen(true);
       return;
     }
     setPublicJoinModalOpen(false);
-  }, [chatId, inviteToken, inviteParam, publicChannel, selectedChat, joinStatus]);
+  }, [chatId, inviteToken, inviteParam, publicChannel, selectedChat, joinStatus, blockedProject]);
 
   useEffect(() => {
     if (inviteParam) {
@@ -331,6 +348,7 @@ const MessagesPage = () => {
     setChannelLoading(true);
 
     const loadChat = async () => {
+      setPublicJoinModalOpen(false);
       try {
         if (chatId === "invite" || inviteParam) {
           return;
@@ -339,6 +357,16 @@ const MessagesPage = () => {
           const username = chatId.slice(1);
           const res = await messagesAPI.getChatByUsername(username);
           if (cancelled) return;
+          
+          if (res.project && !res.project.member_role) {
+            setBlockedProject(res.project);
+            setPublicChannel(null);
+            setChannelMeta(null);
+            setJoinStatus(null);
+            return;
+          }
+          setBlockedProject(null);
+          
           setPublicChannel({
             id: res.chat.id,
             type: res.chat.type,
@@ -386,30 +414,72 @@ const MessagesPage = () => {
           setJoinStatus(null);
           return;
         }
-        if (matchedChat.type !== "channel" || !matchedChat.isPublic) {
+
+        if (matchedChat.projectId) {
+          const projectRes = await chatsAPI.getProject(chatId);
+          if (cancelled) return;
+          if (!projectRes.project) {
+            setPublicChannel(null);
+            setChannelMeta(null);
+            setBlockedProject(null);
+            return;
+          }
+          if (!projectRes.project.member_role) {
+            setBlockedProject(projectRes.project);
+            setPublicChannel(null);
+            setChannelMeta(null);
+            setJoinStatus(null);
+            return;
+          }
+          setBlockedProject(null);
+        } else {
+          setBlockedProject(null);
+        }
+
+        if (matchedChat.type === "group" || matchedChat.type === "channel") {
+          setPublicChannel({
+            id: matchedChat.id,
+            type: matchedChat.type,
+            title: matchedChat.title,
+            username: matchedChat.username,
+            avatar: matchedChat.avatar,
+            isPublic: matchedChat.isPublic,
+            isPrivate: matchedChat.isPrivate,
+            role: matchedChat.role as Chat["role"],
+            inviteToken: matchedChat.inviteToken || null,
+            publicNumber: matchedChat.publicNumber || null,
+            routeId: matchedChat.routeId || null,
+            members: matchedChat.members || [],
+            lastMessage: matchedChat.lastMessage || "",
+            timestamp: matchedChat.timestamp || new Date().toISOString(),
+            unread: matchedChat.unread || 0,
+          });
+          setJoinStatus(null);
+          setChannelMeta({ role: matchedChat.role, membersCount: matchedChat.members?.length || 0 });
+        } else if (matchedChat.type !== "channel" || !matchedChat.isPublic) {
           setPublicChannel(null);
           setChannelMeta(null);
           setJoinStatus(null);
           return;
+        } else {
+          const res = await messagesAPI.getPublicChannel(chatId);
+          if (cancelled) return;
+          setPublicChannel({
+            id: res.channel.id,
+            type: "channel",
+            title: res.channel.title,
+            username: res.channel.username,
+            avatar: res.channel.avatar,
+            isPublic: res.channel.isPublic,
+            role: (res.channel.role || undefined) as Chat["role"],
+            members: [],
+            lastMessage: "",
+            timestamp: new Date().toISOString(),
+            unread: 0,
+          });
+          setJoinStatus(null);
+          setChannelMeta({ role: res.channel.role, membersCount: res.channel.membersCount });
         }
-
-        const res = await messagesAPI.getPublicChannel(chatId);
-        if (cancelled) return;
-        setPublicChannel({
-          id: res.channel.id,
-          type: "channel",
-          title: res.channel.title,
-          username: res.channel.username,
-          avatar: res.channel.avatar,
-          isPublic: res.channel.isPublic,
-          role: (res.channel.role || undefined) as Chat["role"],
-          members: [],
-          lastMessage: "",
-          timestamp: new Date().toISOString(),
-          unread: 0,
-        });
-        setJoinStatus(null);
-        setChannelMeta({ role: res.channel.role, membersCount: res.channel.membersCount });
       } catch (error) {
         if (!cancelled) {
           setPublicChannel(null);
@@ -426,7 +496,7 @@ const MessagesPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [chatId, rest, selectedChat?.id, selectedChat?.type, selectedChat?.role, selectedChat?.isPublic, chatsData?.chats, navigate]);
+  }, [chatId, rest, selectedChat?.id, selectedChat?.type, selectedChat?.role, selectedChat?.isPublic, selectedChat?.projectId, chatsData?.chats, navigate]);
 
   useEffect(() => {
     if (!targetUserId) return;
@@ -900,7 +970,7 @@ const MessagesPage = () => {
           t={t}
         />
 
-        <Dialog open={publicJoinModalOpen} onOpenChange={setPublicJoinModalOpen}>
+        <Dialog open={publicJoinModalOpen && !blockedProject} onOpenChange={setPublicJoinModalOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="text-white">
@@ -959,7 +1029,7 @@ const MessagesPage = () => {
         </Dialog>
 
         <AnimatePresence>
-            {selectedChatId || displayChat ? (
+            {selectedChatId || displayChat || blockedProject ? (
             <motion.div
               key="chat-panel"
               initial={{ opacity: 0, x: 20 }}
@@ -1015,7 +1085,46 @@ const MessagesPage = () => {
                     />
 
                   <div className="flex-1 min-h-0 bg-white/5 backdrop-blur-[24px] overflow-hidden flex flex-col" style={backgroundStyle}>
-                    {messagesLoading ? (
+                    {blockedProject ? (
+                      <div className="flex-1 flex items-center justify-center p-6">
+                        <div className="max-w-md w-full rounded-3xl border border-white/10 bg-black/40 p-8 text-center">
+                          <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-white/10 text-2xl font-bold mb-4">
+                            {blockedProject.name?.charAt(0) || "P"}
+                          </div>
+                          <h3 className="text-xl font-semibold mb-2">{blockedProject.name}</h3>
+                          <p className="text-white/60 text-sm mb-6">{blockedProject.description || "Приватный проект"}</p>
+                          <div className="flex items-center justify-center gap-4 text-xs text-white/40 mb-6">
+                            <span className="rounded-full bg-white/10 px-3 py-1">{blockedProject.status || "idea"}</span>
+                          </div>
+                          <button
+                            onClick={async () => {
+                              if (!blockedProject.id) return;
+                              setJoiningProject(true);
+                              try {
+                                await projectsAPI.join(blockedProject.id);
+                                setBlockedProject(null);
+                                toast.success('Вы вступили в проект!');
+                                navigate(0);
+                              } catch {
+                                toast.error('Ошибка при вступлении');
+                              } finally {
+                                setJoiningProject(false);
+                              }
+                            }}
+                            disabled={joiningProject}
+                            className="btn-glass w-full py-3"
+                          >
+                            {joiningProject ? '...' : 'Вступить в проект'}
+                          </button>
+                          <button
+                            onClick={() => navigate('/projects')}
+                            className="mt-3 text-sm text-white/60 hover:text-white"
+                          >
+                            ← Назад к проектам
+                          </button>
+                        </div>
+                      </div>
+                    ) : messagesLoading ? (
                       <div className="flex-1 flex items-center justify-center text-center px-6">
                         <p className="text-sm text-secondary">Загрузка...</p>
                       </div>
@@ -1089,7 +1198,7 @@ const MessagesPage = () => {
                   readOnlyMessage={
                     displayChat?.type === "channel" || displayChat?.type === "group" ? (
                       <div className="flex justify-center">
-                        {!channelRole ? (
+                        {blockedProject ? null : !channelRole ? (
                           <Button
                             size="sm"
                             variant="secondary"

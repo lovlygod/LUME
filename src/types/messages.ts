@@ -24,6 +24,8 @@ export interface Chat {
   lastMessageType?: "text" | "image" | "sticker" | "voice" | "moment_image";
   timestamp: string;
   unread?: number;
+  projectId?: number | null;
+  projectName?: string | null;
 }
 
 export interface Attachment {

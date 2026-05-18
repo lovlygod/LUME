@@ -169,6 +169,13 @@ const ChatList = ({
                           {formatTime(chat.timestamp)}
                         </span>
                       </div>
+                      {chat.projectId && (
+                        <div className="mt-1 flex items-center gap-1">
+                          <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-white/60">
+                            {chat.projectName || 'Проект'}
+                          </span>
+                        </div>
+                      )}
                       <p className="truncate text-xs text-secondary">
                         {chat.lastMessage === "Исчезающее фото"
                           ? "Исчезающее фото"
