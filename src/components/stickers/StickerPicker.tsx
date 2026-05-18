@@ -4,6 +4,7 @@ import type { Sticker, StickerPack } from "@/types/stickers";
 import StickerGrid from "@/components/stickers/StickerGrid";
 import StickerPackTabs from "@/components/stickers/StickerPackTabs";
 import { useLanguage } from "@/contexts/LanguageContext";
+import CustomSelect from "@/components/ui/CustomSelect";
 
 interface StickerPickerProps {
   isOpen: boolean;
@@ -44,22 +45,18 @@ const StickerPicker = ({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 12 }}
           transition={{ duration: 0.2 }}
-          className="absolute bottom-full mb-3 left-0 right-0 rounded-[24px] border border-white/10 bg-black/85 backdrop-blur-2xl p-4 shadow-[0_16px_40px_rgba(0,0,0,0.35)]"
+          className="absolute bottom-full mb-3 left-0 right-0 rounded-3xl border border-white/10 bg-black/85 backdrop-blur-2xl p-4 shadow-[0_16px_40px_rgba(0,0,0,0.35)]"
         >
           <div className="flex items-center justify-between gap-3 mb-3">
             <StickerPackTabs value={tab} onValueChange={setTab} />
             {packs.length > 0 && (
-              <select
+              <CustomSelect
                 value={resolvedPackId || ""}
-                onChange={(event) => onPickPack(event.target.value)}
-                className="rounded-full bg-white/5 border border-white/10 px-3 py-1.5 text-xs text-white/80"
-              >
-                {packs.map((pack) => (
-                  <option key={pack.id} value={pack.id}>
-                    {pack.name}
-                  </option>
-                ))}
-              </select>
+                onChange={onPickPack}
+                options={packs.map((pack) => ({ value: pack.id, label: pack.name }))}
+                placeholder={t("stickers.pack") || "Pack"}
+                buttonClassName="h-8 min-w-[170px] rounded-full bg-white/5 border border-white/10 px-3 py-1.5 text-xs text-white/80"
+              />
             )}
           </div>
 

@@ -58,7 +58,7 @@ const DangerPage = () => {
         </div>
         <button
           onClick={() => navigate("/settings")}
-          className="px-4 py-2 rounded-full text-xs font-medium bg-white/5 text-secondary hover:text-white transition"
+          className="btn-glass-outline px-4 py-2 text-xs"
         >
           {t("settings.backToSettings")}
         </button>
@@ -71,7 +71,7 @@ const DangerPage = () => {
             <h2 className="text-lg font-semibold">{t("settings.dangerZone")}</h2>
           </div>
 
-          <div className="card-glass p-5 space-y-4 rounded-[24px]">
+          <div className="card-glass p-5 space-y-4 rounded-3xl">
             <div className="flex items-start gap-3">
               <AlertTriangle className="h-5 w-5 text-red-300 flex-shrink-0 mt-0.5" />
               <div>
@@ -175,14 +175,14 @@ const DangerPage = () => {
                 <button
                   onClick={() => setShowDeleteModal(false)}
                   disabled={isDeleting}
-                  className="flex-1 rounded-full py-3 text-sm font-medium bg-white/5 text-white hover:bg-white/10 transition-smooth disabled:opacity-50"
+                  className="btn-glass-outline flex-1"
                 >
                   {t("common.cancel")}
                 </button>
                 <button
                   onClick={handleDeleteAccount}
                   disabled={isDeleting || !deletePassword || !deleteConfirm}
-                  className="flex-1 rounded-full py-3 text-sm font-semibold text-red-200 border border-red-200/20 hover:bg-white/5 transition-smooth disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="btn-glass flex-1 text-red-200"
                 >
                   {isDeleting ? (
                     <>

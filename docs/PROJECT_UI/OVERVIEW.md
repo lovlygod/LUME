@@ -23,13 +23,17 @@ LUME
 │   ├── /messages         — Messenger
 │   │   └── /messages/:chatId
 │   ├── /messages?userId=... — Open chat via query param
+│   ├── /onboarding       — Onboarding flow (new users)
+│   ├── /workspaces       — Workspaces list
+│   │   └── /workspaces/:slug — Workspace detail
+│   ├── /projects         — Projects list
+│   │   └── /projects/:slug — Project detail
 │   ├── /profile          — My profile
 │   ├── /profile/:userId  — User profile
 │   ├── /verified         — Verification
 │   ├── /settings         — Account settings
-│   ├── /admin            — Admin panel
-│   └── /settings/sessions
-│   └── /verified          — Verification flow
+│   │   └── /settings/sessions — Session management
+│   └── /admin            — Admin panel
 └── System
     └── *                 — 404 Not Found
 ```
@@ -67,6 +71,11 @@ Messages → Chat list → Chat panel
 | Feed | `src/pages/Index.tsx` | AppLayout |
 | Explore | `src/pages/Explore.tsx` | AppLayout |
 | Messages | `src/pages/Messages.tsx` | AppLayout |
+| Onboarding | `src/pages/onboarding/OnboardingPage.tsx` | AppLayout |
+| Workspaces | `src/pages/workspaces/WorkspacesPage.tsx` | AppLayout |
+| Workspace Detail | `src/pages/workspaces/WorkspaceDetailPage.tsx` | AppLayout |
+| Projects | `src/pages/projects/ProjectsPage.tsx` | AppLayout |
+| Project Detail | `src/pages/projects/ProjectDetailPage.tsx` | AppLayout |
 | Profile | `src/pages/Profile.tsx` | AppLayout |
 | User Profile | `src/pages/UserProfile.tsx` | AppLayout |
 | Verified | `src/pages/Verified.tsx` | AppLayout |

@@ -350,7 +350,7 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, imageUrls, timestamp, re
     <LayoutGroup>
       <motion.article
         data-post-id={dataPostId || id}
-        className={`relative isolate rounded-[24px] border border-white/6 bg-white/5 px-5 py-5 backdrop-blur-[24px] shadow-[0_18px_50px_rgba(0,0,0,0.35)] transition-smooth hover:bg-white/6 ${
+        className={`relative isolate rounded-3xl border border-white/10 bg-white/5 px-5 py-5 shadow-[0_18px_50px_rgba(0,0,0,0.35)] transition-smooth hover:bg-white/6 ${
           showPostMenu ? "z-20" : "z-0"
         }`}
         initial={{ opacity: 0, y: 8 }}
@@ -604,7 +604,7 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, imageUrls, timestamp, re
                     <motion.button
                       type="submit"
                       disabled={!commentText.trim()}
-                      className="rounded-full px-4 py-2 text-sm text-white/80 bg-white/5 disabled:opacity-50 transition-smooth"
+                      className="btn-glass px-4 py-2 text-sm"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >

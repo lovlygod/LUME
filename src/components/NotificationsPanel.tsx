@@ -42,10 +42,19 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
 
     setLoading(true);
     try {
-      const data = await apiRequest<{ notifications: Notification[]; limit?: number; offset?: number }>('/notifications?limit=20&offset=' + nextOffset, {
+      const data = await apiRequest<{ notifications: Array<Notification & { actorId?: string | null; actorUsername?: string | null; actorAvatar?: string | null; targetId?: string | null; targetType?: string | null; createdAt?: string }>; limit?: number; offset?: number }>('/notifications?limit=20&offset=' + nextOffset, {
         method: 'GET',
       });
-      setNotifications(prev => append ? [...prev, ...data.notifications] : data.notifications);
+      const normalized = (data.notifications || []).map((n) => ({
+        ...n,
+        actor_id: n.actor_id ?? n.actorId ?? null,
+        actor_username: n.actor_username ?? n.actorUsername ?? null,
+        actor_avatar: n.actor_avatar ?? n.actorAvatar ?? null,
+        target_id: n.target_id ?? n.targetId ?? null,
+        target_type: n.target_type ?? n.targetType ?? null,
+        created_at: n.created_at ?? n.createdAt ?? new Date().toISOString(),
+      } as Notification));
+      setNotifications(prev => append ? [...prev, ...normalized] : normalized);
       setOffset(nextOffset + data.notifications.length);
       setHasMore(data.notifications.length >= limit);
     } catch (error) {
@@ -159,8 +168,16 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
   }, [resolveLabel]);
 
 
-  const formatRelativeTime = useCallback((dateString: string) => {
+  const formatRelativeTime = useCallback((dateString?: string | null) => {
+    if (!dateString) {
+      return resolveTimeLabel('time.justNow', 'time.just_now', 'just now');
+    }
+
     const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) {
+      return resolveTimeLabel('time.justNow', 'time.just_now', 'just now');
+    }
+
     const diffMs = Date.now() - date.getTime();
     const diffMinutes = Math.floor(diffMs / 60000);
     if (diffMinutes < 1) return resolveTimeLabel('time.justNow', 'time.just_now', 'just now');
@@ -362,7 +379,7 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ open, onOpenCha
                           {renderNotificationText(notification)}
                         </p>
                         <p className="text-xs text-white/50 mt-0.5">
-                          {formatRelativeTime(notification.created_at)}
+                          {formatRelativeTime(notification.created_at || (notification as Notification & { createdAt?: string }).createdAt)}
                         </p>
                       </div>
                       {notification.groupCount && notification.groupCount > 1 && (

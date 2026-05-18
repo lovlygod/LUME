@@ -33,7 +33,7 @@ const StaticPage = ({ titleKey, descriptionKey, sectionPrefix }: StaticPageProps
   return (
     <div className="min-h-screen bg-[var(--bg-main)] text-white py-12">
       <div className="mx-auto w-full max-w-[960px] px-6">
-        <div className="rounded-[28px] border border-white/10 bg-white/5 p-8 backdrop-blur-[20px]">
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-8">
           <div className="space-y-3">
             <h1 className="text-3xl font-semibold">{t(titleKey)}</h1>
             <p className="text-sm text-white/60">{t(descriptionKey)}</p>
@@ -42,7 +42,7 @@ const StaticPage = ({ titleKey, descriptionKey, sectionPrefix }: StaticPageProps
             {sections.map((section) => (
               <div
                 key={section.title}
-                className="rounded-[24px] border border-white/10 bg-white/6 p-5"
+                className="rounded-3xl border border-white/10 bg-white/5 p-5"
               >
                 <h2 className="text-lg font-semibold text-white">{section.title}</h2>
                 <p className="mt-2 text-sm text-white/60">{section.content}</p>
@@ -51,7 +51,7 @@ const StaticPage = ({ titleKey, descriptionKey, sectionPrefix }: StaticPageProps
           </div>
           <Link
             to="/"
-            className="mt-8 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/70 transition hover:text-white"
+            className="mt-8 btn-glass-outline px-4 py-2 text-xs"
           >
             {t("landing.backHome")}
           </Link>

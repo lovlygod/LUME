@@ -17,14 +17,33 @@ interface ChatListProps {
   t: (key: string) => string;
 }
 
-const toUser = (chat: Chat): User => ({
-  id: chat.id,
-  email: "",
-  name: chat.title || `Chat ${chat.id}`,
-  username: chat.username || "",
-  verified: Boolean(chat.verified),
-  avatar: chat.avatar || undefined,
-});
+const toUser = (chat: Chat): User => {
+  const isPrivate = chat.type === "private";
+  const otherMember = isPrivate ? chat.members?.[0] : null;
+  const resolvedName =
+    (isPrivate ? otherMember?.name || otherMember?.username : chat.title) ||
+    chat.title ||
+    `Chat ${chat.id}`;
+  const resolvedUsername =
+    (isPrivate ? otherMember?.username : chat.username) ||
+    chat.username ||
+    "";
+  const resolvedAvatar =
+    (isPrivate ? otherMember?.avatar : chat.avatar) ||
+    chat.avatar ||
+    undefined;
+  const resolvedVerified =
+    isPrivate ? Boolean(otherMember?.verified) : Boolean(chat.verified);
+
+  return {
+    id: chat.id,
+    email: "",
+    name: resolvedName,
+    username: resolvedUsername,
+    verified: resolvedVerified,
+    avatar: resolvedAvatar,
+  };
+};
 
 const formatTime = (timestamp: string) => {
   const date = new Date(timestamp);
@@ -50,7 +69,7 @@ const ChatList = ({
   <motion.div
     className={`m-3 flex flex-col ${
       selectedChatId ? "w-20" : "w-[360px]"
-    } transition-all duration-300 ease-in-out rounded-[28px] border border-white/10 bg-white/5 backdrop-blur-[24px]`}
+    } transition-all duration-300 ease-in-out rounded-3xl border border-white/10 bg-white/5`}
   >
     <div className="px-5 py-5">
       <div className="flex items-center justify-between">

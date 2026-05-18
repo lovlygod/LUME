@@ -15,15 +15,15 @@ interface AuthContextType {
   isAuthenticated: () => boolean;
 }
 
-// Валидация username: минимум 5 символов, только английские буквы и цифры
+// Username validation: min 3 chars, latin letters, digits, underscore and dot
 export const validateUsername = (username: string): { valid: boolean; error?: string } => {
-  if (!username || username.length < 5) {
-    return { valid: false, error: 'Username must be at least 5 characters long' };
+  if (!username || username.length < 3) {
+    return { valid: false, error: 'Username must be at least 3 characters long' };
   }
   
-  const usernameRegex = /^[a-zA-Z0-9]+$/;
+  const usernameRegex = /^[a-zA-Z0-9_.]+$/;
   if (!usernameRegex.test(username)) {
-    return { valid: false, error: 'Username can only contain English letters and numbers' };
+    return { valid: false, error: 'Username can only contain English letters, numbers, underscore and dot' };
   }
   
   return { valid: true };

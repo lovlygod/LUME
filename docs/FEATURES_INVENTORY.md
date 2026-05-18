@@ -236,6 +236,82 @@ English | [Русский](../docs-ru/FEATURES_INVENTORY.ru.md) | [中文](../do
   - Поиск чатов/каналов (public)
   - Тренды (популярные хэштеги)
   - Рекомендуемые пользователи
+  - Поиск builders/разработчиков
+  - Поиск проектов
+  - Поиск workspaces
+  - Проекты, ищущие команду
+
+---
+
+## 🎯 Onboarding
+
+### Онбординг новых пользователей
+- **Маршрут:** `/onboarding`
+- **Файлы:** `src/pages/onboarding/OnboardingPage.tsx`, `backend/src/routes/onboardingRoutes.js`, `backend/src/services/onboardingService.js`
+- **Статус:** ✅ Реализовано
+- **Функции:**
+  - 4-шаговый процесс настройки профиля
+  - Шаг 1: Выбор основной роли (Developer, Designer, и т.д.)
+  - Шаг 2: Выбор навыков (React, Node.js, PostgreSQL, и т.д.)
+  - Шаг 3: Установка целей (Найти команду, Показать проект, и т.д.)
+  - Шаг 4: Создание или присоединение к workspace
+  - Сохранение черновика в localStorage
+  - Автоматическое восстановление при перезагрузке
+  - Анимированные переходы между шагами
+
+---
+
+## 🏢 Workspaces
+
+### Рабочие пространства для команд
+- **Маршруты:** `/workspaces`, `/workspaces/:slug`
+- **Файлы:** `src/pages/workspaces/WorkspacesPage.tsx`, `src/pages/workspaces/WorkspaceDetailPage.tsx`, `backend/src/routes/workspaceRoutes.js`, `backend/src/services/workspaceService.js`
+- **Статус:** ✅ Реализовано
+- **Функции:**
+  - Создание публичных/приватных workspaces
+  - Управление участниками с ролями (owner, admin, lead, developer, designer, member, guest)
+  - Генерация пригласительных кодов
+  - Присоединение через invite code
+  - Список проектов workspace
+  - Фокус-теги для категоризации
+  - Поиск публичных workspaces
+
+---
+
+## 📁 Projects
+
+### Управление проектами
+- **Маршруты:** `/projects`, `/projects/:slug`
+- **Файлы:** `src/pages/projects/ProjectsPage.tsx`, `src/pages/projects/ProjectDetailPage.tsx`, `backend/src/routes/projectRoutes.js`, `backend/src/services/projectService.js`
+- **Статус:** ✅ Реализовано
+- **Функции:**
+  - Создание проектов (standalone или в workspace)
+  - Статусы: Planning, Active, On Hold, Completed, Archived
+  - Видимость: Public/Private
+  - Tech stack и теги
+  - Ссылки на GitHub и demo
+  - Управление командой с ролями
+  - Поиск участников команды
+  - Open source флаг
+  - "Looking for members" флаг
+  - Интеграция с задачами
+
+---
+
+## ✅ Tasks
+
+### Управление задачами в проектах
+- **Файлы:** `backend/src/routes/taskRoutes.js`, `backend/src/services/taskService.js`
+- **Статус:** ✅ Реализовано
+- **Функции:**
+  - Kanban-доска (todo, in_progress, review, done)
+  - Создание задач в проектах
+  - Назначение на участников команды
+  - Приоритеты: low, medium, high, urgent
+  - Комментарии к задачам
+  - Связь с исходными сообщениями
+  - Фильтрация и сортировка
+  - Drag & drop между колонками (UI)
 
 ---
 
@@ -330,13 +406,20 @@ English | [Русский](../docs-ru/FEATURES_INVENTORY.ru.md) | [中文](../do
 
 | Категория | Реализовано | Частично | Placeholder | Всего |
 |-----------|-------------|----------|-------------|-------|
-| Страницы | 26 | 0 | 0 | 26 |
-| Компоненты | 60+ | 0 | 0 | 60+ |
-| API endpoints | 40+ | 0 | 0 | 40+ |
+| Страницы | 32 | 0 | 0 | 32 |
+| Компоненты | 65+ | 0 | 0 | 65+ |
+| API endpoints | 70+ | 0 | 0 | 70+ |
 | WebSocket события | 12+ | 0 | 0 | 12+ |
 | i18n языки | 5 | 0 | 0 | 5 |
 
 **Общий статус:** ✅ Production-ready
+
+**Новые модули (2026):**
+- ✅ Onboarding - 4-step user setup flow
+- ✅ Workspaces - Team collaboration spaces
+- ✅ Projects - Project management with tasks
+- ✅ Tasks - Kanban-style task tracking
+- ✅ Explore - Enhanced discovery (builders, projects, workspaces)
 
 ---
 

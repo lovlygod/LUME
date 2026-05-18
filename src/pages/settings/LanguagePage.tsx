@@ -4,7 +4,7 @@ import { Globe } from "lucide-react";
 import Lottie from "lottie-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import CustomSelect from "@/components/ui/CustomSelect";
 import russiaLottie from "@/assets/lottie/Russia.json";
 import usaLottie from "@/assets/lottie/USA.json";
 import chinaLottie from "@/assets/lottie/China.json";
@@ -45,7 +45,7 @@ const LanguagePage = () => {
         </div>
         <button
           onClick={() => navigate("/settings")}
-          className="px-4 py-2 rounded-full text-xs font-medium bg-white/5 text-secondary hover:text-white transition"
+          className="btn-glass-outline px-4 py-2 text-xs"
         >
           {t("settings.backToSettings")}
         </button>
@@ -58,7 +58,7 @@ const LanguagePage = () => {
             <h2 className="text-lg font-semibold">{t("settings.interfaceLanguage")}</h2>
           </div>
 
-          <div className="card-glass p-5 space-y-4 rounded-[24px]">
+          <div className="card-glass p-5 space-y-4 rounded-3xl">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center">
@@ -70,26 +70,23 @@ const LanguagePage = () => {
               </div>
 
               <div className="flex items-center gap-2">
-                <Select
+                <CustomSelect
                   value={language}
-                  onValueChange={(value) => handleLanguageChange(value as "ru" | "en" | "zh" | "es" | "pt-BR")}
-                >
-                  <SelectTrigger className="h-10 w-[200px] rounded-full border-white/10 bg-white/5 text-white">
-                    <SelectValue placeholder={t("settings.interfaceLanguage")} />
-                  </SelectTrigger>
-                  <SelectContent className="border-white/10 bg-[#0B0B0F]">
-                    {languageOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        <div className="flex items-center gap-2">
-                          <div className="h-6 w-6">
-                            <Lottie animationData={option.lottie} loop className="h-6 w-6" />
-                          </div>
-                          <span>{option.label}</span>
+                  onChange={(value) => handleLanguageChange(value as "ru" | "en" | "zh" | "es" | "pt-BR")}
+                  options={languageOptions.map((option) => ({
+                    value: option.value,
+                    label: (
+                      <div className="flex items-center gap-2">
+                        <div className="h-6 w-6">
+                          <Lottie animationData={option.lottie} loop className="h-6 w-6" />
                         </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                        <span>{option.label}</span>
+                      </div>
+                    ),
+                  }))}
+                  placeholder={t("settings.interfaceLanguage")}
+                  buttonClassName="h-10 w-[200px] rounded-full border-white/10 bg-white/5 text-white"
+                />
               </div>
             </div>
           </div>

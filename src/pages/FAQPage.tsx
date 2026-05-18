@@ -70,7 +70,7 @@ const FAQPage = () => {
     >
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <aside className="lg:col-span-3">
-          <div className="sticky top-6 rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <div className="sticky top-6 rounded-3xl border border-white/10 bg-white/5 p-6">
             <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">
               {t("help.nav.title")}
             </div>
@@ -94,7 +94,7 @@ const FAQPage = () => {
         </aside>
 
         <main className="lg:col-span-6 space-y-6">
-          <div className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
             <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-white/50">
               <Sparkles className="h-3.5 w-3.5" />
               {t("help.faq.searchLabel")}
@@ -106,7 +106,7 @@ const FAQPage = () => {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder={t("help.faq.searchPlaceholder")}
-                className="w-full rounded-full border border-white/10 bg-white/5 py-2.5 pl-11 pr-4 text-sm text-white placeholder:text-white/35 focus:outline-none focus:ring-1 focus:ring-white/20"
+                className="glass-input w-full pl-11 pr-4 py-3 text-sm text-white"
               />
             </div>
           </div>
@@ -115,7 +115,7 @@ const FAQPage = () => {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl"
+            className="rounded-3xl border border-white/10 bg-white/5 p-6"
           >
             <Accordion type="single" collapsible>
               {filteredQuestions.map((item) => (
@@ -153,17 +153,17 @@ const FAQPage = () => {
         </main>
 
         <aside className="lg:col-span-3 space-y-4">
-          <div className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
             <div className="text-sm font-semibold text-white">{t("help.quick.title")}</div>
             <p className="mt-2 text-sm text-white/60">{t("help.quick.description")}</p>
             <div className="mt-4 space-y-2">
-              <a className="block rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70 hover:text-white" href="/support">
+              <a className="block rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70 hover:bg-white/10 hover:text-white" href="/support">
                 {t("help.quick.support")}
               </a>
-              <a className="block rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70 hover:text-white" href="/status">
+              <a className="block rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70 hover:bg-white/10 hover:text-white" href="/status">
                 {t("help.quick.status")}
               </a>
-              <a className="block rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70 hover:text-white" href="/contacts">
+              <a className="block rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70 hover:bg-white/10 hover:text-white" href="/contacts">
                 {t("help.quick.contacts")}
               </a>
             </div>

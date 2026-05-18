@@ -23,6 +23,8 @@ English | [Русский](./README.ru.md) | [中文](./README.cn.md)
 - [Security](#security)
 - [Installation and launch](#installation-and-launch)
 - [Configuration](#configuration)
+- [Stabilized architecture map](#stabilized-architecture-map)
+- [Troubleshooting runbook](#troubleshooting-runbook)
 - [License](#license)
 
 ---
@@ -97,41 +99,76 @@ LUME/
 │   │   │   └── layout/     # Layout components
 │   │   ├── pages/          # App pages
 │   │   │   ├── auth/       # Auth pages
-│   │   │   ├── messages/   # Messages pages
-  │   │   │   └── group/      # (legacy) Group pages
-│   │   ├── services/       # API client, errorHandler, websocket
-│   │   ├── contexts/       # React contexts (Auth, Language, Theme, Server)
-│   │   ├── hooks/          # Custom hooks (React Query)
-│   │   ├── i18n/           # Localization
-│   │   ├── lib/            # Utilities (queryClient, config, utils)
-│   │   ├── types/          # TypeScript types
-│   │   └── test/           # Tests
+      │   │   │   ├── messages/   # Messages pages
+      │   │   │   ├── group/      # (legacy) Group pages
+      │   │   │   ├── onboarding/ # Onboarding flow
+      │   │   │   ├── projects/   # Projects pages
+      │   │   │   ├── workspaces/ # Workspaces pages
+      │   │   │   └── stickers/   # Sticker pages
+      │   │   ├── services/       # API client, errorHandler, websocket, e2ee
+      │   │   ├── contexts/       # React contexts (Auth, Language, Theme, Server)
+      │   │   ├── hooks/          # Custom hooks (React Query)
+      │   │   ├── i18n/           # Localization
+      │   │   ├── lib/            # Utilities (queryClient, config, utils)
+      │   │   ├── types/          # TypeScript types
+      │   │   └── test/           # Tests
 │   └── public/             # Static assets
 │
 └── Backend (Express + PostgreSQL)
-    ├── src/
-    │   ├── server.js       # Entry point + WebSocket server
-    │   ├── api.js          # API routes (Auth, Posts, Chats, Messages, Profile)
-    │   ├── auth.js         # Authentication (JWT, refresh tokens, cookies)
-    │   ├── profile.js      # User profile
-    │   ├── uploads.js      # File uploads (Cloudinary)
-    │   ├── validation.js   # Zod validation
-    │   ├── permissions.js  # Access control
-    │   ├── rateLimiter.js  # Rate limiting middleware
-    │   ├── errors.js       # Error handling
-    │   ├── logger.js       # Logging
-    │   ├── audit.js        # Audit logging
-    │   ├── csrf.js         # CSRF protection
-    │   ├── linkPreview.js  # Open Graph preview
-    │   ├── serializers.js  # Data serialization
-    │   └── db.js           # PostgreSQL database
-    │
-    ├── uploads/            # (removed) local uploads directory
-    ├── migrate.js          # Core migrations
-    ├── migrate-rate-limit.js # Rate limiting migration
-    ├── migrate-communities.js # Groups migration
-    ├── migrate-audit.js    # Audit migration
-    └── package.json
+     ├── src/
+     │   ├── server.js         # Entry point + WebSocket server
+     │   ├── api.js            # API routes (Auth, Posts, Chats, Messages, Profile)
+     │   ├── auth.js           # Authentication (JWT, refresh tokens, cookies)
+     │   ├── profile.js        # User profile
+     │   ├── uploads.js        # File uploads (Cloudinary)
+     │   ├── validation.js     # Zod validation
+     │   ├── permissions.js    # Access control
+     │   ├── rateLimiter.js    # Rate limiting middleware
+     │   ├── errors.js         # Error handling
+     │   ├── logger.js         # Logging
+     │   ├── audit.js          # Audit logging
+     │   ├── csrf.js           # CSRF protection
+     │   ├── linkPreview.js    # Open Graph preview
+     │   ├── serializers.js    # Data serialization
+     │   ├── db.js             # PostgreSQL database
+     │   ├── routes/
+     │   │   ├── chatRoutes.js       # Chats (groups/channels)
+     │   │   ├── socialRoutes.js     # Social (posts, comments, likes, follows, reports)
+     │   │   ├── e2eeRoutes.js       # End-to-end encryption
+     │   │   ├── stickerRoutes.js    # Stickers
+     │   │   ├── messengerRoutes.js  # Messenger (chats list, notifications, read status, reactions)
+     │   │   ├── exploreRoutes.js    # Explore (builders, projects, workspaces)
+     │   │   ├── onboardingRoutes.js # Onboarding flow
+     │   │   ├── projectRoutes.js    # Projects CRUD
+     │   │   ├── workspaceRoutes.js  # Workspaces CRUD
+     │   │   └── taskRoutes.js       # Tasks within projects
+     │   ├── services/
+     │   │   ├── exploreService.js   # Explore search services
+     │   │   ├── onboardingService.js # Onboarding steps
+     │   │   ├── projectService.js   # Project operations
+     │   │   ├── taskService.js      # Task operations
+     │   │   └── workspaceService.js  # Workspace operations
+     │   ├── validators/
+     │   │   ├── onboardingSchemas.js # Onboarding validation
+     │   │   ├── projectSchemas.js    # Project validation
+     │   │   ├── taskSchemas.js       # Task validation
+     │   │   └── workspaceSchemas.js  # Workspace validation
+     │   ├── search/
+     │   │   └── messagesSearch.js    # Full-text search (Meilisearch)
+     │   └── middleware/
+     │       └── sanitize.js          # Input sanitization
+     │
+     ├── database/
+     │   ├── schema.sql                            # Base schema
+     │   ├── migrate.js                             # Core migrations
+     │   ├── migrate-rate-limit.js                  # Rate limiting migration
+     │   ├── migrate-communities.js                 # Groups migration
+     │   ├── migrate-audit.js                       # Audit migration
+     │   └── 013_workspace_builder_core.sql         # Workspaces/projects/tasks migration
+     ├── scripts/
+     │   ├── db-init.js               # Database initialization
+     │   └── stickers-sync.js         # Sticker sync helper
+     └── package.json
 ```
 
 ---
@@ -204,20 +241,164 @@ LUME/
 - **Centralized error handling**
 - **Permission checks**: chat role and access control
 
-### 7. Permissions
+### 7. Onboarding
+
+**Process:**
+1. New users are guided through a 4-step onboarding flow
+2. Step 1: Choose primary role (Developer, Designer, etc.)
+3. Step 2: Select skills (React, Node.js, PostgreSQL, etc.)
+4. Step 3: Set goals (Find a team, Show my project, etc.)
+5. Step 4: Create or join a workspace
+
+**Data stored:** `primary_role`, `skills`, `goals`, `onboarding_completed`
+
+### 8. Workspaces & Projects
+
+**Workspaces:**
+- Create public/private workspaces
+- Invite members via codes
+- Manage roles: owner, admin, lead, developer, designer, member, guest
+
+**Projects:**
+- Create projects within workspaces
+- Track tasks with Kanban-style boards (todo, in_progress, review, done)
+- Invite collaborators with role-based permissions
+- Link GitHub repos and demo URLs
+
+### 9. Tasks
+
+**Features:**
+- Create tasks within projects
+- Assign to team members
+- Set priority: low, medium, high, urgent
+- Status workflow: todo → in_progress → review → done
+- Add comments to tasks
+- Source message linking (create tasks from messages)
+
+---
+
+## 🛡️ Security
+
+- **httpOnly Cookies**: tokens not accessible via JavaScript
+- **Rate Limiting**: brute-force protection
+- **CSP headers**: XSS protection
+- **Zod validation**: strict data validation
+- **Centralized error handling**: unified error format
+- **Permission checks**: chat role and access control
+- **E2E Encryption**: optional end-to-end encrypted messaging
+
+---
+
+## 👥 Permissions
 
 **Chat roles:**
-- **Owner (100)**: full access, delete chat
+- **Owner (100)**: full access, delete chat, transfer ownership
 - **Admin (80)**: manage members and settings
-- **Moderator (50)**: moderate messages
 - **Member (10)**: read and send
+
+**Workspace roles:**
+- **Owner**: full control, delete workspace, manage invites
+- **Admin**: manage members and content
+- **Lead**: manage projects and tasks
+- **Developer/Designer/Guest**: limited access
 
 **Rules:**
 - Cannot manage users with equal or higher rank
 - Owner cannot be kicked/demoted
 - Each request checks permissions via middleware
 
-### 8. Audit and logging
+---
+
+## 📊 Audit and Logging
+
+**Audited events:**
+- User logins/logouts
+- Delete posts/messages/chats
+- Member role changes
+- Kick/ban actions
+- Verification requests
+- Admin actions
+
+**Storage:**
+- Audit logs stored in `audit_logs`
+- Auto-cleanup after 90 days
+- IP address, User Agent, and details
+
+---
+
+Recent stabilization refactor split oversized route domains from [`backend/src/api.js`](backend/src/api.js) into dedicated modules:
+
+- Sticker domain routes: [`registerStickerRoutes()`](backend/src/routes/stickerRoutes.js:1)
+- Messenger/read-status/notification reactions domain routes: [`registerMessengerRoutes()`](backend/src/routes/messengerRoutes.js:1)
+- E2EE domain routes remain isolated in [`registerE2EERoutes()`](backend/src/routes/e2eeRoutes.js:1)
+
+Current backend route registration root is still [`backend/src/api.js`](backend/src/api.js), but domain ownership is now modularized for safer maintenance.
+
+---
+
+## 🛠️ Troubleshooting runbook
+
+### Start commands
+
+Frontend (workspace root):
+
+```bash
+npm install
+npm run dev
+```
+
+Backend (separate terminal):
+
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+### Required environment variables
+
+Frontend:
+
+- `VITE_API_URL` (example: `http://localhost:5000`)
+- `VITE_WS_URL` (optional, defaults from `VITE_API_URL`)
+- `VITE_E2EE_ENABLED`
+- `VITE_E2EE_STRICT_MODE`
+
+Backend (see [`backend/.env.example`](backend/.env.example)):
+
+- `PORT`
+- `JWT_SECRET`
+- `DATABASE_URL`
+- `FRONTEND_URL` / `FRONTEND_URLS`
+
+### Health checks
+
+- API health: `GET /health` from [`backend/src/server.js`](backend/src/server.js)
+- Runtime status: `GET /api/status` from [`backend/src/server.js`](backend/src/server.js)
+
+### Port conflict / stale process recovery (Windows)
+
+Find process on backend port:
+
+```bash
+netstat -ano | findstr :5000
+```
+
+Terminate stale PID:
+
+```bash
+taskkill /PID <PID> /F
+```
+
+### WebSocket/API mismatch checks
+
+- Frontend WS URL composition is defined in [`WS_URL`](src/lib/config.ts:5)
+- Backend WS endpoint path is `/ws` in [`backend/src/server.js`](backend/src/server.js)
+- Ensure both point to the same host/port and protocol (`ws://` vs `wss://`)
+
+### Message persistence validation
+
+Message cache persistence and contract behavior are covered by [`src/test/messages.contract-and-persistence.test.tsx`](src/test/messages.contract-and-persistence.test.tsx).
 
 **Audit events:**
 - User logins/logouts
@@ -413,6 +594,47 @@ http://localhost:5000/api
 - `POST /messages` — Send message
 - `DELETE /messages/:messageId` — Delete message
 
+#### Onboarding
+- `GET /onboarding/status` — Get onboarding status
+- `POST /onboarding/profile` — Save profile step
+- `POST /onboarding/skills` — Save skills step
+- `POST /onboarding/goals` — Save goals step
+- `POST /onboarding/workspace` — Save workspace step
+- `POST /onboarding/complete` — Complete onboarding
+
+#### Workspaces
+- `POST /workspaces` — Create workspace
+- `GET /workspaces/my` — My workspaces
+- `GET /workspaces/public` — Public workspaces
+- `GET /workspaces/:slug` — Workspace by slug
+- `PATCH /workspaces/:id` — Update workspace
+- `DELETE /workspaces/:id` — Delete workspace
+- `POST /workspaces/:id/members` — Add member
+- `PATCH /workspaces/:id/members/:userId` — Update member role
+- `DELETE /workspaces/:id/members/:userId` — Remove member
+- `POST /workspaces/:id/invites` — Create invite
+- `POST /workspaces/join/:inviteCode` — Join via invite
+- `GET /workspaces/:id/members` — List members
+
+#### Projects
+- `POST /projects` — Create project
+- `GET /projects/my` — My projects
+- `GET /projects/public` — Public projects
+- `GET /projects/:slug` — Project by slug
+- `PATCH /projects/:id` — Update project
+- `DELETE /projects/:id` — Delete project
+- `POST /projects/:id/members` — Add member
+- `DELETE /projects/:id/members/:userId` — Remove member
+- `POST /projects/:id/invite` — Create invite
+- `GET /projects/:id/members` — List members
+
+#### Tasks
+- `POST /projects/:projectId/tasks` — Create task
+- `GET /projects/:projectId/tasks` — Project tasks
+- `PATCH /tasks/:taskId` — Update task
+- `DELETE /tasks/:taskId` — Delete task
+- `POST /tasks/:taskId/comments` — Add comment
+
 ---
 
 ## 🔌 WebSocket events
@@ -439,7 +661,9 @@ ws://localhost:5000/ws
 - `chat:read_update` — Read status
 - `presence:update` — Online status
 - `channel:new_message` — Channel message
-- `chat:read_update` — Read status update
+- `message:deleted` — Message deleted
+- `notification_new` — New notification
+- `session_terminated` — Session terminated (logout all)
 
 ---
 
@@ -484,6 +708,7 @@ node migrate.js                    # Core tables
 node migrate-rate-limit.js         # Rate limiting
 node migrate-audit.js              # Audit logs
 node migrate-communities.js        # Groups (communities)
+node database/migrations/013_workspace_builder_core.sql  # Workspaces, projects, tasks
 
 # Start
 npm run dev
@@ -510,6 +735,11 @@ PORT=5000
 JWT_SECRET=your-super-secret-key-change-in-production
 NODE_ENV=development
 LOG_LEVEL=info  # error | warn | info | debug
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
+E2EE_ENFORCE=false  # Enable E2EE strict mode (true/false)
 ```
 
 ### Frontend
@@ -537,4 +767,3 @@ MIT License
 - [Groups Module](./docs/GROUPS_MODULE.md) — Groups module docs
 - [Project UI](./docs/PROJECT_UI/) — UI/UX documentation
 - [API Documentation](./backend/API.md) — API endpoints
-

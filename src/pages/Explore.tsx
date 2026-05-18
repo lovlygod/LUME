@@ -1,448 +1,306 @@
-import { useState, useMemo, useEffect } from "react";
-import { Search, TrendingUp, Users, Radio } from "lucide-react";
-import { motion } from "framer-motion";
-import { Input } from "@/components/ui/input";
-import { Link } from "react-router-dom";
-import { messagesAPI, searchAPI, postsAPI } from "@/services/api";
-import type { User } from "@/types/api";
-import { isVerifiedUser, isDeveloper, isDeveloperCrown, VerifiedBadge, DeveloperBadge, DeveloperCrownBadge } from "@/contexts/AuthContext";
-import { normalizeImageUrl } from "@/lib/utils";
-import { getProfileRoute } from "@/lib/profileRoute";
+import { useState, useEffect } from "react";
+import { Search, Users, FolderKanban, Briefcase, UserPlus, Rocket } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { exploreAPI, type BuilderProfile, type ProjectItem, type WorkspaceItem } from "@/services/api";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-interface Trend {
-  tag: string;
-  posts: string;
-  color: string;
-}
+const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
 
-interface TrendPost {
-  text?: string;
-}
+type Tab = "builders" | "projects" | "workspaces" | "lookingForTeam" | "releases";
 
-interface PublicChannel {
-  id: string;
-  title?: string | null;
-  username?: string | null;
-  avatar?: string | null;
-  membersCount?: number;
-}
+const roleColors: Record<string, string> = {
+  "Frontend Developer": "bg-white/10 text-white/80",
+  "Backend Developer": "bg-white/10 text-white/80",
+  "Fullstack Developer": "bg-white/10 text-white/80",
+  "UI/UX Designer": "bg-white/10 text-white/80",
+  "Telegram Bot Developer": "bg-white/10 text-white/80",
+  "Game Developer": "bg-white/10 text-white/80",
+  "Founder": "bg-white/10 text-white/80",
+  "Student": "bg-white/10 text-white/80",
+  "Open Source Contributor": "bg-white/10 text-white/80",
+};
 
+const statusColors: Record<string, string> = {
+  idea: "bg-white/10 text-white/60",
+  building: "bg-white/10 text-white/60",
+  testing: "bg-white/10 text-white/60",
+  launched: "bg-white/10 text-white/60",
+  paused: "bg-white/10 text-white/60",
+  archived: "bg-white/10 text-white/60",
+};
 
 const Explore = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchMode, setSearchMode] = useState<'users' | 'channels'>('users');
-  const [searchResults, setSearchResults] = useState<User[]>([]);
-  const [channelResults, setChannelResults] = useState<PublicChannel[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [trends, setTrends] = useState<Trend[]>([]);
-  const [suggestedUsers, setSuggestedUsers] = useState<User[]>([]);
-  const [loadingTrends, setLoadingTrends] = useState(true);
-  const [loadingUsers, setLoadingUsers] = useState(true);
   const { t } = useLanguage();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<Tab>("builders");
+  const [builders, setBuilders] = useState<BuilderProfile[]>([]);
+  const [projects, setProjects] = useState<ProjectItem[]>([]);
+  const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([]);
+  const [lookingForTeam, setLookingForTeam] = useState<ProjectItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Загрузка трендов
+  const tabs: { id: Tab; label: string; icon: typeof Users }[] = [
+    { id: "builders", label: t("explore.builders"), icon: Users },
+    { id: "projects", label: t("explore.projects"), icon: FolderKanban },
+    { id: "workspaces", label: t("explore.workspaces"), icon: Briefcase },
+    { id: "lookingForTeam", label: t("explore.lookingForTeam"), icon: UserPlus },
+    { id: "releases", label: t("explore.releases"), icon: Rocket },
+  ];
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      switch (activeTab) {
+        case "builders":
+          const buildersRes = await exploreAPI.getBuilders();
+          setBuilders(buildersRes.builders || []);
+          break;
+        case "projects":
+          const projectsRes = await exploreAPI.getProjects();
+          setProjects(projectsRes.projects || []);
+          break;
+        case "workspaces":
+          const workspacesRes = await exploreAPI.getWorkspaces();
+          setWorkspaces(workspacesRes.workspaces || []);
+          break;
+        case "lookingForTeam":
+          const lftRes = await exploreAPI.getLookingForTeam();
+          setLookingForTeam(lftRes.projects || []);
+          break;
+        case "releases":
+          const releasesRes = await exploreAPI.getProjects({ status: "launched" });
+          setProjects(releasesRes.projects || []);
+          break;
+      }
+    } catch (error) {
+      console.error("Failed to load explore data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadTrends = async () => {
-      try {
-        const response = await postsAPI.getUserPosts('home');
-        const posts = response.posts.slice(0, 200) as TrendPost[];
-        
-        const hashtagCount = new Map<string, number>();
-        posts.forEach((post) => {
-          if (post.text) {
-            const hashtags = post.text.match(/#[a-zA-Z0-9_]+/g);
-            if (hashtags) {
-              hashtags.forEach(tag => {
-                const count = hashtagCount.get(tag) || 0;
-                hashtagCount.set(tag, count + 1);
-              });
-            }
-          }
-        });
+    loadData();
+  }, [activeTab]);
 
-        const sortedTags = Array.from(hashtagCount.entries())
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 5)
-          .map(([tag, count]) => ({
-            tag,
-            posts: count < 10 ? `${count}` : `${(count / 1000).toFixed(1)}K`,
-            color: [
-              'from-violet-500 to-purple-500',
-              'from-cyan-500 to-blue-500',
-              'from-pink-500 to-rose-500',
-              'from-amber-500 to-orange-500',
-              'from-emerald-500 to-green-500'
-            ][hashtagCount.size % 5]
-          }));
+  const filteredBuilders = builders.filter(
+    (b) =>
+      !searchQuery ||
+      b.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      b.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      b.skills?.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
-        setTrends(sortedTags);
-      } catch (error) {
-        console.error('Failed to load trends:', error);
-        setTrends([]);
-      } finally {
-        setLoadingTrends(false);
-      }
-    };
+  const filteredProjects = projects.filter(
+    (p) =>
+      !searchQuery ||
+      p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.stack?.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      p.tags?.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
-    loadTrends();
-  }, []);
+  const filteredWorkspaces = workspaces.filter(
+    (w) =>
+      !searchQuery ||
+      w.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      w.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      w.slug?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  // Загрузка рекомендуемых пользователей
-  useEffect(() => {
-    const loadSuggestedUsers = async () => {
-      try {
-        const response = await searchAPI.searchUsers('');
-        setSuggestedUsers(response.users.slice(0, 5));
-      } catch (error) {
-        console.error('Failed to load suggested users:', error);
-        setSuggestedUsers([]);
-      } finally {
-        setLoadingUsers(false);
-      }
-    };
+  const filteredLookingForTeam = lookingForTeam.filter(
+    (p) =>
+      !searchQuery ||
+      p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-    loadSuggestedUsers();
-  }, []);
-
-  // Поиск пользователей / каналов
-  useEffect(() => {
-    const runSearch = async () => {
-      if (!searchQuery.trim()) {
-        setSearchResults([]);
-        setChannelResults([]);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        if (searchMode === 'users') {
-          const response = await searchAPI.searchUsers(searchQuery);
-          setSearchResults(response.users);
-          setChannelResults([]);
-        } else {
-          const response = await messagesAPI.getPublicChannels(searchQuery);
-          setChannelResults(response.channels || []);
-          setSearchResults([]);
-        }
-      } catch (error) {
-        console.error('Failed to search:', error);
-        setSearchResults([]);
-        setChannelResults([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    runSearch();
-  }, [searchQuery, searchMode]);
-
-
-  return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/60 backdrop-blur-md">
-        <div className="px-6 py-5">
-          <h1 className="text-lg font-semibold text-white">{t("explore.title")}</h1>
-          <p className="text-xs text-secondary">{t("explore.subtitle")}</p>
+  const BuilderCard = ({ builder }: { builder: BuilderProfile }) => (
+    <Link
+      to={`/profile/${builder.id}`}
+      className="group relative flex flex-col rounded-2xl border border-white/10 bg-white/5 p-3 transition-all hover:border-white/20 hover:bg-white/10 h-[110px]"
+    >
+      <div className="relative flex items-start gap-4">
+        <div className="relative">
+          <img
+            src={builder.avatar || defaultAvatar}
+            alt=""
+            className="h-14 w-14 rounded-2xl object-cover ring-2 ring-white/10"
+          />
+          {builder.availability === 'open' && (
+            <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white/20 ring-2 ring-black">
+              <span className="h-1.5 w-1.5 rounded-full bg-white/60" />
+            </span>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="truncate font-semibold text-white">{builder.name || builder.username}</p>
+          <p className="truncate text-sm text-white/50">@{builder.username}</p>
+          {builder.primary_role && (
+            <span className={`mt-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${roleColors[builder.primary_role] || "bg-white/10 text-white/80"}`}>
+              {builder.primary_role}
+            </span>
+          )}
         </div>
       </div>
-
-      {/* Search */}
-      <div className="px-6 pb-6">
-        <div className="flex flex-col gap-3">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
-                <Input
-                  type="text"
-                  placeholder={searchMode === 'channels' ? t("explore.searchChannels") : t("explore.searchUsers")}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 rounded-full"
-                />
-              </div>
-
-          <div className="flex justify-center">
-            <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1.5">
-              <button
-                type="button"
-                onClick={() => setSearchMode('users')}
-                className={`relative z-10 flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition-smooth ${
-                  searchMode === 'users' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'
-                }`}
-              >
-                <Users className="h-3.5 w-3.5" />
-                {t('explore.users')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setSearchMode('channels')}
-                className={`relative z-10 flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition-smooth ${
-                  searchMode === 'channels' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'
-                }`}
-              >
-                <Radio className="h-3.5 w-3.5" />
-                {t('explore.channels')}
-              </button>
-            </div>
-          </div>
+      {builder.bio && (
+        <p className="relative mt-3 text-sm text-white/60 truncate-2">{builder.bio}</p>
+      )}
+      {builder.skills && builder.skills.length > 0 && (
+        <div className="relative mt-auto pt-3 flex flex-wrap gap-1.5">
+          {builder.skills.slice(0, 4).map((skill) => (
+            <span key={skill} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/70">
+              {skill}
+            </span>
+          ))}
+          {builder.skills.length > 4 && (
+            <span className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/40">
+              +{builder.skills.length - 4}
+            </span>
+          )}
         </div>
+      )}
+    </Link>
+  );
+
+  const ProjectCard = ({ project }: { project: ProjectItem }) => (
+    <button
+      onClick={() => navigate(`/projects/${project.slug}`)}
+      className="group relative flex flex-col rounded-2xl border border-white/10 bg-white/5 p-3 text-left transition-all hover:border-white/20 hover:bg-white/10 h-[110px]"
+    >
+      <div className="flex items-center gap-2">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-base font-bold text-white/60 ring-1 ring-white/10">
+          {project.name.charAt(0).toUpperCase()}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-semibold text-sm">{project.name}</p>
+          <p className="truncate text-xs text-white/50">/{project.slug}</p>
+        </div>
+        <span className="shrink-0 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-white/60">
+          {t(`projects.status.${project.status}`)}
+        </span>
       </div>
-
-      {/* Content */}
-      <div className="space-y-4">
-        {searchQuery.trim() ? (
-          // Search Results
-          <>
-            {searchMode === 'users' && searchResults.length === 0 && !loading ? (
-              <div className="px-4 py-8 text-center">
-                <p className="text-sm text-muted-foreground">
-                  {t("explore.noUsersFound")} "{searchQuery}"
-                </p>
-              </div>
-            ) : null}
-            {searchMode === 'channels' && channelResults.length === 0 && !loading ? (
-              <div className="px-4 py-8 text-center">
-                <p className="text-sm text-muted-foreground">
-                  {t("explore.noChannelsFound")} "{searchQuery}"
-                </p>
-              </div>
-            ) : null}
-            <div className="rounded-[28px] border border-white/10 bg-white/5 py-2 backdrop-blur-[24px]">
-              <div className="px-4 py-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                  {searchMode === 'channels' ? <Radio className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}
-                  {searchMode === 'channels' ? t("explore.channels") : t("explore.users")}
-                </h3>
-              </div>
-              {loading ? (
-                <div className="px-4 py-8 text-center">
-                  <p className="text-sm text-muted-foreground">{t("explore.searching")}</p>
-                </div>
-              ) : (
-                  searchMode === 'users'
-                    ? searchResults.map((user, index) => (
-                  <motion.div
-                    key={user.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    <Link
-                      to={getProfileRoute(user)}
-                      className="flex items-start gap-3 px-4 py-3 rounded-[22px] transition-smooth hover:bg-white/5"
-                    >
-                      {/* Avatar */}
-                      <div className="relative">
-                        {user.avatar ? (
-                          <img
-                            src={normalizeImageUrl(user.avatar) || ''}
-                            alt={user.name}
-                            className="h-12 w-12 rounded-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = '';
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                          />
-                        ) : null}
-                        {!user.avatar && (
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/10 text-lg font-semibold text-white">
-                            {user.name.charAt(0)}
-                          </div>
-                        )}
-                        {Boolean(user.verified) && (
-                          <div className="absolute -bottom-0.5 -right-0.5">
-                            <VerifiedBadge className="h-4 w-4" />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* User Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-white truncate">
-                            {user.name}
-                          </span>
-                          {Boolean(user.verified) && (
-                            <VerifiedBadge className="h-4 w-4" />
-                          )}
-                          {isDeveloperCrown(user.username)
-                            ? <DeveloperCrownBadge className="h-4 w-4" />
-                            : isDeveloper(user.username) && <DeveloperBadge className="h-4 w-4" />
-                          }
-                        </div>
-                        <p className="text-sm text-secondary">{user.username}</p>
-                        <p className="mt-1 text-sm text-white/80 line-clamp-2">
-                          {user.bio}
-                        </p>
-                      </div>
-                    </Link>
-                  </motion.div>
-                ))
-                : channelResults.map((channel, index) => (
-                  <motion.div
-                    key={channel.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    <Link
-                      to={`/messages/${channel.id}`}
-                      className="flex items-start gap-3 px-4 py-3 rounded-[22px] transition-smooth hover:bg-white/5"
-                    >
-                      <div className="relative">
-                        {channel.avatar ? (
-                          <img
-                            src={normalizeImageUrl(channel.avatar) || ''}
-                            alt={channel.title || channel.username || 'channel'}
-                            className="h-12 w-12 rounded-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = '';
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                          />
-                        ) : null}
-                        {!channel.avatar && (
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/10 text-lg font-semibold text-white">
-                            {(channel.title || channel.username || 'C').charAt(0)}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-white truncate">
-                            {channel.title || channel.username || `Channel ${channel.id}`}
-                          </span>
-                        </div>
-                        <p className="text-sm text-secondary">@{channel.username || channel.id}</p>
-                        <p className="mt-1 text-sm text-white/60">
-                          {t("explore.members", { count: String(channel.membersCount || 0) })}
-                        </p>
-                      </div>
-                    </Link>
-                  </motion.div>
-                ))
-              )}
-            </div>
-          </>
-        ) : (
-          // Default Explore Content
-          <>
-            {/* Trending Signals */}
-            <div className="rounded-[28px] border border-white/10 bg-white/5 py-2 backdrop-blur-[24px]">
-              <div className="px-4 py-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  {t("explore.trending")}
-                </h3>
-              </div>
-              {loadingTrends ? (
-                <div className="px-4 py-8 text-center">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-transparent mx-auto" />
-                </div>
-              ) : trends.length > 0 ? (
-                trends.map((trend, index) => (
-                  <motion.div
-                    key={trend.tag}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="px-4 py-3 rounded-[22px] hover:bg-white/5 transition-smooth cursor-pointer"
-                  >
-                    <p className="text-sm font-medium text-white">
-                      {trend.tag}
-                    </p>
-                    <p className="text-xs text-secondary">{trend.posts} {t("explore.signals")}</p>
-                  </motion.div>
-                ))
-              ) : (
-                <div className="px-4 py-8 text-center">
-                  <p className="text-sm text-secondary">{t("explore.noTrendingSignals")}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Suggested Users */}
-            <div className="rounded-[28px] border border-white/10 bg-white/5 py-2 backdrop-blur-[24px]">
-              <div className="px-4 py-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                  <Users className="h-3.5 w-3.5" />
-                  {t("explore.suggestedNodes")}
-                </h3>
-              </div>
-              {loadingUsers ? (
-                <div className="px-4 py-8 text-center">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
-                </div>
-              ) : suggestedUsers.length > 0 ? (
-                suggestedUsers.map((user, index) => (
-                  <motion.div
-                    key={user.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    <Link
-                      to={getProfileRoute(user)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-[22px] transition-smooth hover:bg-white/5"
-                    >
-                      <div className="relative">
-                        {user.avatar ? (
-                          <img
-                            src={normalizeImageUrl(user.avatar) || ''}
-                            alt={user.name}
-                            className="h-10 w-10 rounded-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = '';
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                          />
-                        ) : null}
-                        {!user.avatar && (
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white">
-                            {user.name.charAt(0)}
-                          </div>
-                        )}
-                        {Boolean(user.verified) && (
-                          <div className="absolute -bottom-0.5 -right-0.5">
-                            <VerifiedBadge className="h-3.5 w-3.5" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1">
-                          <span className="font-medium text-white truncate">
-                            {user.name}
-                          </span>
-                          {Boolean(user.verified) && (
-                            <VerifiedBadge className="h-3.5 w-3.5" />
-                          )}
-                          {isDeveloperCrown(user.username)
-                            ? <DeveloperCrownBadge className="h-3.5 w-3.5" />
-                            : isDeveloper(user.username) && <DeveloperBadge className="h-3.5 w-3.5" />
-                          }
-                        </div>
-                        <p className="text-xs text-secondary">{user.username}</p>
-                      </div>
-                        <motion.button
-                          className="rounded-full border border-white/12 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 hover:text-white transition-smooth"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                        {t("explore.connect")}
-                      </motion.button>
-                    </Link>
-                  </motion.div>
-                ))
-              ) : (
-                <div className="px-4 py-8 text-center">
-                  <p className="text-sm text-muted-foreground">{t("explore.noSuggestedNodes")}</p>
-                </div>
-              )}
-            </div>
-          </>
+      <div className="mt-auto">
+        {project.description && (
+          <p className="truncate text-xs text-white/60">{project.description}</p>
         )}
       </div>
+    </button>
+  );
+
+  const WorkspaceCard = ({ workspace }: { workspace: WorkspaceItem }) => (
+    <button
+      onClick={() => navigate(`/workspaces/${workspace.slug}`)}
+      className="group relative flex flex-col rounded-2xl border border-white/10 bg-white/5 p-3 text-left transition-all hover:border-white/20 hover:bg-white/10 h-[110px]"
+    >
+      <div className="flex items-center gap-2">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-base font-bold text-white/60 ring-1 ring-white/10">
+          {workspace.name.charAt(0).toUpperCase()}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-semibold text-sm">{workspace.name}</p>
+          <p className="truncate text-xs text-white/50">/{workspace.slug}</p>
+        </div>
+      </div>
+      <div className="mt-auto">
+        {workspace.description && (
+          <p className="truncate text-xs text-white/60">{workspace.description}</p>
+        )}
+      </div>
+    </button>
+  );
+
+  return (
+    <div className="space-y-6 py-6 text-white">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">{t("explore.title")}</h1>
+          <p className="text-white/60">{t("explore.subtitle")}</p>
+        </div>
+        <div className="hidden h-12 w-12 items-center justify-center rounded-2xl bg-white/5 border border-white/10 lg:flex">
+          <Search className="h-5 w-5 text-white/40" />
+        </div>
+      </div>
+
+      <div className="relative">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2">
+          <Search className="h-5 w-5 text-white/30" />
+        </div>
+        <input
+          className="glass-input w-full px-5 py-3 pl-12 text-white"
+          placeholder={t("explore.search")}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
+      <div className="flex gap-2 overflow-x-auto">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`group flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-medium transition-all ${
+                isActive
+                  ? "bg-white/10 border border-white/20 text-white"
+                  : "bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white hover:border-white/20"
+              }`}
+            >
+              <Icon className={`h-4 w-4 transition-transform group-hover:scale-110 ${isActive ? "text-white" : "text-white/40"}`} />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {loading ? (
+        <div className="py-10 text-center text-white/60">{t("explore.searching")}</div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {activeTab === "builders" && (
+            filteredBuilders.length === 0 ? (
+              <p className="col-span-full py-10 text-center text-white/60">{t("explore.noBuildersFound")}</p>
+            ) : (
+              filteredBuilders.map((builder) => <BuilderCard key={builder.id} builder={builder} />)
+            )
+          )}
+
+          {activeTab === "projects" && (
+            filteredProjects.length === 0 ? (
+              <p className="col-span-full py-10 text-center text-white/60">{t("explore.noProjectsFound")}</p>
+            ) : (
+              filteredProjects.map((project) => <ProjectCard key={project.id} project={project} />)
+            )
+          )}
+
+          {activeTab === "workspaces" && (
+            filteredWorkspaces.length === 0 ? (
+              <p className="col-span-full py-10 text-center text-white/60">{t("explore.noWorkspacesFound")}</p>
+            ) : (
+              filteredWorkspaces.map((workspace) => <WorkspaceCard key={workspace.id} workspace={workspace} />)
+            )
+          )}
+
+          {activeTab === "lookingForTeam" && (
+            filteredLookingForTeam.length === 0 ? (
+              <p className="col-span-full py-10 text-center text-white/60">{t("explore.noResults")}</p>
+            ) : (
+              filteredLookingForTeam.map((project) => <ProjectCard key={project.id} project={project} />)
+            )
+          )}
+
+          {activeTab === "releases" && (
+            filteredProjects.length === 0 ? (
+              <p className="col-span-full py-10 text-center text-white/60">{t("explore.noProjectsFound")}</p>
+            ) : (
+              filteredProjects.filter((p) => p.status === "launched").map((project) => <ProjectCard key={project.id} project={project} />)
+            )
+          )}
+        </div>
+      )}
     </div>
   );
 };

@@ -155,7 +155,7 @@ const StatusPage = () => {
     <HelpShell title={t("status.title")} subtitle={t("status.subtitle")} meta={lastCheckedLabel}>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <aside className="lg:col-span-3">
-          <div className="sticky top-6 rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <div className="sticky top-6 rounded-3xl border border-white/10 bg-white/5 p-6">
             <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">
               {t("status.overview")}
             </div>
@@ -170,7 +170,7 @@ const StatusPage = () => {
         </aside>
 
         <main className="lg:col-span-6 space-y-6">
-          <div className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
             <div className="flex items-center justify-between">
               <div className="text-sm text-white/60">{t("status.live")}</div>
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -201,7 +201,7 @@ const StatusPage = () => {
           {data && (
             <div className="grid gap-4 md:grid-cols-2">
               {gridServices.map((service) => (
-                <div key={service.key} className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+                <div key={service.key} className="rounded-3xl border border-white/10 bg-white/5 p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-sm text-white/70">
                       <span className={`h-2 w-2 rounded-full ${service.status === "ok" ? "bg-emerald-400" : service.status === "degraded" ? "bg-amber-400" : "bg-rose-400"}`} />
@@ -222,7 +222,7 @@ const StatusPage = () => {
         </main>
 
         <aside className="lg:col-span-3 space-y-4">
-          <div className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
             <div className="text-sm font-semibold text-white">{t("status.metrics")}</div>
             <div className="mt-3 space-y-2 text-sm text-white/60">
               <div>{t("status.requests")}: {data ? data.api.requestsPerMinute : "--"}</div>
@@ -230,7 +230,7 @@ const StatusPage = () => {
               <div>{t("status.connections", { value: data ? data.websocket.connections : 0 })}</div>
             </div>
           </div>
-          <div className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
             <div className="text-sm font-semibold text-white">{t("status.system")}</div>
             <div className="mt-3 space-y-2 text-sm text-white/60">
               <div className="flex items-center gap-2">

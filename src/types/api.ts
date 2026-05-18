@@ -14,6 +14,14 @@ export interface User {
   joinDate?: string;
   verified: boolean;
   verificationExpiry?: string;
+  onboardingCompleted?: boolean;
+  primaryRole?: string;
+  goals?: string[];
+  skills?: string[];
+  availability?: string;
+  githubUrl?: string;
+  telegramUsername?: string;
+  portfolioUrl?: string;
 }
 
 export interface VerificationRequest {

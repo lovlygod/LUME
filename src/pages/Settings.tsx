@@ -62,7 +62,7 @@ const Settings = () => {
             <Link
               key={card.to}
               to={card.to}
-              className="card-glass p-5 rounded-[24px] border border-white/10 hover:border-white/25 transition-smooth"
+              className="card-glass p-5 rounded-3xl border border-white/10 hover:border-white/25 transition-smooth"
             >
               <div className="flex items-start gap-3">
                 <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center">

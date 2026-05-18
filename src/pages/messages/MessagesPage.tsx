@@ -112,6 +112,36 @@ const MessagesPage = () => {
     [chatsData?.chats, selectedChatId]
   );
   const displayChat = useMemo(() => selectedChat || publicChannel, [selectedChat, publicChannel]);
+  const chatPanelUser = useMemo(() => {
+    if (!displayChat) return null;
+
+    if (displayChat.type === "private") {
+      const otherMember = displayChat.members?.find((m) => String(m.id) !== String(currentUser?.id));
+      if (otherMember) {
+        return {
+          id: otherMember.id,
+          name: otherMember.name || otherMember.username || "User",
+          username: otherMember.username || "",
+          avatar: otherMember.avatar || undefined,
+          verified: Boolean(otherMember.verified),
+          email: "",
+        };
+      }
+    }
+
+    if (displayChat.title) {
+      return {
+        id: displayChat.id,
+        name: displayChat.title,
+        username: displayChat.username || "",
+        avatar: displayChat.avatar || undefined,
+        verified: false,
+        email: "",
+      };
+    }
+
+    return null;
+  }, [displayChat, currentUser?.id]);
   const activeChatId = useMemo(() => selectedChat?.id || null, [selectedChat]);
   const { data: messagesData, isLoading: messagesLoading } = useChatMessages(activeChatId);
   const sendMessage = useSendMessage(currentUser?.id);
@@ -939,9 +969,9 @@ const MessagesPage = () => {
               className="flex-1 flex flex-col min-w-0 p-3"
             >
               <div className="flex-1 flex flex-col min-h-0">
-                  <div className="flex-1 flex flex-col min-h-0 rounded-[28px] overflow-hidden border border-white/10 bg-transparent">
+                  <div className="flex-1 flex flex-col min-h-0 rounded-3xl overflow-hidden border border-white/10 bg-transparent">
                     <ChatPanel
-                    user={displayChat?.title ? { id: displayChat.id, name: displayChat.title, username: displayChat.username || "", avatar: displayChat.avatar || undefined, verified: false, email: "" } : null}
+                    user={chatPanelUser}
                     chatType={displayChat?.type}
                     memberCount={displayChat?.members?.length || channelMeta?.membersCount}
                     memberCountLabel={
@@ -1229,7 +1259,7 @@ const MessagesPage = () => {
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
-                      className="fixed z-50 rounded-[22px] border border-white/10 bg-white/10 backdrop-blur-[24px]"
+                      className="fixed z-50 rounded-2xl border border-white/10 bg-white/10"
                       style={{ left: showDeleteMenu.x, top: showDeleteMenu.y - 10 }}
                     >
                       <button
@@ -1257,7 +1287,7 @@ const MessagesPage = () => {
               exit={{ opacity: 0 }}
               className="flex-1 flex items-center justify-center"
             >
-              <div className="rounded-[24px] border border-white/10 bg-white/5 px-6 py-5 text-center backdrop-blur-[24px]">
+              <div className="rounded-3xl border border-white/10 bg-white/5 px-6 py-5 text-center">
                 <div className="h-14 w-14 rounded-full bg-white/8 flex items-center justify-center mx-auto mb-3">
                   <MessageCircle className="h-6 w-6 text-white/50" />
                 </div>

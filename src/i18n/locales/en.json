@@ -72,6 +72,8 @@
   },
   "navigation": {
     "home": "Home",
+    "workspaces": "Workspaces",
+    "projects": "Projects",
     "explore": "Explore",
     "messages": "Messages",
     "profile": "Profile",
@@ -92,7 +94,7 @@
     "enterName": "Enter your name",
     "name": "Name",
     "username": "Username",
-    "chooseUsername": "Choose a username (min 5 chars)",
+    "chooseUsername": "Choose a username (min 3 chars, letters/numbers/_/.)",
     "createPassword": "Create a password",
     "confirmPasswordPlaceholder": "Confirm your password",
     "welcomeBack": "Welcome back",
@@ -104,10 +106,22 @@
     "hasAccount": "Already have an account?",
     "loginError": "Invalid email or password",
     "registerError": "Failed to register",
-    "usernameError": "Username must be at least 5 characters and contain only English letters and numbers",
+    "usernameError": "Username must be at least 3 characters and contain only English letters, numbers, underscore and dot",
     "passwordError": "Password must be at least 6 characters",
     "passwordMismatch": "Passwords do not match",
     "allFieldsRequired": "All fields are required"
+  },
+  "onboarding": {
+    "title": "Onboarding",
+    "step1Title": "Choose your primary role",
+    "step2Title": "Choose skills",
+    "step3Title": "Your goals in LUME",
+    "step4Title": "Finish onboarding",
+    "goalsListToggle": "Goals list",
+    "progressSaved": "Progress is saved automatically",
+    "saving": "Saving...",
+    "continue": "Continue",
+    "complete": "Complete"
   },
   "logout": {
     "title": "Logout",
@@ -206,6 +220,7 @@
   "stickers": {
     "myStickers": "My Stickers",
     "lumeStickers": "LUME Stickers",
+    "pack": "Pack",
     "empty": "No stickers yet",
     "browsePacks": "Browse sticker packs",
     "loading": "Loading sticker pack...",
@@ -217,6 +232,154 @@
     "packAddError": "Failed to add sticker pack",
     "packRefreshError": "Failed to refresh sticker packs",
     "packLoadError": "Failed to load sticker pack"
+  },
+  "workspaces": {
+    "title": "Workspaces",
+    "common": {
+      "loading": "Loading...",
+      "creating": "Creating...",
+      "joining": "Joining...",
+      "close": "Close"
+    },
+    "errors": {
+      "load": "Failed to load workspaces",
+      "create": "Failed to create workspace",
+      "join": "Failed to join workspace"
+    },
+    "toast": {
+      "created": "Workspace created",
+      "joined": "Joined workspace"
+    },
+    "create": {
+      "title": "Create workspace",
+      "openButton": "New workspace",
+      "submit": "Create workspace"
+    },
+    "join": {
+      "title": "Join by invite",
+      "inviteCode": "Invite code",
+      "submit": "Join"
+    },
+    "list": {
+      "my": "My workspaces",
+      "public": "Public workspaces"
+    },
+    "empty": {
+      "my": "No workspaces yet",
+      "public": "No public workspaces",
+      "projects": "No projects yet",
+      "members": "No members yet",
+      "channels": "No channels yet"
+    },
+    "form": {
+      "name": "Name",
+      "slug": "slug",
+      "description": "Description",
+      "type": "Type",
+      "private": "Private",
+      "public": "Public",
+      "focusTags": "Focus tags (comma separated)"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "channels": "Channels",
+      "projects": "Projects",
+      "members": "Members"
+    },
+    "overview": {
+      "projects": "Projects",
+      "members": "Members"
+    },
+    "channels": {
+      "title": "Channels"
+    },
+    "projects": {
+      "title": "Projects",
+      "create": "Create Project"
+    },
+    "members": {
+      "title": "Members"
+    }
+  },
+  "projects": {
+    "title": "Projects",
+    "common": {
+      "loading": "Loading...",
+      "creating": "Creating...",
+      "close": "Close"
+    },
+    "errors": {
+      "load": "Failed to load projects",
+      "create": "Failed to create project",
+      "update": "Failed to update project"
+    },
+    "toast": {
+      "created": "Project created",
+      "updated": "Project updated"
+    },
+    "create": {
+      "title": "Create project",
+      "openButton": "New project",
+      "submit": "Create project"
+    },
+    "list": {
+      "my": "My projects",
+      "public": "Public projects"
+    },
+    "empty": {
+      "my": "No projects yet",
+      "public": "No public projects",
+      "tasks": "No tasks yet",
+      "members": "No members yet"
+    },
+    "status": {
+      "idea": "Idea",
+      "building": "Building",
+      "testing": "Testing",
+      "launched": "Launched",
+      "paused": "Paused",
+      "archived": "Archived"
+    },
+    "form": {
+      "name": "Name",
+      "slug": "slug",
+      "description": "Description",
+      "visibility": "Visibility",
+      "status": "Status",
+      "public": "Public",
+      "private": "Private",
+      "workspace": "Workspace",
+      "noWorkspace": "No workspace",
+      "stack": "Stack (comma separated)",
+      "tags": "Tags (comma separated)",
+      "github": "GitHub URL",
+      "demo": "Demo URL"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "tasks": "Tasks",
+      "members": "Members",
+      "chat": "Chat"
+    },
+    "tasks": {
+      "title": "Tasks",
+      "create": "Add Task",
+      "todo": "To Do",
+      "inProgress": "In Progress",
+      "review": "Review",
+      "done": "Done",
+      "priority": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
+      "form": {
+        "title": "Title",
+        "description": "Description",
+        "status": "Status",
+        "priority": "Priority"
+      }
+    }
   },
   "sessions": {
     "title": "Active Sessions",
@@ -279,7 +442,12 @@
     "profileNotFoundDesc": "The user you're looking for doesn't exist or you don't have permission to view this profile.",
     "userNotFound": "User not found",
     "noFollowers": "No followers yet",
-    "noFollowing": "Not following anyone yet"
+    "noFollowing": "Not following anyone yet",
+    "available": "Available",
+    "looking": "Looking",
+    "busy": "Busy",
+    "avatarUpdated": "Avatar updated",
+    "avatarError": "Failed to upload avatar"
   },
   "messages": {
     "title": "Messages",
@@ -448,26 +616,28 @@
   },
   "explore": {
     "title": "Explore",
-    "subtitle": "Find users and servers",
-    "searchUsers": "Search users...",
-    "searchChannels": "Search channels...",
-    "searchServers": "Search servers...",
+    "subtitle": "Find builders, projects, and teams",
+    "builders": "Builders",
+    "projects": "Projects",
+    "workspaces": "Workspaces",
+    "lookingForTeam": "Looking for Team",
+    "releases": "Releases",
     "search": "Search",
-    "trending": "Trending",
-    "trendingSignals": "Trending Signals",
-    "suggestedNodes": "Suggested Nodes",
-    "users": "Users",
-    "channels": "Channels",
-    "servers": "Servers",
-    "noUsersFound": "No users found",
-    "noChannelsFound": "No channels found",
-    "noServersFound": "No servers found",
+    "filters": "Filters",
+    "role": "Role",
+    "skill": "Skill",
+    "availability": "Availability",
+    "status": "Status",
+    "noBuildersFound": "No builders found",
+    "noProjectsFound": "No projects found",
+    "noWorkspacesFound": "No workspaces found",
+    "noResults": "No results found",
     "searching": "Searching...",
-    "noTrendingSignals": "No trending signals yet",
-    "noSuggestedNodes": "No suggested nodes available",
     "connect": "Connect",
-    "signals": "signals",
-    "members": "subscribers: {count}"
+    "viewProject": "View Project",
+    "joinWorkspace": "Join",
+    "lookingForWork": "Looking for work",
+    "notAvailable": "Not available"
   },
   "verified": {
     "title": "Get Verified",

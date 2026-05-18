@@ -59,7 +59,7 @@ const PrivacyPage = () => {
         </div>
         <button
           onClick={() => navigate("/settings")}
-          className="px-4 py-2 rounded-full text-xs font-medium bg-white/5 text-secondary hover:text-white transition"
+          className="btn-glass-outline px-4 py-2 text-xs"
         >
           {t("settings.backToSettings")}
         </button>
@@ -72,7 +72,7 @@ const PrivacyPage = () => {
             <h2 className="text-lg font-semibold">{t("settings.privacy")}</h2>
           </div>
 
-          <div className="card-glass p-5 space-y-4 rounded-[24px]">
+          <div className="card-glass p-5 space-y-4 rounded-3xl">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center">

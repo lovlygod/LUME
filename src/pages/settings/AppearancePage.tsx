@@ -59,7 +59,7 @@ const AppearancePage = () => {
         </div>
         <button
           onClick={() => navigate("/settings")}
-          className="px-4 py-2 rounded-full text-xs font-medium bg-white/5 text-secondary hover:text-white transition"
+          className="btn-glass-outline px-4 py-2 text-xs"
         >
           {t("settings.backToSettings")}
         </button>
@@ -72,7 +72,7 @@ const AppearancePage = () => {
             <h2 className="text-lg font-semibold">{t("settings.theme")}</h2>
           </div>
 
-          <div className="card-glass p-5 space-y-4 rounded-[24px]">
+          <div className="card-glass p-5 space-y-4 rounded-3xl">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center">
@@ -115,7 +115,7 @@ const AppearancePage = () => {
             <h2 className="text-lg font-semibold">{t("settings.snowEffect")}</h2>
           </div>
 
-          <div className="card-glass p-5 space-y-4 rounded-[24px]">
+          <div className="card-glass p-5 space-y-4 rounded-3xl">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center">

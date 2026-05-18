@@ -21,6 +21,11 @@ import SessionsPage from "./pages/settings/SessionsPage";
 import NotFound from "./pages/NotFound";
 import Register from "./pages/auth/Register";
 import Login from "./pages/auth/Login";
+import OnboardingPage from "./pages/onboarding/OnboardingPage";
+import WorkspacesPage from "./pages/workspaces/WorkspacesPage";
+import WorkspaceDetailPage from "./pages/workspaces/WorkspaceDetailPage";
+import ProjectsPage from "./pages/projects/ProjectsPage";
+import ProjectDetailPage from "./pages/projects/ProjectDetailPage";
 import AddStickerPackPage from "./pages/stickers/AddStickerPackPage";
 import LandingLayout from "@/layouts/LandingLayout";
 import LandingPage from "@/pages/LandingPage";
@@ -68,6 +73,11 @@ const AppContent = () => {
       <Route element={<ProtectedRoute />}>
         <Route element={<MainLayout />}>
           <Route path="/feed" element={<Index />} />
+          <Route path="/home" element={<Index />} />
+          <Route path="/workspaces" element={<WorkspacesPage />} />
+          <Route path="/workspaces/:slug" element={<WorkspaceDetailPage />} />
+          <Route path="/projects" element={<ProjectsPage />} />
+          <Route path="/projects/:slug" element={<ProjectDetailPage />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/messages/:chatId" element={<Messages />} />
           <Route path="/messages/:chatId/:rest" element={<Messages />} />
@@ -84,6 +94,7 @@ const AppContent = () => {
           <Route path="/settings/language" element={<LanguagePage />} />
           <Route path="/settings/danger" element={<DangerPage />} />
           <Route path="/settings/sessions" element={<SessionsPage />} />
+          <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/admin" element={<AdminPanel />} />
         </Route>
       </Route>

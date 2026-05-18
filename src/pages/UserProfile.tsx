@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Calendar, MapPin, Link as LinkIcon, MessageCircle, UserPlus, UserCheck, Users } from "lucide-react";
+import { Calendar, MapPin, Link as LinkIcon, MessageCircle, UserPlus, UserCheck, Users, Code, CheckCircle, Search, Clock, Github, FolderKanban, ExternalLink } from "lucide-react";
 import { motion } from "framer-motion";
-import { profileAPI, postsAPI, onboardingAPI } from "@/services/api";
+import { profileAPI, postsAPI, onboardingAPI, projectsAPI } from "@/services/api";
 import type { User } from "@/types/api";
 import { useParams } from 'react-router-dom';
 import Post from "@/components/post/Post";
@@ -48,6 +48,9 @@ const UserProfile = () => {
   const [followersList, setFollowersList] = useState<User[]>([]);
   const [followingList, setFollowingList] = useState<User[]>([]);
 
+  // Dev profile data
+  const [projects, setProjects] = useState<Array<{ id: number; name: string; slug: string; status: string }>>([]);
+
   // Load user profile
   useEffect(() => {
     const loadProfile = async () => {
@@ -62,6 +65,16 @@ const UserProfile = () => {
         const response = await profileAPI.getUserById(userId);
         setUser(response.user);
         const resolvedUserId = response.user?.id || userId;
+
+        // Load projects (if user has dev profile fields)
+        if (response.user.onboardingCompleted || response.user.skills?.length || response.user.primaryRole) {
+          try {
+            const projectsRes = await projectsAPI.getMy();
+            setProjects((projectsRes.projects || []).slice(0, 4));
+          } catch (e) {
+            console.error('Failed to load projects:', e);
+          }
+        }
 
         // Check if we're following this user
         try {
@@ -205,10 +218,9 @@ const UserProfile = () => {
             )}
           </div>
 
-            <div className="ml-4 flex-1 flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-semibold text-white">{user.name}</h1>
+            <div className="ml-4 flex-1 flex flex-col">
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-semibold text-white">{user.name}</h1>
                 {isVerifiedUser(user) && (
                   <VerifiedBadge className="h-4 w-4" />
                 )}
@@ -216,8 +228,22 @@ const UserProfile = () => {
                   ? <DeveloperCrownBadge className="h-4 w-4" />
                   : isDeveloper(user.username) && <DeveloperBadge className="h-4 w-4" />
                 }
+                {/* Role badge near name */}
+                {user.primaryRole && (
+                  <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-medium text-blue-300">
+                    {user.primaryRole}
+                  </span>
+                )}
               </div>
-                <p className="text-sm text-secondary">@{user.username}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-sm text-secondary">@{user.username}</p>
+                  {user.availability && (
+                    <span className="flex items-center gap-1 text-[10px]">
+                      <span className={`h-1.5 w-1.5 rounded-full ${user.availability === 'open' ? 'bg-green-400' : user.availability === 'looking' ? 'bg-yellow-400' : 'bg-red-400'}`} />
+                      <span className="text-white/40">{user.availability === 'open' ? t('profile.available') : user.availability === 'looking' ? t('profile.looking') : t('profile.busy')}</span>
+                    </span>
+                  )}
+                </div>
               </div>
             {/* Action Buttons - only if not own profile */}
             {currentUser && user.id !== currentUser.id && String(user.id) !== String(currentUser.id) && (
@@ -225,13 +251,7 @@ const UserProfile = () => {
                 <motion.button
                   onClick={handleFollowToggle}
                   disabled={isFollowLoading}
-                  className={`flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-smooth disabled:opacity-50 ${
-                    isFollowing
-                      ? 'bg-white/10 text-white hover:bg-white/15'
-                      : isVerifiedUser(user)
-                        ? 'bg-blue-500/80 text-white hover:bg-blue-500'
-                        : 'bg-white/10 text-white hover:bg-white/15'
-                  }`}
+                  className={`btn-glass gap-2 ${isFollowing ? '' : isVerifiedUser(user) ? 'bg-blue-500/80 hover:bg-blue-500' : ''}`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -251,7 +271,7 @@ const UserProfile = () => {
                 </motion.button>
                 <motion.button
                   onClick={() => navigate(`/messages?userId=${user.id}`)}
-                  className="flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold bg-white/10 text-white hover:bg-white/15 transition-smooth"
+                  className="btn-glass gap-2"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -263,69 +283,89 @@ const UserProfile = () => {
           </div>
         </div>
 
-        <div className="mt-4">
-          {/* Stats - Followers/Following */}
-          <div className="flex items-center gap-5 text-base">
-            <button
-              onClick={() => openFollowModal('followers')}
-              className="flex items-center gap-1 hover:text-white transition-smooth"
-            >
-              <span className="font-semibold text-white text-base">{user.followers_count || 0}</span>
-              <span className="text-secondary text-sm">{t("profile.followers")}</span>
-            </button>
-            <button
-              onClick={() => openFollowModal('following')}
-              className="flex items-center gap-1 hover:text-white transition-smooth"
-            >
-              <span className="font-semibold text-white text-base">{user.following_count || 0}</span>
-              <span className="text-secondary text-sm">{t("profile.following")}</span>
-            </button>
-          </div>
+        <div className="mt-4 space-y-3">
+          {/* City & Website */}
+          {(user.city || user.website) && (
+            <div className="flex flex-col gap-2 text-sm text-secondary">
+              {user.city && (
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="h-4 w-4" />
+                  <span>{user.city}</span>
+                </div>
+              )}
+              {user.website && (
+                <a
+                  href={user.website.startsWith('http') ? user.website : `https://${user.website}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-white hover:underline"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  <span>{user.website.replace(/^https?:\/\//, '')}</span>
+                </a>
+              )}
+            </div>
+          )}
 
           {/* Bio */}
-          <p className="mt-3 text-sm text-white/90 leading-relaxed">
+          <p className="text-sm text-white/80 leading-relaxed break-words">
             {user.bio || t("profile.noBio")}
           </p>
 
-          {/* City & Website */}
-          <div className="mt-3 flex flex-col gap-2 text-sm text-secondary">
-            {user.city && (
-              <div className="flex items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5" />
-                <span>{user.city}</span>
-              </div>
-            )}
-            {user.website && (
-              <a
-                href={user.website.startsWith('http') ? user.website : `https://${user.website}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-white/80 hover:underline"
-              >
-                <LinkIcon className="h-3.5 w-3.5" />
-                <span>{user.website.replace(/^https?:\/\//, '')}</span>
-              </a>
-            )}
-          </div>
-
-          {/* Meta info - Join date */}
-          <div className="mt-3 flex items-center gap-4 text-sm text-secondary">
-            <div className="flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5" />
-              <span>
-                {t("profile.joined")}{" "}
-                {user.joinDate && !Number.isNaN(Date.parse(user.joinDate))
-                  ? new Date(user.joinDate).toLocaleDateString("ru-RU", {
-                      day: "2-digit",
-                      month: "long",
-                      year: "numeric",
-                    })
-                  : "-"}
-              </span>
+          {/* Skills - compact row */}
+          {user.skills?.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {user.skills.slice(0, 10).map((skill: string) => (
+                <span key={skill} className="rounded-md bg-white/5 px-2 py-0.5 text-[11px] text-white/50">
+                  {skill}
+                </span>
+              ))}
             </div>
+          )}
+
+          {/* Links & Projects */}
+          {(user.githubUrl || user.telegramUsername || projects.length > 0) && (
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Links */}
+              {user.githubUrl && (
+                <a href={user.githubUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 text-xs text-white/60 hover:text-white hover:bg-white/10 transition-colors">
+                  <Github className="h-3 w-3" />
+                  <span>GitHub</span>
+                </a>
+              )}
+              {user.telegramUsername && (
+                <a href={`https://t.me/${user.telegramUsername}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 text-xs text-white/60 hover:text-white hover:bg-white/10 transition-colors">
+                  <MessageCircle className="h-3 w-3" />
+                  <span>Telegram</span>
+                </a>
+              )}
+
+              {/* Projects */}
+              {projects.length > 0 && (
+                <div className="flex gap-2">
+                  {projects.slice(0, 3).map((project) => (
+                    <button key={project.id} onClick={() => navigate(`/projects/${project.slug}`)} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 transition-colors">
+                      <FolderKanban className="h-3 w-3" />
+                      <span>{project.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+{/* Stats */}
+          <div className="flex items-center gap-4 pt-2 text-sm border-t border-white/5">
+            <button onClick={() => openFollowModal('followers')} className="hover:text-white">
+              <span className="font-semibold text-white">{user.followers_count || 0}</span>
+              <span className="text-secondary ml-1">{t("profile.followers")}</span>
+            </button>
+            <button onClick={() => openFollowModal('following')} className="hover:text-white">
+              <span className="font-semibold text-white">{user.following_count || 0}</span>
+              <span className="text-secondary ml-1">{t("profile.following")}</span>
+            </button>
           </div>
         </div>
-      </div>
 
       <FollowModal
         open={showFollowModal}
@@ -362,7 +402,7 @@ const UserProfile = () => {
             ))}
           </div>
         ) : (
-          <div className="rounded-[24px] border border-white/10 bg-white/5 px-5 py-6 text-center">
+          <div className="rounded-3xl border border-white/10 bg-white/5 px-5 py-6 text-center">
             <p className="text-sm text-secondary">{t("profile.noSignals")}</p>
           </div>
         )}

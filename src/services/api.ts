@@ -156,7 +156,7 @@ export const apiRequest = async <T = unknown>(
 };
 
 export const authAPI = {
-  register: async (userData: { email: string; password: string; name: string; username: string }) => {
+  register: async (userData: { email: string; password: string; name?: string; username: string }) => {
     return apiRequest<{ token: string; user: User }>('/register', {
       method: 'POST',
       body: JSON.stringify(userData),
@@ -167,6 +167,53 @@ export const authAPI = {
     return apiRequest<{ token: string; user: User }>('/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
+    });
+  },
+};
+
+export const onboardingAPI = {
+  getStatus: async () => apiRequest<{ onboarding: User }>('/onboarding/status', { method: 'GET' }),
+  saveProfile: async (payload: Record<string, unknown>) => apiRequest('/onboarding/profile', { method: 'POST', body: JSON.stringify(payload) }),
+  saveSkills: async (skills: string[]) => apiRequest('/onboarding/skills', { method: 'POST', body: JSON.stringify({ skills }) }),
+  saveGoals: async (goals: string[]) => apiRequest('/onboarding/goals', { method: 'POST', body: JSON.stringify({ goals }) }),
+  saveWorkspace: async (payload: Record<string, unknown>) => apiRequest('/onboarding/workspace', { method: 'POST', body: JSON.stringify(payload) }),
+  complete: async () => apiRequest('/onboarding/complete', { method: 'POST' }),
+
+  // Backward-compatible social graph methods (used by Profile/UserProfile/Verified pages)
+  getSuggestions: async (): Promise<{ users: User[] }> => {
+    return apiRequest('/onboarding/suggestions', {
+      method: 'GET',
+    });
+  },
+
+  batchFollow: async (userIds: string[]) => {
+    return apiRequest('/follow/batch', {
+      method: 'POST',
+      body: JSON.stringify({ userIds }),
+    });
+  },
+
+  unfollow: async (userId: string) => {
+    return apiRequest(`/follow/${userId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  checkFollowing: async (userId: string): Promise<{ following: boolean }> => {
+    return apiRequest(`/follow/status/${userId}`, {
+      method: 'GET',
+    });
+  },
+
+  getFollowers: async (userId: string): Promise<{ followers: User[]; total: number }> => {
+    return apiRequest(`/users/${userId}/followers`, {
+      method: 'GET',
+    });
+  },
+
+  getFollowing: async (userId: string): Promise<{ following: User[]; total: number }> => {
+    return apiRequest(`/users/${userId}/following`, {
+      method: 'GET',
     });
   },
 };
@@ -706,9 +753,9 @@ export const verificationAPI = {
   },
 };
 
-// ==================== ONBOARDING ====================
+// ==================== SOCIAL GRAPH ====================
 
-export const onboardingAPI = {
+export const socialGraphAPI = {
   getSuggestions: async (): Promise<{ users: User[] }> => {
     return apiRequest('/onboarding/suggestions', {
       method: 'GET',
@@ -756,7 +803,16 @@ export const usersAPI = {
     }, true, signal);
   },
 
-  updateProfile: async (data: { bio?: string; city?: string; website?: string }) => {
+  updateProfile: async (data: { 
+    bio?: string; 
+    city?: string; 
+    website?: string;
+    primaryRole?: string;
+    skills?: string[];
+    availability?: string;
+    githubUrl?: string;
+    telegramUsername?: string;
+  }) => {
     return apiRequest('/users/me', {
       method: 'PATCH',
       body: JSON.stringify(data),
@@ -779,6 +835,291 @@ export const usersAPI = {
     return apiRequest(`/users/${userId}/presence`, {
       method: 'GET',
     }, true, signal);
+  },
+};
+
+export interface WorkspaceItem {
+  id: number;
+  owner_id: number;
+  name: string;
+  slug: string;
+  description?: string | null;
+  type: 'public' | 'private';
+  focus_tags?: string[] | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ProjectItem {
+  id: number;
+  owner_id: number;
+  workspace_id?: number | null;
+  name: string;
+  slug: string;
+  description?: string | null;
+  status: 'idea' | 'building' | 'testing' | 'launched' | 'paused' | 'archived';
+  visibility: 'public' | 'private';
+  stack?: string[] | null;
+  tags?: string[] | null;
+  github_url?: string | null;
+  demo_url?: string | null;
+  logo_url?: string | null;
+  banner_url?: string | null;
+  looking_for_members?: boolean;
+  is_open_source?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface TaskItem {
+  id: number;
+  project_id: number;
+  title: string;
+  description?: string | null;
+  status: 'todo' | 'in_progress' | 'review' | 'done' | 'cancelled';
+  priority: 'low' | 'medium' | 'high';
+  assignee_id?: number | null;
+  creator_id?: number | null;
+  due_date?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkspaceMember {
+  id: number;
+  workspace_id: number;
+  user_id: number;
+  role: 'owner' | 'admin' | 'lead' | 'developer' | 'designer' | 'member' | 'guest';
+  title?: string | null;
+  joined_at: string;
+  user?: {
+    id: number;
+    username: string;
+    name: string;
+    avatar?: string | null;
+  };
+}
+
+export interface ProjectMember {
+  id: number;
+  project_id: number;
+  user_id: number;
+  role: string;
+  joined_at: string;
+  user?: {
+    id: number;
+    username: string;
+    name: string;
+    avatar?: string | null;
+  };
+}
+
+export interface BuilderProfile {
+  id: number;
+  username: string;
+  name: string;
+  avatar?: string | null;
+  bio?: string | null;
+  primary_role?: string | null;
+  skills?: string[] | null;
+  availability?: string | null;
+  github_url?: string | null;
+  telegram_username?: string | null;
+  website?: string | null;
+  created_at?: string;
+}
+
+export const workspacesAPI = {
+  getMy: async (): Promise<{ workspaces: WorkspaceItem[] }> => {
+    return apiRequest('/workspaces/my', { method: 'GET' });
+  },
+  getPublic: async (): Promise<{ workspaces: WorkspaceItem[] }> => {
+    return apiRequest('/workspaces/public', { method: 'GET' });
+  },
+  create: async (payload: {
+    name: string;
+    slug: string;
+    description?: string;
+    type?: 'public' | 'private';
+    focusTags?: string[];
+  }): Promise<{ workspace: WorkspaceItem }> => {
+    return apiRequest('/workspaces', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  joinByInvite: async (inviteCode: string): Promise<{ message: string; workspaceId: number }> => {
+    return apiRequest(`/workspaces/join/${encodeURIComponent(inviteCode)}`, {
+      method: 'POST',
+    });
+  },
+  getBySlug: async (slug: string): Promise<{ workspace: WorkspaceItem }> => {
+    return apiRequest(`/workspaces/${encodeURIComponent(slug)}`, { method: 'GET' });
+  },
+};
+
+export const projectsAPI = {
+  getMy: async (): Promise<{ projects: ProjectItem[] }> => {
+    return apiRequest('/projects/my', { method: 'GET' });
+  },
+  getPublic: async (): Promise<{ projects: ProjectItem[] }> => {
+    return apiRequest('/projects/public', { method: 'GET' });
+  },
+  create: async (payload: {
+    workspaceId?: number;
+    name: string;
+    slug: string;
+    description?: string;
+    status?: ProjectItem['status'];
+    visibility?: ProjectItem['visibility'];
+    stack?: string[];
+    tags?: string[];
+    githubUrl?: string;
+    demoUrl?: string;
+    lookingForMembers?: boolean;
+    isOpenSource?: boolean;
+  }): Promise<{ project: ProjectItem }> => {
+    return apiRequest('/projects', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  getBySlug: async (slug: string): Promise<{ project: ProjectItem }> => {
+    return apiRequest(`/projects/${encodeURIComponent(slug)}`, { method: 'GET' });
+  },
+  update: async (id: number, payload: Partial<ProjectItem>): Promise<{ project: ProjectItem }> => {
+    return apiRequest(`/projects/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+  delete: async (id: number): Promise<{ message: string }> => {
+    return apiRequest(`/projects/${id}`, { method: 'DELETE' });
+  },
+};
+
+export const tasksAPI = {
+  getByProject: async (projectId: number): Promise<{ tasks: TaskItem[] }> => {
+    return apiRequest(`/projects/${projectId}/tasks`, { method: 'GET' });
+  },
+  create: async (projectId: number, payload: {
+    title: string;
+    description?: string;
+    status?: TaskItem['status'];
+    priority?: TaskItem['priority'];
+    assigneeId?: number;
+    dueDate?: string;
+  }): Promise<{ task: TaskItem }> => {
+    return apiRequest(`/projects/${projectId}/tasks`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  update: async (taskId: number, payload: Partial<TaskItem>): Promise<{ task: TaskItem }> => {
+    return apiRequest(`/tasks/${taskId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+  delete: async (taskId: number): Promise<{ message: string }> => {
+    return apiRequest(`/tasks/${taskId}`, { method: 'DELETE' });
+  },
+  createFromMessage: async (projectId: number, payload: {
+    title: string;
+    sourceMessageId?: number;
+  }): Promise<{ task: TaskItem }> => {
+    return apiRequest(`/projects/${projectId}/tasks/from-message`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+};
+
+export const exploreAPI = {
+  getBuilders: async (params?: {
+    role?: string;
+    skill?: string;
+    availability?: string;
+  }): Promise<{ builders: BuilderProfile[] }> => {
+    const query = new URLSearchParams();
+    if (params?.role) query.append('role', params.role);
+    if (params?.skill) query.append('skill', params.skill);
+    if (params?.availability) query.append('availability', params.availability);
+    return apiRequest(`/explore/builders?${query}`, { method: 'GET' });
+  },
+  getProjects: async (params?: {
+    status?: string;
+    stack?: string;
+    tags?: string;
+    needsMembers?: boolean;
+  }): Promise<{ projects: ProjectItem[] }> => {
+    const query = new URLSearchParams();
+    if (params?.status) query.append('status', params.status);
+    if (params?.stack) query.append('stack', params.stack);
+    if (params?.tags) query.append('tags', params.tags);
+    if (params?.needsMembers) query.append('needsMembers', 'true');
+    return apiRequest(`/explore/projects?${query}`, { method: 'GET' });
+  },
+  getWorkspaces: async (): Promise<{ workspaces: WorkspaceItem[] }> => {
+    return apiRequest('/explore/workspaces', { method: 'GET' });
+  },
+  getLookingForTeam: async (): Promise<{ projects: ProjectItem[] }> => {
+    return apiRequest('/explore/looking-for-team', { method: 'GET' });
+  },
+};
+
+export const workspaceMembersAPI = {
+  getMembers: async (workspaceId: number): Promise<{ members: WorkspaceMember[] }> => {
+    return apiRequest(`/workspaces/${workspaceId}/members`, { method: 'GET' });
+  },
+  addMember: async (workspaceId: number, payload: {
+    userId: number;
+    role?: string;
+    title?: string;
+  }): Promise<{ message: string }> => {
+    return apiRequest(`/workspaces/${workspaceId}/members`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  updateMember: async (workspaceId: number, userId: number, payload: {
+    role?: string;
+    title?: string;
+  }): Promise<{ message: string }> => {
+    return apiRequest(`/workspaces/${workspaceId}/members/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+  removeMember: async (workspaceId: number, userId: number): Promise<{ message: string }> => {
+    return apiRequest(`/workspaces/${workspaceId}/members/${userId}`, { method: 'DELETE' });
+  },
+  generateInvite: async (workspaceId: number, expiresInHours?: number): Promise<{ invite: { code: string; expires_at: string } }> => {
+    return apiRequest(`/workspaces/${workspaceId}/invites`, {
+      method: 'POST',
+      body: JSON.stringify({ expiresInHours }),
+    });
+  },
+};
+
+export const projectMembersAPI = {
+  getMembers: async (projectId: number): Promise<{ members: ProjectMember[] }> => {
+    return apiRequest(`/projects/${projectId}/members`, { method: 'GET' });
+  },
+  addMember: async (projectId: number, payload: {
+    userId: number;
+    role: string;
+  }): Promise<{ message: string }> => {
+    return apiRequest(`/projects/${projectId}/members`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  removeMember: async (projectId: number, userId: number): Promise<{ message: string }> => {
+    return apiRequest(`/projects/${projectId}/members/${userId}`, { method: 'DELETE' });
+  },
+  generateInvite: async (projectId: number): Promise<{ invite: { code: string } }> => {
+    return apiRequest(`/projects/${projectId}/invite`, { method: 'POST' });
   },
 };
 

@@ -19,7 +19,7 @@ const RulesPage = () => {
     >
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <aside className="lg:col-span-3">
-          <div className="sticky top-6 rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <div className="sticky top-6 rounded-3xl border border-white/10 bg-white/5 p-6">
             <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">
               {t("help.nav.title")}
             </div>
@@ -46,7 +46,7 @@ const RulesPage = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.3 }}
-              className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl"
+              className="rounded-3xl border border-white/10 bg-white/5 p-6"
             >
               <div className="flex items-center gap-3 text-sm text-white/60">
                 <section.icon className="h-4 w-4" />
@@ -80,14 +80,14 @@ const RulesPage = () => {
         </main>
 
         <aside className="lg:col-span-3 space-y-4">
-          <div className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
             <div className="text-sm font-semibold text-white">{t("help.rules.actions.title")}</div>
             <p className="mt-2 text-sm text-white/60">{t("help.rules.actions.subtitle")}</p>
             <div className="mt-4 space-y-2">
-              <a className="block rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70 hover:text-white" href="/support">
+              <a className="block rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70 hover:bg-white/10 hover:text-white" href="/support">
                 {t("help.rules.actions.report")}
               </a>
-              <a className="block rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70 hover:text-white" href="/contacts">
+              <a className="block rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70 hover:bg-white/10 hover:text-white" href="/contacts">
                 {t("help.rules.actions.contact")}
               </a>
             </div>

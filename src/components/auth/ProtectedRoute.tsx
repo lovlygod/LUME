@@ -2,7 +2,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 const ProtectedRoute = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -18,6 +18,10 @@ const ProtectedRoute = () => {
 
   if (!isAuthenticated()) {
     return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (user && user.onboardingCompleted === false && !location.pathname.startsWith('/onboarding')) {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return <Outlet />;

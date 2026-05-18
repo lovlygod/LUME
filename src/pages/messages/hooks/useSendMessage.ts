@@ -35,7 +35,6 @@ export const useSendMessage = (currentUserId?: string) => {
 
     const recipients: Array<{ userId: string; deviceId: string }> = [];
     for (const memberId of uniqueMemberIds) {
-      // eslint-disable-next-line no-await-in-loop
       const bundles = await e2eeAPI.getUserDeviceBundles(memberId, device.deviceId);
       const devices = Array.isArray((bundles as { devices?: unknown[] })?.devices)
         ? ((bundles as { devices?: Array<{ userId?: string; deviceId?: string }> }).devices || [])
@@ -59,7 +58,6 @@ export const useSendMessage = (currentUserId?: string) => {
     });
 
     for (const packet of packets) {
-      // eslint-disable-next-line no-await-in-loop
       await e2eeAPI.sendEncryptedEnvelope({
         chatId: payload.chatId,
         senderDeviceId: device.deviceId,
@@ -103,11 +101,12 @@ export const useSendMessage = (currentUserId?: string) => {
 
       return messagesAPI.sendMessage(payload);
     },
-    onSuccess: (data, variables) => {
+    onSuccess: async (data, variables) => {
       messageSounds.playSend();
       const now = new Date().toISOString();
       const chatKey = messageQueryKeys.chatMessages(variables.chatId);
       const chatsKey = messageQueryKeys.chatList();
+      const isE2EEMessage = Boolean((data as { e2ee?: boolean })?.e2ee);
 
       queryClient.setQueryData<{ messages: Message[] }>(chatKey, (prev) => {
         const list = prev?.messages || [];
@@ -174,6 +173,14 @@ export const useSendMessage = (currentUserId?: string) => {
         );
         return { chats: updated.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()) };
       });
+
+      if (!isE2EEMessage) {
+        await queryClient.invalidateQueries({
+          queryKey: messageQueryKeys.chatMessages(variables.chatId),
+          exact: true,
+          refetchType: "active",
+        });
+      }
     },
   });
 };

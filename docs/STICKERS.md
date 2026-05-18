@@ -1,6 +1,9 @@
-# Stickers
+# LUME Stickers Module
 
-**Last update:** 2026-03-18
+English | [Русский](../docs-ru/STICKERS.ru.md) | [中文](../docs-cn/STICKERS.cn.md)
+
+**Last updated:** 2026-05-18
+**Status:** ✅ Implemented
 
 This document covers the sticker system end-to-end: UI components, data model, backend endpoints, storage, and runtime behavior.
 

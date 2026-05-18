@@ -128,7 +128,7 @@ const ChatPage = () => {
         </div>
         <button
           onClick={() => navigate("/settings")}
-          className="px-4 py-2 rounded-full text-xs font-medium bg-white/5 text-secondary hover:text-white transition"
+          className="btn-glass-outline px-4 py-2 text-xs"
         >
           {t("settings.backToSettings")}
         </button>
@@ -141,7 +141,7 @@ const ChatPage = () => {
             <h2 className="text-lg font-semibold">{t("settings.chat")}</h2>
           </div>
 
-          <div className="card-glass p-5 space-y-6 rounded-[24px]">
+          <div className="card-glass p-5 space-y-6 rounded-3xl">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center">
@@ -490,7 +490,7 @@ const ChatPage = () => {
                 <button
                   type="button"
                   onClick={() => setShowCustomBgModal(false)}
-                  className="px-4 py-2 rounded-full text-sm text-white/70 border border-white/10 hover:bg-white/5 transition-smooth"
+                  className="btn-glass-outline px-4 py-2"
                 >
                   {t("common.cancel")}
                 </button>

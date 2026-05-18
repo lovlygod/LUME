@@ -45,6 +45,11 @@ English | [Русский](../../docs-ru/PROJECT_UI/ROUTES.ru.md) | [中文](../
 | `/messages` | Messages | `src/pages/Messages.tsx` | Chat list |
 | `/messages/:chatId` | Messages | `src/pages/Messages.tsx` | Chat view |
 | `/messages?userId=:id` | Messages | `src/pages/Messages.tsx` | Open chat via query param |
+| `/onboarding` | OnboardingPage | `src/pages/onboarding/OnboardingPage.tsx` | Onboarding flow |
+| `/workspaces` | WorkspacesPage | `src/pages/workspaces/WorkspacesPage.tsx` | Workspaces list |
+| `/workspaces/:slug` | WorkspaceDetailPage | `src/pages/workspaces/WorkspaceDetailPage.tsx` | Workspace detail |
+| `/projects` | ProjectsPage | `src/pages/projects/ProjectsPage.tsx` | Projects list |
+| `/projects/:slug` | ProjectDetailPage | `src/pages/projects/ProjectDetailPage.tsx` | Project detail |
 
 ### Profile
 

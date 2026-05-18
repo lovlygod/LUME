@@ -76,7 +76,7 @@ const AddStickerPackPage = () => {
           <button
             type="button"
             onClick={handleAddPack}
-            className="rounded-full bg-white/15 text-white py-2 px-6 text-sm font-semibold hover:bg-white/20 transition-smooth"
+            className="btn-glass py-2 px-6"
           >
             {t("stickers.addPack")}
           </button>

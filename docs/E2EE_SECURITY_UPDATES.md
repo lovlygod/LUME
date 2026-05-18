@@ -1,6 +1,13 @@
-# E2EE Security Updates (Incremental Migration)
+# LUME E2EE Security Updates
+
+English | [Русский](../docs-ru/E2EE_SECURITY_UPDATES.ru.md) | [中文](../docs-cn/E2EE_SECURITY_UPDATES.cn.md)
+
+**Last updated:** 2026-05-18
+**Status:** ✅ Implemented
 
 This document summarizes the implemented security migration work toward a Signal-style model while preserving the existing LUME architecture.
+
+---
 
 ## Scope completed
 

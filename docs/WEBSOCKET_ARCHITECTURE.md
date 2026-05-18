@@ -1,9 +1,9 @@
-# WebSocket Architecture (LUME)
+# LUME WebSocket Architecture
 
 English | [Русский](../docs-ru/WEBSOCKET_ARCHITECTURE.ru.md) | [中文](../docs-cn/WEBSOCKET_ARCHITECTURE.cn.md)
 
-**Last updated:** 2026-03-11
-**Status:** Implemented and in use
+**Last updated:** 2026-05-18
+**Status:** ✅ Implemented
 
 ---
 

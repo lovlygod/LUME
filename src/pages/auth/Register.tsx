@@ -76,7 +76,7 @@ const Register = () => {
 
     try {
       await register(formData.email, formData.password, formData.name, formData.username);
-      navigate('/feed');
+      navigate('/onboarding');
     } catch (err: unknown) {
       setError(getRegisterErrorMessage(err));
     } finally {

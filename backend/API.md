@@ -1442,9 +1442,236 @@ New notification event.
 
 ---
 
+## Onboarding
+
+### GET `/onboarding/status`
+Get user's onboarding status.
+
+**Response 200:**
+```json
+{
+  "onboarding": {
+    "completed": false,
+    "primary_role": "Developer",
+    "skills": ["React", "Node.js"],
+    "goals": ["Find a team"]
+  }
+}
+```
+
+### POST `/onboarding/profile`
+Save profile step (role).
+
+**Body:**
+```json
+{
+  "primaryRole": "Frontend Developer"
+}
+```
+
+### POST `/onboarding/skills`
+Save skills step.
+
+**Body:**
+```json
+{
+  "skills": ["React", "TypeScript", "Node.js"]
+}
+```
+
+### POST `/onboarding/goals`
+Save goals step.
+
+**Body:**
+```json
+{
+  "goals": ["Find a team", "Show my project"]
+}
+```
+
+### POST `/onboarding/workspace`
+Handle workspace creation or joining.
+
+**Body (Create):**
+```json
+{
+  "action": "create",
+  "workspace": {
+    "name": "My Team",
+    "slug": "my-team",
+    "description": "Building awesome projects",
+    "type": "public",
+    "focus": ["Web Development"]
+  }
+}
+```
+
+### POST `/onboarding/complete`
+Mark onboarding as completed.
+
+---
+
+## Workspaces
+
+### POST `/workspaces`
+Create a new workspace.
+
+**Body:**
+```json
+{
+  "name": "My Workspace",
+  "slug": "my-workspace",
+  "description": "Building awesome projects together",
+  "type": "public",
+  "focusTags": ["Web Development", "Open Source"]
+}
+```
+
+### GET `/workspaces/my`
+Get user's workspaces.
+
+### GET `/workspaces/public`
+Get public workspaces.
+
+### GET `/workspaces/:slug`
+Get workspace by slug.
+
+### PATCH `/workspaces/:id`
+Update workspace (owner/admin only).
+
+### DELETE `/workspaces/:id`
+Delete workspace (owner only).
+
+### POST `/workspaces/:id/members`
+Add member to workspace.
+
+### PATCH `/workspaces/:id/members/:userId`
+Update member role.
+
+### DELETE `/workspaces/:id/members/:userId`
+Remove member.
+
+### GET `/workspaces/:id/members`
+Get workspace members.
+
+### POST `/workspaces/:id/invites`
+Generate invite code.
+
+### POST `/workspaces/join/:inviteCode`
+Join workspace via invite code.
+
+---
+
+## Projects
+
+### POST `/projects`
+Create a new project.
+
+**Body:**
+```json
+{
+  "workspaceId": "1",
+  "name": "Awesome App",
+  "slug": "awesome-app",
+  "description": "Building the next big thing",
+  "status": "active",
+  "visibility": "public",
+  "stack": ["React", "Node.js", "PostgreSQL"],
+  "tags": ["Web", "SaaS"],
+  "githubUrl": "https://github.com/user/awesome-app",
+  "demoUrl": "https://awesome-app.com",
+  "lookingForMembers": true,
+  "isOpenSource": true
+}
+```
+
+### GET `/projects/my`
+Get user's projects.
+
+### GET `/projects/public`
+Get public projects.
+
+### GET `/projects/:slug`
+Get project by slug.
+
+### PATCH `/projects/:id`
+Update project (admin/lead/manager only).
+
+### DELETE `/projects/:id`
+Delete project (owner only).
+
+### POST `/projects/:id/members`
+Add member to project.
+
+### GET `/projects/:id/members`
+Get project members.
+
+### DELETE `/projects/:id/members/:userId`
+Remove member.
+
+### POST `/projects/:id/invite`
+Generate invite code.
+
+---
+
+## Tasks
+
+### POST `/projects/:projectId/tasks`
+Create a task (admin/lead/manager only).
+
+**Body:**
+```json
+{
+  "title": "Implement user authentication",
+  "description": "Add JWT-based auth with refresh tokens",
+  "status": "todo",
+  "priority": "high",
+  "assigneeId": "2"
+}
+```
+
+### GET `/projects/:projectId/tasks`
+Get all tasks for a project.
+
+### PATCH `/tasks/:taskId`
+Update a task.
+
+### DELETE `/tasks/:taskId`
+Delete a task (admin/lead/manager only).
+
+### POST `/tasks/:taskId/comments`
+Add a comment to a task.
+
+---
+
+## Explore
+
+### GET `/explore/builders`
+Search for builders/developers.
+
+**Query Parameters:**
+- `role`: filter by role
+- `availability`: filter by availability
+- `skills`: comma-separated skills
+
+### GET `/explore/projects`
+Search for public projects.
+
+### GET `/explore/workspaces`
+Search for public workspaces.
+
+### GET `/explore/looking-for-team`
+Get projects looking for team members.
+
+---
+
 ## Related Documents
 
 - [Features Inventory](../docs/FEATURES_INVENTORY.md)
 - [Error Handling](../docs/ERROR_HANDLING.md)
-- [groups Module](../docs/groups_MODULE.md)
+- [Groups Module](../docs/GROUPS_MODULE.md)
+- [Onboarding Module](../docs/ONBOARDING_MODULE.md)
+- [Workspaces Module](../docs/WORKSPACES_MODULE.md)
+- [Projects Module](../docs/PROJECTS_MODULE.md)
+- [Tasks Module](../docs/TASKS_MODULE.md)
 - [README](../README.md)
