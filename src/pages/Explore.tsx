@@ -147,20 +147,7 @@ const Explore = () => {
       {builder.bio && (
         <p className="relative mt-3 text-sm text-white/60 truncate-2">{builder.bio}</p>
       )}
-      {builder.skills && builder.skills.length > 0 && (
-        <div className="relative mt-auto pt-3 flex flex-wrap gap-1.5">
-          {builder.skills.slice(0, 4).map((skill) => (
-            <span key={skill} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/70">
-              {skill}
-            </span>
-          ))}
-          {builder.skills.length > 4 && (
-            <span className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/40">
-              +{builder.skills.length - 4}
-            </span>
-          )}
-        </div>
-      )}
+      
     </Link>
   );
 
