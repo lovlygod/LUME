@@ -88,7 +88,7 @@ LUME/
 │   ├── src/
 │   │   ├── components/     # UI components
 │   │   │   ├── ui/         # shadcn/ui components
-  │   │   │   ├── groups/     # (legacy) Group components
+│   │   │   ├── groups/     # (legacy) Group components
 │   │   │   ├── feed/       # Feed components
 │   │   │   ├── post/       # Post components
 │   │   │   ├── chat/       # Chat components
@@ -99,19 +99,19 @@ LUME/
 │   │   │   └── layout/     # Layout components
 │   │   ├── pages/          # App pages
 │   │   │   ├── auth/       # Auth pages
-      │   │   │   ├── messages/   # Messages pages
-      │   │   │   ├── group/      # (legacy) Group pages
-      │   │   │   ├── onboarding/ # Onboarding flow
-      │   │   │   ├── projects/   # Projects pages
-      │   │   │   ├── workspaces/ # Workspaces pages
-      │   │   │   └── stickers/   # Sticker pages
-      │   │   ├── services/       # API client, errorHandler, websocket, e2ee
-      │   │   ├── contexts/       # React contexts (Auth, Language, Theme, Server)
-      │   │   ├── hooks/          # Custom hooks (React Query)
-      │   │   ├── i18n/           # Localization
-      │   │   ├── lib/            # Utilities (queryClient, config, utils)
-      │   │   ├── types/          # TypeScript types
-      │   │   └── test/           # Tests
+│   │   │   ├── messages/   # Messages pages
+│   │   │   ├── group/      # (legacy) Group pages
+│   │   │   ├── onboarding/ # Onboarding flow
+│   │   │   ├── projects/   # Projects pages
+│   │   │   ├── workspaces/ # Workspaces pages
+│   │   │   └── stickers/   # Sticker pages
+│   │   ├── services/       # API client, errorHandler, websocket, e2ee
+│   │   ├── contexts/       # React contexts (Auth, Language, Theme, Server)
+│   │   ├── hooks/          # Custom hooks (React Query)
+│   │   ├── i18n/           # Localization
+│   │   ├── lib/            # Utilities (queryClient, config, utils)
+│   │   ├── types/          # TypeScript types
+│   │   └── test/           # Tests
 │   └── public/             # Static assets
 │
 └── Backend (Express + PostgreSQL)
