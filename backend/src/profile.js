@@ -7,7 +7,9 @@ const getUserProfile = (req, res) => {
   const isNumericId = /^\d+$/.test(userRef);
   const query = `
     SELECT id, email, name, username, bio, city, website, pinned_post_id,
-           avatar, banner, verified, followers_count, join_date, created_at
+           avatar, banner, verified, followers_count, join_date, created_at,
+           onboarding_completed, primary_role, goals, skills, availability,
+           github_url, telegram_username, portfolio_url
     FROM users
     WHERE ${isNumericId ? 'id = $1' : 'LOWER(username) = LOWER($1)'}
   `;
@@ -46,7 +48,15 @@ const getUserProfile = (req, res) => {
           verified: user.verified === 1,
           followers_count: user.followers_count || 0,
           following_count: followingCount,
-          joinDate: user.join_date
+          joinDate: user.join_date,
+          onboardingCompleted: user.onboarding_completed,
+          primaryRole: user.primary_role,
+          goals: user.goals || [],
+          skills: user.skills || [],
+          availability: user.availability,
+          githubUrl: user.github_url,
+          telegramUsername: user.telegram_username,
+          portfolioUrl: user.portfolio_url,
         }
       });
     });

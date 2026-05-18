@@ -25,9 +25,14 @@ const { verifyCSRFToken } = require('./csrf');
 const { indexMessage } = require('./search/messagesSearch');
 const developerPlatformRoutes = require('./developerPlatform');
 const developerApiRoutes = require('./developerApi');
-const registerChatRoutes = require('./routes/chatRoutes');
-const registerSocialRoutes = require('./routes/socialRoutes');
+const registerStickerRoutes = require('./routes/stickerRoutes');
+const registerMessengerRoutes = require('./routes/messengerRoutes');
 const registerE2EERoutes = require('./routes/e2eeRoutes');
+const createOnboardingRoutes = require('./routes/onboardingRoutes');
+const createWorkspaceRoutes = require('./routes/workspaceRoutes');
+const createProjectRoutes = require('./routes/projectRoutes');
+const createTaskRoutes = require('./routes/taskRoutes');
+const createExploreRoutes = require('./routes/exploreRoutes');
 
 // Helper function to extract @mentions from text
 function extractMentions(text) {
@@ -482,31 +487,60 @@ router.use('/developer', developerPlatformRoutes);
 // Developer public API routes
 router.use('/developer-api', developerApiRoutes);
 
-registerChatRoutes(router, {
-  db,
-  authenticateToken,
-  asyncHandler,
-  normalizeUsername,
-  isChatUsernameValid,
-  generateInviteToken,
-  generatePublicNumber,
-});
-
-registerSocialRoutes(router, {
-  db,
-  authenticateToken,
-  asyncHandler,
-  ValidationError,
-  fileUpload,
-  uploadFile,
-  momentUpload,
-  crypto,
-});
 registerE2EERoutes(router, {
   db,
   authenticateToken,
   asyncHandler,
 });
+
+registerStickerRoutes(router, {
+  authenticateToken,
+  asyncHandler,
+  db,
+  ensureStickerData,
+  ensureStickerSchema,
+  normalizeStickerSlug,
+  isRemoteUrl,
+  getPublicBaseUrl,
+  stickerFileCache,
+  resolveStickerAssetPath,
+  cacheStickerBuffer,
+  fs,
+});
+
+registerMessengerRoutes(router, {
+  authenticateToken,
+  asyncHandler,
+  db,
+  ValidationError,
+});
+
+router.use('/', createOnboardingRoutes({
+  authenticateToken,
+  asyncHandler,
+}));
+
+router.use('/', createWorkspaceRoutes({
+  authenticateToken,
+  asyncHandler,
+  db,
+}));
+
+router.use('/', createProjectRoutes({
+  authenticateToken,
+  asyncHandler,
+  db,
+}));
+
+router.use('/', createTaskRoutes({
+  authenticateToken,
+  asyncHandler,
+}));
+
+router.use('/', createExploreRoutes({
+  authenticateToken,
+  asyncHandler,
+}));
 
 // Profile routes (protected)
 router.get('/profile/:userId', authenticateToken, getUserProfile);
@@ -836,24 +870,31 @@ router.get('/profile', authenticateToken, (req, res) => {
 
   const query = `
     SELECT id, email, name, username, bio, city, website, pinned_post_id,
-           avatar, banner, verified, followers_count, join_date, created_at, role
+           avatar, banner, verified, followers_count, join_date, created_at, role,
+           onboarding_completed, primary_role, goals, skills, availability, github_url, telegram_username, portfolio_url
     FROM users
     WHERE id = $1
   `;
 
-  db.get(query, [userId], (err, user) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
+  const pool = require('./db').pool;
+  
+  pool.query(query, [userId])
+    .then((result) => {
+      const user = result.rows[0];
 
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
 
-    // Get following count
-    const followingQuery = 'SELECT COUNT(*) as count FROM followers WHERE follower_id = $1';
-    db.get(followingQuery, [userId], (err, followingResult) => {
-      const followingCount = followingResult ? followingResult.count : 0;
+      // Get following count
+      const followingQuery = 'SELECT COUNT(*) as count FROM followers WHERE follower_id = $1';
+      return pool.query(followingQuery, [userId]).then((followingResult) => {
+        return { user, followingCount: followingResult.rows[0] ? followingResult.rows[0].count : 0 };
+      });
+    })
+    .then((data) => {
+      const user = data.user;
+      const followingCount = data.followingCount;
 
       res.json({
         user: {
@@ -869,14 +910,25 @@ router.get('/profile', authenticateToken, (req, res) => {
           avatar: user.avatar,
           banner: user.banner,
           verified: user.verified === 1,
+          onboardingCompleted: !!user.onboarding_completed,
+          primaryRole: user.primary_role || null,
+          goals: user.goals || [],
+          skills: user.skills || [],
+          availability: user.availability || null,
+          githubUrl: user.github_url || null,
+          telegramUsername: user.telegram_username || null,
+          portfolioUrl: user.portfolio_url || null,
           followers_count: user.followers_count || 0,
           following_count: followingCount,
           joinDate: user.join_date,
           role: user.role || 'user'
         }
       });
+    })
+    .catch((err) => {
+      console.log('GET /profile error:', err);
+      res.status(500).json({ error: 'Database error' });
     });
-  });
 });
 
 // Get user's posts
@@ -948,6 +1000,79 @@ router.get('/users', authenticateToken, asyncHandler(async (req, res) => {
     }));
 
     res.json({ users: formattedUsers });
+  });
+}));
+
+// Follow/unfollow + followers/following
+router.post('/follow/batch', authenticateToken, asyncHandler(async (req, res) => {
+  const followerId = req.user.userId;
+  const userIds = Array.isArray(req.body?.userIds) ? req.body.userIds : [];
+  if (!userIds.length) return res.status(400).json({ error: 'userIds is required' });
+
+  const sanitized = [...new Set(userIds.map((v) => String(v)).filter((id) => id !== String(followerId)))];
+  for (const followingId of sanitized) {
+    // eslint-disable-next-line no-await-in-loop
+    await db.query(
+      `INSERT INTO followers (follower_id, following_id)
+       VALUES ($1, $2)
+       ON CONFLICT (follower_id, following_id) DO NOTHING`,
+      [followerId, followingId]
+    );
+  }
+
+  res.json({ message: 'Followed', count: sanitized.length });
+}));
+
+router.delete('/follow/:userId', authenticateToken, asyncHandler(async (req, res) => {
+  const followerId = req.user.userId;
+  const followingId = req.params.userId;
+  await db.query('DELETE FROM followers WHERE follower_id = $1 AND following_id = $2', [followerId, followingId]);
+  res.json({ message: 'Unfollowed' });
+}));
+
+router.get('/follow/status/:userId', authenticateToken, asyncHandler(async (req, res) => {
+  const followerId = req.user.userId;
+  const followingId = req.params.userId;
+  const { rows } = await db.query(
+    'SELECT 1 FROM followers WHERE follower_id = $1 AND following_id = $2 LIMIT 1',
+    [followerId, followingId]
+  );
+  res.json({ following: rows.length > 0 });
+}));
+
+router.get('/users/:userId/followers', authenticateToken, asyncHandler(async (req, res) => {
+  const userId = req.params.userId;
+  const { rows } = await db.query(
+    `SELECT u.id, u.name, u.username, u.bio, u.avatar, u.verified
+     FROM followers f
+     JOIN users u ON u.id = f.follower_id
+     WHERE f.following_id = $1
+       AND f.follower_id <> f.following_id
+     ORDER BY f.created_at DESC`,
+    [userId]
+  );
+
+  res.json({
+    followers: rows.map((u) => ({ ...u, id: String(u.id) })),
+    total: rows.length,
+  });
+}));
+
+router.get('/users/:userId/following', authenticateToken, asyncHandler(async (req, res) => {
+  const userId = req.params.userId;
+  const { rows } = await db.query(
+    `SELECT u.id, u.name, u.username, u.bio, u.avatar, u.verified
+     FROM followers f
+     JOIN users u ON u.id = f.following_id
+     WHERE f.follower_id = $1
+       AND f.follower_id <> f.following_id
+     ORDER BY f.created_at DESC`,
+    [userId]
+  );
+
+  res.json({
+    following: rows.map((u) => ({ ...u, id: String(u.id) })),
+    total: rows.length,
   });
 }));
 
@@ -1725,312 +1850,6 @@ router.post('/chats/:id/join-requests/:requestId', authenticateToken, asyncHandl
     }
   );
 }));
-
-// ==================== Stickers ====================
-
-router.get('/stickers/packs', authenticateToken, asyncHandler(async (_req, res) => {
-  await ensureStickerData();
-
-  db.all(
-    `SELECT sp.id, sp.name, sp.slug, sp.description, sp.author, sp.created_at,
-            COUNT(s.id) as sticker_count
-     FROM sticker_packs sp
-     LEFT JOIN stickers s ON s.pack_id = sp.id
-     GROUP BY sp.id, sp.name, sp.description, sp.author, sp.created_at
-     ORDER BY sp.created_at DESC`,
-    (err, packs) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      const formatted = (packs || []).map((pack) => ({
-        id: pack.id.toString(),
-        name: pack.name,
-        slug: pack.slug,
-        description: pack.description,
-        author: pack.author,
-        createdAt: pack.created_at,
-        stickerCount: Number(pack.sticker_count || 0),
-      }));
-      res.json({ packs: formatted });
-    }
-  );
-}));
-
-router.get('/stickers/packs/:id', authenticateToken, asyncHandler(async (req, res) => {
-  await ensureStickerData();
-  const packId = req.params.id;
-
-  db.get('SELECT id, name, slug, description, author, created_at FROM sticker_packs WHERE id = $1', [packId], (err, pack) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (!pack) {
-      return res.status(404).json({ error: 'Pack not found' });
-    }
-
-    db.all('SELECT id, name, file_path FROM stickers WHERE pack_id = $1 ORDER BY id ASC', [packId], (err2, stickers) => {
-      if (err2) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      const formatted = (stickers || []).map((sticker) => ({
-        id: sticker.id.toString(),
-        name: sticker.name,
-        filePath: sticker.file_path,
-        url: isRemoteUrl(sticker.file_path)
-          ? sticker.file_path
-          : `${getPublicBaseUrl(req)}/api/stickers/${sticker.id}`,
-      }));
-
-      res.json({
-        pack: {
-          id: pack.id.toString(),
-          name: pack.name,
-          slug: pack.slug,
-          description: pack.description,
-          author: pack.author,
-          createdAt: pack.created_at,
-        },
-        stickers: formatted,
-      });
-    });
-  });
-}));
-
-router.get('/stickers/slug/:slug', authenticateToken, asyncHandler(async (req, res) => {
-  await ensureStickerData();
-  const slug = normalizeStickerSlug(req.params.slug || '');
-  if (!slug) {
-    return res.status(400).json({ error: 'Invalid sticker slug' });
-  }
-
-  db.get('SELECT id, name, slug, description, author, created_at FROM sticker_packs WHERE slug = $1', [slug], (err, pack) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (!pack) {
-      return res.status(404).json({ error: 'Pack not found' });
-    }
-
-    db.all('SELECT id, name, file_path FROM stickers WHERE pack_id = $1 ORDER BY id ASC', [pack.id], (err2, stickers) => {
-      if (err2) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      const formatted = (stickers || []).map((sticker) => ({
-        id: sticker.id.toString(),
-        name: sticker.name,
-        filePath: sticker.file_path,
-        url: isRemoteUrl(sticker.file_path)
-          ? sticker.file_path
-          : `${getPublicBaseUrl(req)}/api/stickers/${sticker.id}`,
-      }));
-
-      res.json({
-        pack: {
-          id: pack.id.toString(),
-          name: pack.name,
-          slug: pack.slug,
-          description: pack.description,
-          author: pack.author,
-          createdAt: pack.created_at,
-        },
-        stickers: formatted,
-      });
-    });
-  });
-}));
-
-router.get('/stickers/public/slug/:slug', authenticateToken, asyncHandler(async (req, res) => {
-  await ensureStickerData();
-  const slug = normalizeStickerSlug(req.params.slug || '');
-  if (!slug) {
-    return res.status(400).json({ error: 'Invalid sticker slug' });
-  }
-
-  db.get('SELECT id, name, slug, description, author, created_at FROM sticker_packs WHERE slug = $1', [slug], (err, pack) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (!pack) {
-      return res.status(404).json({ error: 'Pack not found' });
-    }
-
-    db.all('SELECT id, name, file_path FROM stickers WHERE pack_id = $1 ORDER BY id ASC', [pack.id], (err2, stickers) => {
-      if (err2) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      const formatted = (stickers || []).map((sticker) => ({
-        id: sticker.id.toString(),
-        name: sticker.name,
-        filePath: sticker.file_path,
-        url: isRemoteUrl(sticker.file_path)
-          ? sticker.file_path
-          : `${getPublicBaseUrl(req)}/api/stickers/${sticker.id}`,
-      }));
-
-      res.json({
-        pack: {
-          id: pack.id.toString(),
-          name: pack.name,
-          slug: pack.slug,
-          description: pack.description,
-          author: pack.author,
-          createdAt: pack.created_at,
-        },
-        stickers: formatted,
-      });
-    });
-  });
-}));
-
-router.get('/stickers/mine', authenticateToken, asyncHandler(async (req, res) => {
-  await ensureStickerData();
-  const userId = req.user.userId;
-  console.info('[Stickers] mine request', { userId });
-
-  db.all(
-    `SELECT sp.id, sp.name, sp.slug, sp.description, sp.author, sp.created_at,
-            COUNT(s.id) as sticker_count,
-            MAX(usp.added_at) as added_at
-     FROM user_sticker_packs usp
-     JOIN sticker_packs sp ON sp.id = usp.pack_id
-     LEFT JOIN stickers s ON s.pack_id = sp.id
-     WHERE usp.user_id = $1
-     GROUP BY sp.id, sp.name, sp.description, sp.author, sp.created_at
-     ORDER BY added_at DESC`,
-    [userId],
-    (err, packs) => {
-      if (err) {
-        console.error('[Stickers] mine failed', err);
-        return res.status(500).json({ error: 'Database error' });
-      }
-      const formatted = (packs || []).map((pack) => ({
-        id: pack.id.toString(),
-        name: pack.name,
-        slug: pack.slug,
-        description: pack.description,
-        author: pack.author,
-        createdAt: pack.created_at,
-        stickerCount: Number(pack.sticker_count || 0),
-      }));
-      res.json({ packs: formatted });
-    }
-  );
-}));
-
-router.get('/stickers/pack/:id', authenticateToken, asyncHandler(async (req, res) => {
-  await ensureStickerData();
-  const packId = req.params.id;
-
-  db.get('SELECT id, name, slug, description, author, created_at FROM sticker_packs WHERE id = $1', [packId], (err, pack) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (!pack) {
-      return res.status(404).json({ error: 'Pack not found' });
-    }
-
-    db.all('SELECT id, name, file_path FROM stickers WHERE pack_id = $1 ORDER BY id ASC', [packId], (err2, stickers) => {
-      if (err2) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      const formatted = (stickers || []).map((sticker) => ({
-        id: sticker.id.toString(),
-        name: sticker.name,
-        filePath: sticker.file_path,
-        url: isRemoteUrl(sticker.file_path)
-          ? sticker.file_path
-          : `${getPublicBaseUrl(req)}/api/stickers/${sticker.id}`,
-      }));
-
-      res.json({
-        pack: {
-          id: pack.id.toString(),
-          name: pack.name,
-          slug: pack.slug,
-          description: pack.description,
-          author: pack.author,
-          createdAt: pack.created_at,
-        },
-        stickers: formatted,
-      });
-    });
-  });
-}));
-
-router.post('/stickers/add-pack', authenticateToken, asyncHandler(async (req, res) => {
-  await ensureStickerSchema();
-  const userId = req.user.userId;
-  const { packId } = req.body;
-  console.info('[Stickers] add-pack request', { userId, packId });
-  if (!packId) {
-    return res.status(400).json({ error: 'packId is required' });
-  }
-
-  db.run(
-    'INSERT INTO user_sticker_packs (user_id, pack_id) VALUES ($1, $2) ON CONFLICT(user_id, pack_id) DO NOTHING',
-    [userId, packId],
-    (err) => {
-      if (err) {
-        console.error('[Stickers] add-pack failed', err);
-        return res.status(500).json({ error: 'Database error' });
-      }
-      console.info('[Stickers] add-pack success', { userId, packId });
-      res.json({ message: 'Sticker pack added' });
-    }
-  );
-}));
-
-router.get('/stickers/:id', authenticateToken, asyncHandler(async (req, res) => {
-  const stickerId = req.params.id;
-  if (!stickerId || !Number.isInteger(Number(stickerId))) {
-    return res.status(400).json({ error: 'Invalid sticker id' });
-  }
-
-  const cached = stickerFileCache.get(stickerId);
-  if (cached?.buffer) {
-    res.setHeader('Content-Type', 'image/png');
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    res.setHeader('Content-Disposition', 'inline');
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self' data:");
-    return res.end(cached.buffer);
-  }
-
-  db.get('SELECT file_path FROM stickers WHERE id = $1', [stickerId], (err, sticker) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (!sticker) {
-      return res.status(404).json({ error: 'Sticker not found' });
-    }
-
-    if (isRemoteUrl(sticker.file_path)) {
-      return res.redirect(sticker.file_path);
-    }
-
-    let absolutePath;
-    try {
-      absolutePath = resolveStickerAssetPath(sticker.file_path);
-    } catch (_error) {
-      return res.status(400).json({ error: 'Invalid sticker path' });
-    }
-
-    fs.readFile(absolutePath, (readErr, buffer) => {
-      if (readErr) {
-        return res.status(404).json({ error: 'Sticker file missing' });
-      }
-      cacheStickerBuffer(stickerId, buffer);
-      res.setHeader('Content-Type', 'image/png');
-      res.setHeader('Cache-Control', 'public, max-age=86400');
-      res.setHeader('Content-Disposition', 'inline');
-      res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self' data:");
-      return res.end(buffer);
-    });
-  });
-}));
-
-
 
 // Get messages for a chat
 router.get('/chats/:chatId/messages', authenticateToken, (req, res) => {
@@ -3840,10 +3659,20 @@ router.get('/users/:userId', authenticateToken, (req, res) => {
   });
 });
 
-// Update current user profile (PATCH with bio, city, website)
+// Update current user profile (PATCH with name, username, bio, city, website, dev profile fields)
 router.patch('/users/me', authenticateToken, (req, res) => {
   const userId = req.user.userId;
-  const { bio, city, website } = req.body;
+  const { name, username, bio, city, website, primaryRole, skills, availability, githubUrl, telegramUsername } = req.body;
+
+  // Validate name
+  if (name !== undefined && (!name || name.trim().length === 0)) {
+    return res.status(400).json({ error: 'Name is required' });
+  }
+
+  // Validate username
+  if (username !== undefined && (!username || username.trim().length === 0)) {
+    return res.status(400).json({ error: 'Username is required' });
+  }
 
   // Validate city
   if (city !== undefined) {
@@ -3873,9 +3702,28 @@ router.patch('/users/me', authenticateToken, (req, res) => {
     }
   }
 
+  // Validate and normalize GitHub URL
+  let normalizedGithubUrl = githubUrl;
+  if (githubUrl !== undefined) {
+    if (githubUrl) {
+      const trimmed = githubUrl.trim();
+      if (!trimmed.match(/^https?:\/\/github\.com\/.+/i)) {
+        normalizedGithubUrl = `https://github.com/${trimmed.replace(/^@/, '')}`;
+      }
+    }
+  }
+
   const updates = [];
   const values = [];
 
+  if (name !== undefined) {
+    updates.push(`name = $${updates.length + 1}`);
+    values.push(name.trim());
+  }
+  if (username !== undefined) {
+    updates.push(`username = $${updates.length + 1}`);
+    values.push(username.trim().toLowerCase());
+  }
   if (bio !== undefined) {
     updates.push(`bio = $${updates.length + 1}`);
     values.push(bio);
@@ -3888,6 +3736,30 @@ router.patch('/users/me', authenticateToken, (req, res) => {
     updates.push(`website = $${updates.length + 1}`);
     values.push(normalizedWebsite);
   }
+  if (primaryRole !== undefined) {
+    updates.push(`primary_role = $${updates.length + 1}`);
+    values.push(primaryRole || null);
+  }
+  if (skills !== undefined) {
+    updates.push(`skills = $${updates.length + 1}`);
+    if (skills && Array.isArray(skills)) {
+      values.push(`{${skills.map(s => s.replace(/[",\\]/g, '\\$&')).join(',')}}`);
+    } else {
+      values.push(null);
+    }
+  }
+  if (availability !== undefined) {
+    updates.push(`availability = $${updates.length + 1}`);
+    values.push(availability || 'open');
+  }
+  if (normalizedGithubUrl !== undefined) {
+    updates.push(`github_url = $${updates.length + 1}`);
+    values.push(normalizedGithubUrl || null);
+  }
+  if (telegramUsername !== undefined) {
+    updates.push(`telegram_username = $${updates.length + 1}`);
+    values.push(telegramUsername ? telegramUsername.replace(/^@/, '') : null);
+  }
 
   if (updates.length === 0) {
     return res.status(400).json({ error: 'No fields to update' });
@@ -3897,13 +3769,15 @@ router.patch('/users/me', authenticateToken, (req, res) => {
 
   const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${updates.length + 1}`;
 
-  db.run(query, values, function(err) {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    res.json({ message: 'Profile updated successfully' });
-  });
+  const pool = require('./db').pool;
+  pool.query(query, values)
+    .then(() => {
+      res.json({ message: 'Profile updated successfully' });
+    })
+    .catch((err) => {
+      console.error('Profile update error:', err);
+      res.status(500).json({ error: 'Database error' });
+    });
 });
 
 // ==================== PINNED POST ====================
@@ -4248,219 +4122,6 @@ router.get('/attachments/:attachmentId', authenticateToken, (req, res) => {
   });
 });
 
-// ==================== MESSENGER ====================
-
-// Get user presence (online/offline + last_seen)
-router.get('/users/:userId/presence', authenticateToken, (req, res) => {
-  const userId = req.params.userId;
-
-  db.get('SELECT last_seen_at FROM users WHERE id = $1', [parseInt(userId)], (err, user) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Check if user is online via onlineUsers map
-    const onlineUsers = req.app.get('onlineUsers');
-    const isOnline = onlineUsers && onlineUsers.has(parseInt(userId));
-
-    res.json({
-      userId: userId.toString(),
-      online: isOnline,
-      lastSeenAt: user.last_seen_at
-    });
-  });
-});
-
-// Mark messages as read in a chat (REST alternative to WS)
-router.post('/chats/:chatId/read', authenticateToken, (req, res) => {
-  const userId = req.user.userId;
-  const chatId = req.params.chatId;
-  const { lastReadMessageId } = req.body;
-
-  if (!lastReadMessageId) {
-    return res.status(400).json({ error: 'lastReadMessageId is required' });
-  }
-
-  db.get('SELECT 1 FROM chat_members WHERE chat_id = $1 AND user_id = $2', [chatId, userId], (memberErr, memberRow) => {
-    if (memberErr) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (!memberRow) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    db.run(
-      `INSERT INTO chat_reads (chat_id, user_id, last_read_message_id, updated_at)
-       VALUES ($1, $2, $3, NOW())
-       ON CONFLICT(chat_id, user_id)
-       DO UPDATE SET last_read_message_id = $4, updated_at = NOW()`,
-      [chatId, userId, lastReadMessageId, lastReadMessageId],
-      function(err) {
-        if (err) {
-          return res.status(500).json({ error: 'Database error' });
-        }
-
-  const broadcastToChat = req.app.get('broadcastToChat');
-  if (broadcastToChat) {
-    broadcastToChat(chatId, {
-      type: 'chat:read_update',
-      data: {
-        chatId: chatId.toString(),
-        userId: userId.toString(),
-        lastReadMessageId: lastReadMessageId.toString()
-      }
-    });
-  }
-
-        res.json({
-          message: 'Chat marked as read',
-          chatId: chatId.toString(),
-          lastReadMessageId: lastReadMessageId.toString()
-        });
-      }
-    );
-  });
-});
-
-// Get chat read status for all participants
-router.get('/chats/:chatId/read-status', authenticateToken, (req, res) => {
-  const userId = req.user.userId;
-  const chatId = req.params.chatId;
-
-  db.get('SELECT 1 FROM chat_members WHERE chat_id = $1 AND user_id = $2', [chatId, userId], (memberErr, memberRow) => {
-    if (memberErr) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (!memberRow) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    const query = `
-      SELECT cr.user_id, cr.last_read_message_id, cr.updated_at, u.name, u.username
-      FROM chat_reads cr
-      JOIN users u ON cr.user_id = u.id
-      WHERE cr.chat_id = $1
-    `;
-
-    db.all(query, [chatId], (err, readStatuses) => {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-
-      const formatted = readStatuses.map(status => ({
-        userId: status.user_id.toString(),
-        name: status.name,
-        username: status.username,
-        lastReadMessageId: status.last_read_message_id ? status.last_read_message_id.toString() : null,
-        updatedAt: status.updated_at
-      }));
-
-      res.json({ chatId: chatId.toString(), readStatuses: formatted });
-    });
-  });
-});
-
-// ==================== MESSAGE DELETION ====================
-
-// Delete message (for me or for all)
-router.delete('/messages/:messageId', authenticateToken, (req, res) => {
-  const userId = req.user.userId;
-  const messageId = req.params.messageId;
-  const { scope } = req.query; // 'me' or 'all'
-
-  // Get the message
-  db.get('SELECT * FROM messages WHERE id = $1', [messageId], (err, message) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    if (!message) {
-      return res.status(404).json({ error: 'Message not found' });
-    }
-
-    const isAuthor = String(message.sender_id) === String(userId);
-    if (!isAuthor) {
-      return res.status(403).json({ error: 'You can only delete messages you sent' });
-    }
-
-    if (scope === 'all') {
-      // Only author can delete for all
-      if (!isAuthor) {
-        return res.status(403).json({ error: 'Only the sender can delete a message for everyone' });
-      }
-
-      // Mark as deleted for all
-      db.run(
-        'UPDATE messages SET deleted_for_all_at = NOW(), deleted_for_all_by = $1 WHERE id = $2',
-        [userId, messageId],
-        function(err) {
-          if (err) {
-            console.error('[messages] delete-for-all error:', { err, messageId, userId });
-            return res.status(500).json({ error: 'Database error' });
-          }
-
-          // Notify via WebSocket
-          const sendChatMessage = req.app.get('sendChatMessage');
-          if (sendChatMessage) {
-            sendChatMessage({
-              chatId: message.chat_id ? String(message.chat_id) : null,
-              type: 'message:deleted',
-              data: {
-                messageId: messageId.toString(),
-                scope: 'all',
-                byUserId: userId.toString()
-              }
-            });
-          }
-
-          res.json({ 
-            message: 'Message deleted for everyone',
-            messageId: messageId.toString(),
-            scope: 'all'
-          });
-        }
-      );
-    } else {
-      // Delete for me (default)
-      db.get(
-        'SELECT * FROM message_deletions WHERE message_id = $1 AND user_id = $2',
-        [messageId, userId],
-        (err, deletion) => {
-          if (err) {
-            console.error('[messages] delete-for-me select error:', { err, messageId, userId });
-            return res.status(500).json({ error: 'Database error' });
-          }
-
-          if (deletion) {
-            return res.status(400).json({ error: 'Already deleted for you' });
-          }
-
-          db.run(
-            'INSERT INTO message_deletions (message_id, user_id) VALUES ($1, $2)',
-            [messageId, userId],
-            function(err) {
-              if (err) {
-                console.error('[messages] delete-for-me insert error:', { err, messageId, userId });
-                return res.status(500).json({ error: 'Database error' });
-              }
-
-              res.json({
-                message: 'Message deleted for you',
-                messageId: messageId.toString(),
-                scope: 'me'
-              });
-            }
-          );
-        }
-      );
-    }
-  });
-});
-
 // Servers module removed
 
 // Link Preview (Open Graph)
@@ -4480,139 +4141,6 @@ router.post('/link-preview', authenticateToken, asyncHandler(async (req, res) =>
 
   res.json(result.data);
 }));
-
-// ========== NOTIFICATIONS ==========
-
-// Get user notifications
-// Mark notification as read
-router.post('/notifications/read', authenticateToken, asyncHandler(async (req, res) => {
-  const userId = req.user.userId;
-  const { notificationId, markAllAsRead = false } = req.body;
-
-  if (markAllAsRead) {
-    // Mark all notifications as read for this user
-    await new Promise((resolve, reject) => {
-      db.run(
-        'UPDATE notifications SET read = 1 WHERE user_id = $1 AND read = 0',
-        [userId],
-        (err) => {
-          if (err) reject(err);
-          else resolve();
-        }
-      );
-    });
-
-    res.json({ message: 'All notifications marked as read' });
-  } else {
-    if (!notificationId) {
-      throw new ValidationError('Notification ID is required');
-    }
-
-    // Mark specific notification as read
-    const result = await new Promise((resolve, reject) => {
-      db.run(
-        'UPDATE notifications SET read = 1 WHERE id = $1 AND user_id = $2',
-        [notificationId, userId],
-        function(err) {
-          if (err) reject(err);
-          else resolve(this);
-        }
-      );
-    });
-
-    if (result.changes === 0) {
-      throw new ValidationError('Notification not found or already read');
-    }
-
-    res.json({ message: 'Notification marked as read' });
-  }
-}));
-
-// Mark notification as read (new endpoint)
-router.post('/notifications/:id/read', authenticateToken, asyncHandler(async (req, res) => {
-  const userId = req.user.userId;
-  const notificationId = req.params.id;
-
-  const result = await new Promise((resolve, reject) => {
-    db.run(
-      'UPDATE notifications SET read = 1 WHERE id = $1 AND user_id = $2',
-      [notificationId, userId],
-      function(err) {
-        if (err) reject(err);
-        else resolve(this);
-      }
-    );
-  });
-
-  if (result.changes === 0) {
-    throw new ValidationError('Notification not found or already read');
-  }
-
-  res.json({ message: 'Notification marked as read' });
-}));
-
-router.post('/messages/:messageId/reaction', authenticateToken, (req, res) => {
-  const userId = req.user.userId;
-  const messageId = parseInt(req.params.messageId);
-  const { reaction } = req.body;
-
-  if (!messageId || !Number.isFinite(messageId)) {
-    return res.status(400).json({ error: 'Invalid message ID' });
-  }
-
-  db.get(
-    'SELECT id FROM chat_members cm JOIN messages m ON m.chat_id = cm.chat_id WHERE m.id = $1 AND cm.user_id = $2',
-    [messageId, userId],
-    (err, membership) => {
-      if (err) return res.status(500).json({ error: 'Database error' });
-      if (!membership) return res.status(403).json({ error: 'Not a member of this chat' });
-
-      db.get(
-        'SELECT id FROM message_reactions WHERE message_id = $1 AND user_id = $2',
-        [messageId, userId],
-        (err2, existing) => {
-          if (err2) return res.status(500).json({ error: 'Database error' });
-
-          if (existing) {
-            db.run('DELETE FROM message_reactions WHERE id = $1', [existing.id], (err3) => {
-              if (err3) return res.status(500).json({ error: 'Database error' });
-              res.json({ reacted: false, reaction: null });
-            });
-          } else {
-            db.run(
-              'INSERT INTO message_reactions (message_id, user_id, reaction) VALUES ($1, $2, $3) RETURNING id',
-              [messageId, userId, reaction || 'heart'],
-              function(err3) {
-                if (err3) return res.status(500).json({ error: 'Database error' });
-                res.json({ reacted: true, reaction: reaction || 'heart' });
-              }
-            );
-          }
-        }
-      );
-    }
-  );
-});
-
-router.get('/messages/:messageId/reactions', authenticateToken, (req, res) => {
-  const messageId = parseInt(req.params.messageId);
-
-  db.all(
-    `SELECT mr.reaction, mr.user_id, u.username, u.name FROM message_reactions mr
-     JOIN users u ON u.id = mr.user_id
-     WHERE mr.message_id = $1`,
-    [messageId],
-    (err, reactions) => {
-      if (err) return res.status(500).json({ error: 'Database error' });
-      res.json({ reactions: (reactions || []).map(r => ({
-        reaction: r.reaction,
-        userId: r.user_id.toString(),
-        username: r.username,
-        name: r.name,
-      }))});
-    }
-  );
-});
 
 module.exports = router;
 module.exports.ensureStickerData = ensureStickerData;

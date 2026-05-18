@@ -49,9 +49,9 @@ const register = async (req, res, next) => {
 
   try {
     // Validate input
-    if (!email || !password || !name || !username) {
-      throw new ValidationError('All fields are required', {
-        missingFields: ['email', 'password', 'name', 'username'].filter(f => !req.body[f]),
+    if (!email || !password || !username) {
+      throw new ValidationError('Required fields are missing', {
+        missingFields: ['email', 'password', 'username'].filter(f => !req.body[f]),
       });
     }
 
@@ -66,12 +66,12 @@ const register = async (req, res, next) => {
 
     // Insert user into database
     const query = `
-      INSERT INTO users (email, password_hash, name, username)
+      INSERT INTO users (email, password_hash, name, username, onboarding_completed)
       VALUES ($1, $2, $3, $4)
     `;
 
     const userId = await new Promise((resolve, reject) => {
-      db.run(query, [email, hashedPassword, name, username], function(err) {
+      db.run(query, [email, hashedPassword, name || username, username], function(err) {
         if (err) {
           if (err.message.includes('UNIQUE constraint failed')) {
             const field = err.message.includes('email') ? 'email' : 'username';
@@ -127,7 +127,8 @@ const register = async (req, res, next) => {
         email,
         name,
         username,
-        verified: false
+        verified: false,
+        onboardingCompleted: false
       }
     });
   } catch (error) {
@@ -211,7 +212,8 @@ const login = async (req, res, next) => {
         bio: user.bio,
         avatar: user.avatar,
         banner: user.banner,
-        verified: user.verified === 1
+        verified: user.verified === 1,
+        onboardingCompleted: !!user.onboarding_completed
       }
     });
   } catch (error) {
