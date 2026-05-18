@@ -13,7 +13,7 @@ module.exports = function registerMessengerRoutes(router, deps) {
     const chats = await new Promise((resolve, reject) => {
       db.all(
         `SELECT c.id, c.type, c.title, c.avatar, c.owner_id, c.is_public, c.is_private,
-                c.username, c.invite_token, c.public_number, c.created_at,
+                c.username, c.invite_token, c.public_number, c.created_at, c.project_id,
                 cm.role,
                 lm.text AS last_message_text,
                 lm.type AS last_message_type,
@@ -83,6 +83,24 @@ module.exports = function registerMessengerRoutes(router, deps) {
       }, new Map());
     }
 
+    // Get project names for chats with project_id
+    const projectIds = [...new Set(chats.filter(c => c.project_id).map(c => c.project_id))];
+    let projectNames = new Map();
+    if (projectIds.length > 0) {
+      const placeholders = projectIds.map((_, i) => `$${i + 1}`).join(',');
+      const projects = await new Promise((resolve, reject) => {
+        db.all(
+          `SELECT id, name FROM projects WHERE id IN (${placeholders})`,
+          projectIds,
+          (err, rows) => {
+            if (err) return reject(err);
+            resolve(rows || []);
+          }
+        );
+      });
+      projects.forEach(p => projectNames.set(p.id, p.name));
+    }
+
     const payload = chats.map((chat) => ({
       id: String(chat.id),
       type: chat.type,
@@ -100,6 +118,8 @@ module.exports = function registerMessengerRoutes(router, deps) {
       lastMessageType: chat.last_message_type || 'text',
       timestamp: chat.last_message_at,
       unread: Number(chat.unread_count || 0),
+      projectId: chat.project_id || null,
+      projectName: chat.project_id ? projectNames.get(chat.project_id) || null : null,
     }));
 
     res.json({ chats: payload });
@@ -437,4 +457,36 @@ module.exports = function registerMessengerRoutes(router, deps) {
       }
     );
   });
+
+  router.post('/chats', authenticateToken, asyncHandler(async (req, res) => {
+    const userId = req.user.userId;
+    const { type, title, isPublic, isPrivate, username } = req.body;
+
+    if (!type || !['private', 'group', 'channel'].includes(type)) {
+      return res.status(400).json({ error: 'Invalid chat type' });
+    }
+    if (!title || title.trim().length === 0) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+
+    const publicGroup = isPublic && username;
+    if (publicGroup && !/^[a-z0-9_]{5,}$/i.test(username)) {
+      return res.status(400).json({ error: 'Invalid username' });
+    }
+
+    const { rows } = await db.query(
+        `INSERT INTO chats (type, title, is_public, is_private, username, owner_id)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING id`,
+        [type, title.trim(), Boolean(isPublic), Boolean(isPrivate), username || null, userId]
+      );
+      const chatId = rows[0].id;
+
+      await db.query(
+        'INSERT INTO chat_members (chat_id, user_id, role) VALUES ($1, $2, $3)',
+        [chatId, userId, 'owner']
+      );
+
+      res.status(201).json({ chatId: chatId.toString() });
+  }));
 };
