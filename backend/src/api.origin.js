@@ -1376,7 +1376,7 @@ router.get('/chats/username/:username', authenticateToken, asyncHandler(async (r
 
   const chat = await new Promise((resolve) => {
     db.get(
-      `SELECT c.id, c.type, c.title, c.avatar, c.owner_id, c.is_public, c.is_private, c.username,
+      `SELECT c.id, c.type, c.title, c.avatar, c.owner_id, c.is_public, c.is_private, c.username, c.project_id,
               c.invite_token, c.public_number,
               COUNT(cm.user_id) as members_count
        FROM chats c
@@ -1393,6 +1393,33 @@ router.get('/chats/username/:username', authenticateToken, asyncHandler(async (r
 
   if (!chat) {
     return res.status(404).json({ error: 'Chat not found' });
+  }
+
+  let project = null;
+  if (chat.project_id) {
+    const projectData = await new Promise((resolve) => {
+      db.get(
+        `SELECT p.*, pm.role as member_role
+         FROM projects p
+         LEFT JOIN project_members pm ON pm.project_id = p.id AND pm.user_id = $2
+         WHERE p.id = $1`,
+        [chat.project_id, currentUserId],
+        (err, row) => {
+          if (err) return resolve(null);
+          resolve(row || null);
+        }
+      );
+    });
+    if (projectData) {
+      project = {
+        id: projectData.id,
+        name: projectData.name,
+        slug: projectData.slug,
+        description: projectData.description,
+        status: projectData.status,
+        member_role: projectData.member_role,
+      };
+    }
   }
 
   const member = await new Promise((resolve) => {
@@ -1421,7 +1448,9 @@ router.get('/chats/username/:username', authenticateToken, asyncHandler(async (r
       publicNumber: chat.public_number ? String(chat.public_number) : null,
       membersCount: Number(chat.members_count || 0),
       role: member?.role || null,
+      project_id: chat.project_id,
     },
+    project,
   });
 }));
 

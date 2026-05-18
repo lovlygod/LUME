@@ -66,7 +66,7 @@ const register = async (req, res, next) => {
 
     // Insert user into database
     const query = `
-      INSERT INTO users (email, password_hash, name, username, onboarding_completed)
+      INSERT INTO users (email, password_hash, name, username)
       VALUES ($1, $2, $3, $4)
     `;
 
