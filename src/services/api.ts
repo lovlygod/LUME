@@ -508,7 +508,7 @@ export const messagesAPI = {
     return apiRequest(`/chats/${chatId}/public`, { method: 'GET' });
   },
 
-  getChatByUsername: async (username: string): Promise<{ chat: Chat & { membersCount?: number; joinStatus?: string | null } }> => {
+  getChatByUsername: async (username: string): Promise<{ chat: Chat & { membersCount?: number; joinStatus?: string | null; project_id?: number }; project?: any }> => {
     return apiRequest(`/chats/username/${encodeURIComponent(username)}`, { method: 'GET' });
   },
 
@@ -996,6 +996,30 @@ export const projectsAPI = {
   delete: async (id: number): Promise<{ message: string }> => {
     return apiRequest(`/projects/${id}`, { method: 'DELETE' });
   },
+  linkChat: async (projectId: number, chatId: string): Promise<{ message: string }> => {
+    return apiRequest(`/projects/${projectId}/chat`, {
+      method: 'POST',
+      body: JSON.stringify({ chatId }),
+    });
+  },
+  unlinkChat: async (projectId: number): Promise<{ message: string }> => {
+    return apiRequest(`/projects/${projectId}/chat`, { method: 'DELETE' });
+  },
+  getChat: async (projectId: number): Promise<{ chat: any }> => {
+    return apiRequest(`/projects/${projectId}/chat`, { method: 'GET' });
+  },
+  join: async (projectId: number): Promise<{ message: string }> => {
+    return apiRequest(`/projects/${projectId}/join`, { method: 'POST' });
+  },
+  leave: async (projectId: number): Promise<{ message: string }> => {
+    return apiRequest(`/projects/${projectId}/leave`, { method: 'POST' });
+  },
+};
+
+export const chatsAPI = {
+  getProject: async (chatId: string): Promise<{ project: any }> => {
+    return apiRequest(`/chats/${chatId}/project`, { method: 'GET' });
+  },
 };
 
 export const tasksAPI = {
@@ -1117,6 +1141,9 @@ export const projectMembersAPI = {
   },
   removeMember: async (projectId: number, userId: number): Promise<{ message: string }> => {
     return apiRequest(`/projects/${projectId}/members/${userId}`, { method: 'DELETE' });
+  },
+  searchUsers: async (projectId: number, query: string): Promise<{ users: Array<{ id: number; username: string; name: string; avatar: string | null }> }> => {
+    return apiRequest(`/projects/${projectId}/search-users?q=${encodeURIComponent(query)}`, { method: 'GET' });
   },
   generateInvite: async (projectId: number): Promise<{ invite: { code: string } }> => {
     return apiRequest(`/projects/${projectId}/invite`, { method: 'POST' });
