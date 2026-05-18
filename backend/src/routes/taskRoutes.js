@@ -5,7 +5,7 @@ const taskService = require('../services/taskService');
 const projectService = require('../services/projectService');
 const { AuthError } = require('../errors');
 
-module.exports = ({ authenticateToken, asyncHandler }) => {
+module.exports = ({ authenticateToken, asyncHandler, db }) => {
   const router = express.Router();
 
   router.post('/projects/:projectId/tasks', authenticateToken, createValidator(createTaskSchema), asyncHandler(async (req, res) => {
@@ -16,6 +16,14 @@ module.exports = ({ authenticateToken, asyncHandler }) => {
   }));
 
   router.get('/projects/:projectId/tasks', authenticateToken, asyncHandler(async (req, res) => {
+    const { rows: [project] } = await db.query('SELECT visibility FROM projects WHERE id = $1', [req.params.projectId]);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+
+    if (project.visibility === 'public') {
+      const tasks = await taskService.getProjectTasks(req.params.projectId);
+      return res.json({ tasks });
+    }
+
     const canView = await projectService.ensureProjectPermission(req.params.projectId, req.user.userId, ['admin', 'lead', 'manager', 'developer', 'designer', 'tester', 'frontend', 'backend', 'bot developer', 'member']);
     if (!canView) throw new AuthError('Insufficient permissions', 'FORBIDDEN');
     const tasks = await taskService.getProjectTasks(req.params.projectId);
