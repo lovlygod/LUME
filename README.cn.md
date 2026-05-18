@@ -87,7 +87,7 @@ LUME/
 │   ├── src/
 │   │   ├── components/     # UI 组件
 │   │   │   ├── ui/         # shadcn/ui 组件
-  │   │   │   ├── groups/     # (legacy) 群组组件
+│   │   │   ├── groups/     # (legacy) 群组组件
 │   │   │   ├── feed/       # 动态组件
 │   │   │   ├── post/       # 帖子组件
 │   │   │   ├── chat/       # 聊天组件
@@ -99,7 +99,7 @@ LUME/
 │   │   ├── pages/          # 页面
 │   │   │   ├── auth/       # 认证页面
 │   │   │   ├── messages/   # 消息页面
-  │   │   │   └── group/      # (legacy) 群组页面
+│   │   │   └── group/      # (legacy) 群组页面
 │   │   ├── services/       # API 客户端、errorHandler、websocket
 │   │   ├── contexts/       # React 上下文 (Auth, Language, Theme, Server)
 │   │   ├── hooks/          # 自定义 hooks (React Query)
@@ -364,6 +364,50 @@ LUME/
 
 ---
 
+## 🔧 Onboarding（引导）
+
+**流程：**
+1. 新用户通过 4 步引导流程
+2. 步骤 1：选择主要角色（开发者、设计师等）
+3. 步骤 2：选择技能（React、Node.js、PostgreSQL 等）
+4. 步骤 3：设定目标（寻找团队、展示项目等）
+5. 步骤 4：创建或加入 workspace
+
+**存储的数据：** `primary_role`、`skills`、`goals`、`onboarding_completed`
+
+---
+
+## 📁 Workspaces 与 Projects
+
+**Workspaces：**
+- 创建公共/私有 workspaces
+- 通过代码邀请成员
+- 管理角色：owner、admin、lead、developer、designer、member、guest
+
+**Projects：**
+- 在 workspaces 内或独立创建项目
+- 使用 Kanban 看板跟踪任务（todo、in_progress、review、done）
+- 基于角色的权限邀请协作者
+- 链接 GitHub 仓库和 demo URL
+- 寻找成员（looking for members）
+- 链接群组聊天进行沟通
+
+**项目状态：** idea、building、testing、launched、paused、archived
+
+---
+
+## ✅ Tasks（任务）
+
+**功能：**
+- 在项目中创建任务（admin/lead/manager/owner）
+- 分配给团队成员
+- 优先级：low、medium、high、urgent
+- 状态流程：todo → in_progress → review → done
+- 任务评论
+- 消息链接（从消息创建任务）
+
+---
+
 ## 📡 API 文档
 
 完整 API 文档见 [backend/API.md](./backend/API.md)。
@@ -412,6 +456,53 @@ http://localhost:5000/api
 - `GET /messages?chatId=...` — 聊天记录
 - `POST /messages` — 发送消息
 - `DELETE /messages/:messageId` — 删除消息
+
+#### Onboarding
+- `GET /onboarding/status` — 获取 onboarding 状态
+- `POST /onboarding/profile` — 保存个人资料步骤
+- `POST /onboarding/skills` — 保存技能步骤
+- `POST /onboarding/goals` — 保存目标步骤
+- `POST /onboarding/workspace` — 保存 workspace 步骤
+- `POST /onboarding/complete` — 完成 onboarding
+
+#### Workspaces
+- `POST /workspaces` — 创建 workspace
+- `GET /workspaces/my` — 我的 workspaces
+- `GET /workspaces/public` — 公共 workspaces
+- `GET /workspaces/:slug` — 按 slug 获取 workspace
+- `PATCH /workspaces/:id` — 更新 workspace
+- `DELETE /workspaces/:id` — 删除 workspace
+- `POST /workspaces/:id/members` — 添加成员
+- `PATCH /workspaces/:id/members/:userId` — 更新成员角色
+- `DELETE /workspaces/:id/members/:userId` — 移除成员
+- `POST /workspaces/:id/invites` — 创建邀请
+- `POST /workspaces/join/:inviteCode` — 通过邀请码加入
+- `GET /workspaces/:id/members` — 列出成员
+
+#### Projects
+- `POST /projects` — 创建项目
+- `GET /projects/my` — 我的项目
+- `GET /projects/public` — 公共项目
+- `GET /projects/:slug` — 按 slug 获取项目
+- `PATCH /projects/:id` — 更新项目
+- `POST /projects/:id/logo` — 上传 logo
+- `DELETE /projects/:id` — 删除项目
+- `POST /projects/:id/members` — 添加成员
+- `DELETE /projects/:id/members/:userId` — 移除成员
+- `POST /projects/:id/leave` — 离开项目
+- `POST /projects/:id/invite` — 创建邀请
+- `POST /projects/:id/join` — 加入项目
+- `POST /projects/:id/chat` — 链接聊天
+- `DELETE /projects/:id/chat` — 取消链接聊天
+- `GET /projects/:id/search-users` — 搜索用户
+- `GET /projects/:id/members` — 列出成员
+
+#### Tasks
+- `POST /projects/:projectId/tasks` — 创建任务
+- `GET /projects/:projectId/tasks` — 项目任务
+- `PATCH /tasks/:taskId` — 更新任务
+- `DELETE /tasks/:taskId` — 删除任务
+- `POST /tasks/:taskId/comments` — 添加评论
 
 ---
 

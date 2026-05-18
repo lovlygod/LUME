@@ -233,6 +233,48 @@ LUME/
 
 ---
 
+## 🔧 Онбординг (Onboarding)
+
+**Процесс:**
+1. Новые пользователи проходят 4-шаговый onboarding flow
+2. Шаг 1: Выбор основной роли (Developer, Designer и т.д.)
+3. Шаг 2: Выбор навыков (React, Node.js, PostgreSQL и т.д.)
+4. Шаг 3: Определение целей (Найти команду, Показать проект и т.д.)
+5. Шаг 4: Создание или присоединение к workspace
+
+**Сохраняемые данные:** `primary_role`, `skills`, `goals`, `onboarding_completed`
+
+---
+
+## 📁 Workspaces & Projects
+
+**Workspaces:**
+- Создание публичных/приватных workspaces
+- Приглашение участников по кодам
+- Управление ролями: owner, admin, lead, developer, designer, member, guest
+
+**Projects:**
+- Создание проектов внутри workspaces или независимых
+- Отслеживание задач с Kanban-style досками (todo, in_progress, review, done)
+- Приглашение коллабораторов с role-based permissions
+- Связь с GitHub репозиториями и demo URL
+- Поиск участников (looking for members)
+- Связь с групповым чатом для коммуникации
+
+**Статусы проектов:** idea, building, testing, launched, paused, archived
+
+---
+
+## ✅ Tasks (Задачи)
+
+**Возможности:**
+- Создание задач в проектах (admin/lead/manager/owner)
+- Назначение участникам команды
+- Приоритет: low, medium, high, urgent
+- Workflow статуса: todo → in_progress → review → done
+- Комментарии к задачам
+- Связь с сообщениями (создание задач из сообщений)
+
 ## 🗄️ Структура базы данных
 
 ### Основные таблицы
@@ -411,6 +453,53 @@ http://localhost:5000/api
 - `GET /messages?chatId=...` — История чата
 - `POST /messages` — Отправить сообщение
 - `DELETE /messages/:messageId` — Удалить сообщение
+
+#### Onboarding
+- `GET /onboarding/status` — Статус onboarding
+- `POST /onboarding/profile` — Сохранить профиль
+- `POST /onboarding/skills` — Сохранить навыки
+- `POST /onboarding/goals` — Сохранить цели
+- `POST /onboarding/workspace` — Сохранить workspace
+- `POST /onboarding/complete` — Завершить onboarding
+
+#### Workspaces
+- `POST /workspaces` — Создать workspace
+- `GET /workspaces/my` — Мои workspaces
+- `GET /workspaces/public` — Публичные workspaces
+- `GET /workspaces/:slug` — Workspace по slug
+- `PATCH /workspaces/:id` — Обновить workspace
+- `DELETE /workspaces/:id` — Удалить workspace
+- `POST /workspaces/:id/members` — Добавить участника
+- `PATCH /workspaces/:id/members/:userId` — Изменить роль
+- `DELETE /workspaces/:id/members/:userId` — Удалить участника
+- `POST /workspaces/:id/invites` — Создать приглашение
+- `POST /workspaces/join/:inviteCode` — Присоединиться по коду
+- `GET /workspaces/:id/members` — Список участников
+
+#### Projects
+- `POST /projects` — Создать проект
+- `GET /projects/my` — Мои проекты
+- `GET /projects/public` — Публичные проекты
+- `GET /projects/:slug` — Проект по slug
+- `PATCH /projects/:id` — Обновить проект
+- `POST /projects/:id/logo` — Загрузить логотип
+- `DELETE /projects/:id` — Удалить проект
+- `POST /projects/:id/members` — Добавить участника
+- `DELETE /projects/:id/members/:userId` — Удалить участника
+- `POST /projects/:id/leave` — Покинуть проект
+- `POST /projects/:id/invite` — Создать приглашение
+- `POST /projects/:id/join` — Присоединиться к проекту
+- `POST /projects/:id/chat` — Связать чат
+- `DELETE /projects/:id/chat` — Отвязать чат
+- `GET /projects/:id/search-users` — Поиск пользователей
+- `GET /projects/:id/members` — Список участников
+
+#### Tasks
+- `POST /projects/:projectId/tasks` — Создать задачу
+- `GET /projects/:projectId/tasks` — Задачи проекта
+- `PATCH /tasks/:taskId` — Обновить задачу
+- `DELETE /tasks/:taskId` — Удалить задачу
+- `POST /tasks/:taskId/comments` — Добавить комментарий
 
 ---
 
