@@ -1,4 +1,4 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useEffect } from "react";
 import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Paperclip, Send, X, FileImage, File, Mic, Smile } from "lucide-react";
@@ -94,6 +94,13 @@ const MessageComposer = ({
   t,
 }: MessageComposerProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!msgText && textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+  }, [msgText]);
 
   const validateFiles = useCallback((files: File[]): File[] => {
     const validFiles: File[] = [];
@@ -329,22 +336,36 @@ const MessageComposer = ({
         >
           <Paperclip className="h-5 w-5" />
         </motion.button>
-        <input
-          type="text"
+        <textarea
+          ref={(el) => {
+            textareaRef.current = el;
+            if (el) el.scrollTop = el.scrollHeight;
+          }}
           value={msgText}
           onChange={(event) => onSetMsgText(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === "Escape") {
               onClearReply();
             }
-            if (event.key === "Enter" && !event.shiftKey) {
+            if (event.key === "Enter") {
+              if (event.shiftKey) {
+                return;
+              }
               event.preventDefault();
               onSend();
             }
           }}
           placeholder={t("messages.sendMessage")}
           disabled={isSending}
-          className="flex-1 glass-input px-5 py-3 text-sm text-white placeholder:text-white/35 disabled:opacity-50"
+          rows={1}
+          className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder:text-white/35 disabled:opacity-50 resize-none overflow-y-auto min-h-[48px] max-h-[200px] focus:outline-none focus:ring-1 focus:ring-white/20"
+          style={{ height: "auto" }}
+          onInput={(e) => {
+            const target = e.target as HTMLTextAreaElement;
+            target.style.height = "auto";
+            target.style.height = Math.min(target.scrollHeight, 200) + "px";
+            target.scrollTop = target.scrollHeight;
+          }}
         />
         <motion.button
           disabled={(!msgText.trim() && attachments.length === 0) || isSending}

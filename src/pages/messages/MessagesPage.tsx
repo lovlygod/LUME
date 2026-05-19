@@ -70,6 +70,7 @@ const MessagesPage = () => {
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const [scrollToMessageId, setScrollToMessageId] = useState<string | null>(null);
   const [scrollToMessageNonce, setScrollToMessageNonce] = useState(0);
+  const [scrollToBottomTrigger, setScrollToBottomTrigger] = useState(0);
   const [stickersOpen, setStickersOpen] = useState(false);
   const [myStickerPacks, setMyStickerPacks] = useState<StickerPack[]>([]);
   const [lumeStickerPacks, setLumeStickerPacks] = useState<StickerPack[]>([]);
@@ -672,6 +673,7 @@ const MessagesPage = () => {
     setMsgText("");
     setAttachments([]);
     setReplyTo(null);
+    setScrollToBottomTrigger((prev) => prev + 1);
   };
 
   const handleSendSticker = async (sticker: Sticker) => {
@@ -1064,6 +1066,7 @@ const MessagesPage = () => {
                         highlightedMessageId={highlightedMessageId}
                         scrollToMessageId={scrollToMessageId}
                         scrollToMessageNonce={scrollToMessageNonce}
+                        scrollToBottomTrigger={scrollToBottomTrigger}
                         onReply={setReplyFromMessage}
                         onToggleHeart={handleToggleHeart}
                         doubleClickAction={doubleClickAction}

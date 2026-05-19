@@ -17,6 +17,7 @@ import { ReplySwipeIndicator } from "@/components/chat/ReplySwipeIndicator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { NpmPackageCard } from "@/components/npm/NpmPackageCard";
 import { detectNpmCommand } from "@/utils/npmDetector";
+import { DiagramMessage, detectDiagramCode } from "@/components/chat/DiagramMessage";
 
 interface ReplyPreview {
   id: string;
@@ -33,6 +34,7 @@ interface MessageListProps {
   highlightedMessageId: string | null;
   scrollToMessageId?: string | null;
   scrollToMessageNonce?: number;
+  scrollToBottomTrigger?: number;
   onReply: (msg: Message) => void;
   onToggleHeart: (msg: Message) => void;
   doubleClickAction: "reply" | "heart";
@@ -57,6 +59,7 @@ const MessageList = ({
   highlightedMessageId,
   scrollToMessageId,
   scrollToMessageNonce,
+  scrollToBottomTrigger,
   onReply,
   onToggleHeart,
   doubleClickAction,
@@ -157,6 +160,15 @@ const MessageList = ({
     if (targetIndex === -1) return;
     rowVirtualizer.scrollToIndex(targetIndex, { align: "center" });
   }, [scrollToMessageId, scrollToMessageNonce, visibleMessages, rowVirtualizer]);
+
+  useEffect(() => {
+    if (!scrollToBottomTrigger) return;
+    const scrollEl = parentRef.current;
+    if (!scrollEl) return;
+    requestAnimationFrame(() => {
+      scrollEl.scrollTop = scrollEl.scrollHeight;
+    });
+  }, [scrollToBottomTrigger]);
 
   const totalSize = rowVirtualizer.getTotalSize();
   const virtualItems = rowVirtualizer.getVirtualItems();
@@ -459,6 +471,12 @@ const MessageList = ({
                         if (npmPackage) {
                           return <NpmPackageCard packageName={npmPackage} className="max-w-sm" />;
                         }
+
+                        const { isDiagram, code, type } = detectDiagramCode(msg.text);
+                        if (isDiagram) {
+                          return <DiagramMessage code={code} type={type} />;
+                        }
+
                         return (
                           <p className="break-words whitespace-pre-wrap leading-[1.25]">
                             {renderSafeTextWithLinks(msg.text.replace(String.fromCharCode(11), ""), {
