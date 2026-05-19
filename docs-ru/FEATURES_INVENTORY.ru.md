@@ -117,6 +117,19 @@
   - Обработка ошибок (пакет не найден — fallback)
   - Кеширование ответов (in-memory, 15 минут)
 
+### Рендеринг диаграмм (Mermaid)
+- **Файлы:** `backend/src/routes/diagramRoutes.js`, `src/components/chat/DiagramMessage.tsx`
+- **Документация:** [DIAGRAM_RENDERING.ru.md](DIAGRAM_RENDERING.ru.md)
+- **Статус:** ✅ Реализовано
+- **Функции:**
+  - Автоматическое определение Mermaid диаграмм (graph TD/BT/LR/RL, flowchart TD/LR, pie, gitGraph)
+  - Endpoint: `POST /api/diagram/render` — рендеринг через Kroki API (`https://kroki.io/mermaid/svg`)
+  - Кеширование в Redis по SHA256 хешу (TTL: 1 час)
+  - SVG рендеринг с санитизацией (безопасность)
+  - Кнопки: Copy code, Download SVG (с анимацией галочки)
+  - Loading skeleton при загрузке
+  - Автоматическая прокрутка чата после отправки
+
 ### Reply Bar
 - **Файл:** `src/components/chat/ReplyBar.tsx`
 - **Статус:** ✅ Реализовано

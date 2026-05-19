@@ -117,6 +117,19 @@
   - 错误处理（未找到包时显示 fallback）
   - 响应缓存（内存中，15 分钟）
 
+### 图表渲染（Mermaid）
+- **文件：** `backend/src/routes/diagramRoutes.js`, `src/components/chat/DiagramMessage.tsx`
+- **文档：** [DIAGRAM_RENDERING.cn.md](DIAGRAM_RENDERING.cn.md)
+- **状态：** ✅ 已实现
+- **功能：**
+  - 自动检测 Mermaid 图表（graph TD/BT/LR/RL, flowchart TD/LR, pie, gitGraph）
+  - 端点：`POST /api/diagram/render` — 通过 Kroki API 渲染（`https://kroki.io/mermaid/svg`）
+  - Redis 缓存（SHA256 哈希，TTL: 1小时）
+  - SVG 渲染带清理（安全性）
+  - 按钮：复制代码、下载 SVG（带勾号动画）
+  - 加载时显示骨架屏
+  - 发送后自动滚动聊天
+
 ### Reply Bar
 - **文件：** `src/components/chat/ReplyBar.tsx`
 - **状态:** ✅ 已实现
