@@ -546,10 +546,14 @@ const MessageList = ({
                       </span>
                     )}
                     <span>
-                      {new Date(msg.timestamp).toLocaleTimeString("en-US", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {(() => {
+                        const timeFormat = (localStorage.getItem("timeFormat") as "12h" | "24h") || "12h";
+                        const date = new Date(msg.timestamp);
+                        if (timeFormat === "24h") {
+                          return date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+                        }
+                        return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+                      })()}
                     </span>
                     {msg.own && <CheckCheck className="h-3.5 w-3.5 text-white/45" />}
                   </div>

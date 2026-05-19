@@ -18,10 +18,12 @@ const formatTime = (seconds: number): string => {
 
 const formatMessageTime = (timestamp?: string): string => {
   if (!timestamp) return "";
-  return new Date(timestamp).toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const timeFormat = (localStorage.getItem("timeFormat") as "12h" | "24h") || "12h";
+  const date = new Date(timestamp);
+  if (timeFormat === "24h") {
+    return date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  }
+  return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 };
 
 const seededWaveform = (seed: string, count: number): number[] => {

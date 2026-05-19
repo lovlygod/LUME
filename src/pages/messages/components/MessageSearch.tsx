@@ -149,7 +149,11 @@ export const MessageSearch = ({ onResultClick, t, chats }: MessageSearchProps) =
     const diff = now.getTime() - date.getTime();
     const hours = Math.floor(diff / 3600000);
 
+    const timeFormat = (localStorage.getItem("timeFormat") as "12h" | "24h") || "12h";
     if (hours < 24) {
+      if (timeFormat === "24h") {
+        return date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+      }
       return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
     }
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });

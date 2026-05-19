@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Save, Snowflake, Sun } from "lucide-react";
+import { Save, Snowflake, Sun, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
@@ -13,6 +13,7 @@ const AppearancePage = () => {
     theme: "dark" as "dark" | "light",
     snowEffect: false,
     snowVariant: "dots" as "dots" | "flakes" | "hearts",
+    timeFormat: "12h" as "12h" | "24h",
   });
 
   useEffect(() => {
@@ -20,10 +21,12 @@ const AppearancePage = () => {
     const savedSnow = localStorage.getItem("snowEffect") === "true";
     const savedSnowVariant =
       (localStorage.getItem("snowEffectVariant") as "dots" | "flakes" | "hearts" | null) || "dots";
+    const savedTimeFormat = (localStorage.getItem("timeFormat") as "12h" | "24h" | null) || "12h";
     setSettings({
       theme: savedTheme,
       snowEffect: savedSnow,
       snowVariant: savedSnowVariant,
+      timeFormat: savedTimeFormat,
     });
   }, []);
 
@@ -33,6 +36,7 @@ const AppearancePage = () => {
       localStorage.setItem("snowEffect", String(settings.snowEffect));
       localStorage.setItem("snowEffectVariant", settings.snowVariant);
       localStorage.setItem("theme", settings.theme);
+      localStorage.setItem("timeFormat", settings.timeFormat);
       document.documentElement.classList.remove("dark", "light");
       document.documentElement.classList.add(settings.theme);
       window.dispatchEvent(new CustomEvent("themeChange", { detail: settings.theme }));
@@ -41,6 +45,7 @@ const AppearancePage = () => {
           detail: { enabled: settings.snowEffect, variant: settings.snowVariant },
         })
       );
+      window.dispatchEvent(new CustomEvent("timeFormatChange", { detail: settings.timeFormat }));
       toast.success(t("settings.saved"));
     } catch (error) {
       console.error("Failed to save appearance settings:", error);
@@ -182,6 +187,49 @@ const AppearancePage = () => {
                   }`}
                 >
                   {t("settings.snowVariantHearts")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 text-foreground">
+            <Clock className="h-5 w-5" />
+            <h2 className="text-lg font-semibold">{t("settings.timeFormat")}</h2>
+          </div>
+
+          <div className="card-glass p-5 space-y-4 rounded-3xl">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center">
+                  <Clock className="h-5 w-5 text-white/60" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-white">{t("settings.timeFormat")}</p>
+                  <p className="text-xs text-secondary">{t("settings.timeFormatDescription")}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSettings(prev => ({ ...prev, timeFormat: "12h" }))}
+                  className={`px-4 py-2 rounded-full text-xs font-medium transition-smooth ${
+                    settings.timeFormat === "12h"
+                      ? "bg-white/10 text-white"
+                      : "bg-white/5 text-secondary hover:text-white"
+                  }`}
+                >
+                  {t("settings.timeFormat12")}
+                </button>
+                <button
+                  onClick={() => setSettings(prev => ({ ...prev, timeFormat: "24h" }))}
+                  className={`px-4 py-2 rounded-full text-xs font-medium transition-smooth ${
+                    settings.timeFormat === "24h"
+                      ? "bg-white/10 text-white"
+                      : "bg-white/5 text-secondary hover:text-white"
+                  }`}
+                >
+                  {t("settings.timeFormat24")}
                 </button>
               </div>
             </div>
