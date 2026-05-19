@@ -100,15 +100,17 @@ const ChatList = ({
             </motion.button>
           )}
           {selectedChatId && (
-            <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              onClick={onCloseChat}
-              className="p-2 rounded-full hover:bg-white/5 transition-smooth"
-            >
-              ✕
-            </motion.button>
+            <div className="flex items-center justify-center w-8 h-8">
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                onClick={onCloseChat}
+                className="text-white/60 hover:text-white text-lg leading-none transition-smooth"
+              >
+                ✕
+              </motion.button>
+            </div>
           )}
         </div>
       </div>
@@ -132,7 +134,7 @@ const ChatList = ({
             <motion.div
               key={chat.id}
             onClick={() => onSelectChat(chat.routeId || chat.id)}
-              className={`cursor-pointer rounded-[22px] px-3 py-3 transition-smooth ${
+              className={`cursor-pointer rounded-xl px-3 py-3 transition-smooth ${
                 selectedChatId === chat.id ? "bg-white/10" : "hover:bg-white/6"
               }`}
               whileHover={{ x: 2 }}
