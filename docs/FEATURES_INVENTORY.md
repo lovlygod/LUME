@@ -2,7 +2,7 @@
 
 English | [Русский](../docs-ru/FEATURES_INVENTORY.ru.md) | [中文](../docs-cn/FEATURES_INVENTORY.cn.md)
 
-**Последнее обновление:** 19 марта 2026 г.
+**Последнее обновление:** 19 мая 2026 г.
 **Статус:** ✅ Актуально
 
 Ниже перечислены **реально реализованные** функции проекта LUME.
@@ -104,6 +104,18 @@ English | [Русский](../docs-ru/FEATURES_INVENTORY.ru.md) | [中文](../do
   - Thumb preview
   - Отметка о просмотре
   - Автоматическое закрытие при переключении вкладки
+
+### NPM Package Preview
+- **Файлы:** `backend/src/npm.js`, `src/components/npm/NpmPackageCard.tsx`, `src/utils/npmDetector.ts`
+- **Статус:** ✅ Реализовано
+- **Функции:**
+  - Автоматическое определение npm команд в сообщениях (`npm react`, `npm express`, `npm @types/node`)
+  - Endpoint: `GET /api/npm/:packageName` — получение данных о пакете из npm Registry
+  - UI карточка с названием пакета, версией, описанием и ссылкой на npmjs.com
+  - Glass UI дизайн в стиле LUME
+  - Loading skeleton при загрузке
+  - Обработка ошибок (пакет не найден — fallback)
+  - Кеширование ответов (in-memory, 15 минут)
 
 ### Reply Bar
 - **Файл:** `src/components/chat/ReplyBar.tsx`
