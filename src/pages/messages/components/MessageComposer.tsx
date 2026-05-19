@@ -22,8 +22,6 @@ interface MessageComposerProps {
   isSending: boolean;
   canSend?: boolean;
   readOnlyMessage?: ReactNode;
-  momentToggle: boolean;
-  momentPreview: string | null;
   attachments: Attachment[];
   replyTo: ReplyPreview | null;
   stickersOpen: boolean;
@@ -35,7 +33,6 @@ interface MessageComposerProps {
   onRemoveAttachment: (index: number) => void;
   onOpenImage: (imageId: string, src: string) => void;
   onClearReply: () => void;
-  onToggleMoment: () => void;
   onSetMsgText: (text: string) => void;
   onSend: () => void;
   onSendVoice: (blob: Blob, duration: number) => void;
@@ -76,8 +73,6 @@ const MessageComposer = ({
   isSending,
   canSend = true,
   readOnlyMessage,
-  momentToggle,
-  momentPreview,
   attachments,
   replyTo,
   stickersOpen,
@@ -89,7 +84,6 @@ const MessageComposer = ({
   onRemoveAttachment,
   onOpenImage,
   onClearReply,
-  onToggleMoment,
   onSetMsgText,
   onSend,
   onSendVoice,
@@ -257,29 +251,6 @@ const MessageComposer = ({
         )}
       </AnimatePresence>
 
-      {/* Moment Preview */}
-      {momentPreview && (
-        <div className="mb-3">
-          <div className="relative w-24">
-            <img
-              src={momentPreview}
-              alt="moment-preview"
-              className="h-24 w-24 rounded-2xl border border-white/10 object-cover blur-[18px] saturate-90 contrast-105"
-              draggable={false}
-            />
-            <div className="absolute inset-0 flex items-center justify-center text-xs text-white/80">
-              Исчезающее фото
-            </div>
-            <button
-              onClick={onToggleMoment}
-              className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-white/20 text-white flex items-center justify-center"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Attachments Preview */}
       {attachments.length > 0 && (
         <div className="flex gap-2 mb-3 overflow-x-auto">
@@ -358,18 +329,6 @@ const MessageComposer = ({
         >
           <Paperclip className="h-5 w-5" />
         </motion.button>
-        <button
-          type="button"
-          onClick={onToggleMoment}
-          className={`h-9 rounded-full border px-3 text-[11px] font-semibold leading-tight transition-smooth ${
-            momentToggle
-              ? "border-white/20 bg-white/15 text-white"
-              : "border-white/10 bg-white/5 text-white/70 hover:text-white"
-          }`}
-        >
-          Исчезающее
-          <span className="block">фото</span>
-        </button>
         <input
           type="text"
           value={msgText}
@@ -383,16 +342,16 @@ const MessageComposer = ({
               onSend();
             }
           }}
-          placeholder={momentToggle ? "Описание не требуется" : t("messages.sendMessage")}
-          disabled={isSending || momentToggle}
+          placeholder={t("messages.sendMessage")}
+          disabled={isSending}
           className="flex-1 glass-input px-5 py-3 text-sm text-white placeholder:text-white/35 disabled:opacity-50"
         />
         <motion.button
-          disabled={(!msgText.trim() && attachments.length === 0 && !momentPreview) || isSending}
+          disabled={(!msgText.trim() && attachments.length === 0) || isSending}
           onClick={onSend}
           className="flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-smooth"
-          whileHover={msgText.trim() || attachments.length > 0 || momentPreview ? { scale: 1.02 } : {}}
-          whileTap={msgText.trim() || attachments.length > 0 || momentPreview ? { scale: 0.98 } : {}}
+          whileHover={msgText.trim() || attachments.length > 0 ? { scale: 1.02 } : {}}
+          whileTap={msgText.trim() || attachments.length > 0 ? { scale: 0.98 } : {}}
         >
           {isSending ? (
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

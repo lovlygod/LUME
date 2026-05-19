@@ -38,12 +38,7 @@ interface MessageListProps {
   onOpenContextMenu: (msg: Message, position: { x: number; y: number }) => void;
   onReplyJump: (messageId: string) => void;
   onDeleteRequest: (messageId: string, x: number, y: number) => void;
-  onOpenMoment: (msg: Message) => void;
   onOpenSticker: (sticker: Sticker) => void;
-  momentOpenMap: Record<string, string>;
-  momentLoadingMap: Record<string, boolean>;
-  momentBlockedMap: Record<string, boolean>;
-  onCloseMoment: (messageId: string) => void;
   onOpenImage: (imageId: string, src: string) => void;
   activeImageId: string | null;
   activeImageSrc: string | null;
@@ -67,12 +62,7 @@ const MessageList = ({
   onOpenContextMenu,
   onReplyJump,
   onDeleteRequest,
-  onOpenMoment,
   onOpenSticker,
-  momentOpenMap,
-  momentLoadingMap,
-  momentBlockedMap,
-  onCloseMoment,
   onOpenImage,
   activeImageId,
   activeImageSrc,
@@ -237,9 +227,7 @@ const MessageList = ({
               ? currentUser?.name || "You"
               : replyTarget.sender?.name || selectedChatUser?.name || "User"
             : "";
-          const replyThumb = replyTarget?.type === "moment_image"
-            ? replyTarget?.moment?.thumbDataUrl || undefined
-            : replyTarget?.attachments?.find((att) => att.type === "image")?.url;
+          const replyThumb = replyTarget?.attachments?.find((att) => att.type === "image")?.url;
           const hasVoiceAttachment = Boolean(msg.attachments?.some((att) => att.type === "voice"));
           const isVoiceMessage = msg.type === "voice" || hasVoiceAttachment;
           const isStickerMessage = msg.type === "sticker" && !!msg.sticker?.url;
@@ -348,15 +336,10 @@ const MessageList = ({
                   highlightedMessageId === msg.id || replyFlashMessageId === msg.id
                     ? "ring-1 ring-white/30 shadow-[0_0_0_1px_rgba(255,255,255,0.12)]"
                     : ""
-                } ${
-                  msg.type === "moment_image"
-                    ? "min-w-[240px] max-w-[min(420px,65%)]"
-                    : "max-w-[min(560px,65%)]"
-                } ${
+                } max-w-[min(560px,65%)] ${
                   isStickerMessage
                     ? "p-0"
-                    : msg.type === "moment_image" ||
-                      (msg.attachments && msg.attachments.some((a) => a.type === "image"))
+                    : msg.attachments && msg.attachments.some((a) => a.type === "image")
                       ? "p-1.5"
                       : "px-3 py-1.5"
                 } ${isOwnMessage || isStickerBotChat ? "" : "cursor-grab active:cursor-grabbing"}`}
@@ -418,10 +401,8 @@ const MessageList = ({
                         {replyAuthor}
                       </div>
                       <div className="text-[12px] text-white/55 truncate overflow-hidden text-ellipsis max-w-full">
-                        {replyTarget.type === "moment_image"
-                          ? "Исчезающее фото"
-                          : replyTarget.text ||
-                            (replyTarget.attachments?.length ? "Вложение" : "")}
+                        {replyTarget.text ||
+                          (replyTarget.attachments?.length ? "Вложение" : "")}
                       </div>
                     </div>
                   </button>
@@ -430,52 +411,6 @@ const MessageList = ({
                   {isStickerMessage ? (
                     <div className="p-2">
                       <StickerMessage sticker={msg.sticker || undefined} onOpen={onOpenSticker} />
-                    </div>
-                  ) : null}
-                  {msg.type === "moment_image" && msg.moment ? (
-                    <div className="rounded-[18px] border border-white/10 bg-white/5 p-3">
-                      <button
-                        type="button"
-                        className="relative w-full text-left"
-                        onClick={() => onOpenMoment(msg)}
-                        disabled={
-                          momentLoadingMap[msg.id] ||
-                          !!msg.moment?.viewedAt ||
-                          !!momentBlockedMap[msg.id]
-                }
-              >
-                        <div className="relative w-full aspect-square rounded-[20px] overflow-hidden border border-white/10 bg-white/5">
-                          <img
-                            src={msg.moment.thumbDataUrl || ""}
-                            alt="moment"
-                            className="absolute inset-0 h-full w-full object-cover blur-2xl scale-110 opacity-80"
-                            draggable={false}
-                            onContextMenu={(event) => event.preventDefault()}
-                          />
-                          <div className="absolute inset-0 bg-black/45" />
-                          <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
-                            <div className="text-[11px] tracking-[0.18em] uppercase text-white/55">
-                              ФОТО-МОМЕНТ
-                            </div>
-                            {!msg.moment.viewedAt && !momentBlockedMap[msg.id] ? (
-                              <div className="mt-3 rounded-full px-4 py-2 bg-white/10 backdrop-blur-md border border-white/15 text-[13px] font-medium text-white/90">
-                                Открыть (1 раз)
-                              </div>
-                            ) : momentBlockedMap[msg.id] ? (
-                              <div className="mt-3 rounded-full px-4 py-2 bg-white/10 backdrop-blur-md border border-white/15 text-[13px] font-medium text-white/90">
-                                Недоступно
-                              </div>
-                            ) : (
-                              <div className="mt-3 rounded-full px-4 py-2 bg-white/10 backdrop-blur-md border border-white/15 text-[13px] font-medium text-white/90">
-                                Просмотрено
-                              </div>
-                            )}
-                            {!msg.moment.viewedAt && !momentBlockedMap[msg.id] && (
-                              <div className="mt-1 text-[12px] text-white/40">Без сохранения</div>
-                            )}
-                          </div>
-                        </div>
-                      </button>
                     </div>
                   ) : null}
                   {msg.attachments && msg.attachments.length > 0 ? (
@@ -515,7 +450,7 @@ const MessageList = ({
                       ))}
                     </div>
                   ) : null}
-                  {msg.text && msg.type !== "moment_image" && !isVoiceMessage && !isStickerMessage && (
+                  {msg.text && !isVoiceMessage && !isStickerMessage && (
                     <div className={`${msg.attachments && msg.attachments.some((a) => a.type === "image") ? "px-3 pt-2" : ""}`}>
                       <p className="break-words whitespace-pre-wrap leading-[1.25]">
                         {renderSafeTextWithLinks(msg.text.replace(String.fromCharCode(11), ""), {

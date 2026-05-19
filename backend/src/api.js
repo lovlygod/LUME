@@ -578,6 +578,7 @@ router.put('/profile/privacy', authenticateToken, (req, res) => {
 });
 router.post('/profile/avatar', authenticateToken, upload.single('avatar'), uploadAvatar);
 router.post('/profile/banner', authenticateToken, upload.single('banner'), uploadBanner);
+router.post('/uploads', authenticateToken, fileUpload.single('file'), uploadFile);
 
 router.put('/profile/settings', authenticateToken, (req, res) => {
   const userId = req.user.userId;

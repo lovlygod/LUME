@@ -184,9 +184,7 @@ const ChatList = ({
                         </div>
                       )}
                       <p className="truncate text-xs text-secondary">
-                        {chat.lastMessage === "Исчезающее фото"
-                          ? "Исчезающее фото"
-                          : chat.lastMessage || t("messages.noMessages")}
+                        {chat.lastMessage || t("messages.noMessages")}
                       </p>
                     </motion.div>
                   )}

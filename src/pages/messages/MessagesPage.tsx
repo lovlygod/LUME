@@ -63,12 +63,6 @@ const MessagesPage = () => {
   const [isOnline, setIsOnline] = useState(false);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [momentFile, setMomentFile] = useState<File | null>(null);
-  const [momentPreview, setMomentPreview] = useState<string | null>(null);
-  const [momentToggle, setMomentToggle] = useState(false);
-  const [momentOpenMap, setMomentOpenMap] = useState<Record<string, string>>({});
-  const [momentLoadingMap, setMomentLoadingMap] = useState<Record<string, boolean>>({});
-  const [momentBlockedMap, setMomentBlockedMap] = useState<Record<string, boolean>>({});
   const [replyTo, setReplyTo] = useState<ReplyPreview | null>(null);
   const [showDeleteMenu, setShowDeleteMenu] = useState<{ msgId: string; x: number; y: number } | null>(null);
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
@@ -647,16 +641,6 @@ const MessagesPage = () => {
   }, [messages, markRead, activeChatId]);
 
   const handleFileSelect = async (files: File[]) => {
-    if (momentToggle) {
-      const first = files[0];
-      if (!first) return;
-      setMomentFile(first);
-      const reader = new FileReader();
-      reader.onloadend = () => setMomentPreview(reader.result as string);
-      reader.readAsDataURL(first);
-      return;
-    }
-
     const tasks = files.map(async (file) => {
       try {
         const uploaded = await uploadsAPI.uploadFile(file);
@@ -674,27 +658,7 @@ const MessagesPage = () => {
   const handleSendMessage = async (overrideText?: string) => {
     const resolvedOverride = typeof overrideText === "string" ? overrideText : undefined;
     const effectiveText = (resolvedOverride ?? msgText).trim();
-    if ((!effectiveText && attachments.length === 0 && !momentFile) || !activeChatId || !canSendMessages) return;
-
-    if (momentFile) {
-      try {
-        await messagesAPI.sendMoment({
-          chatId: activeChatId,
-          file: momentFile,
-          ttlSeconds: 86400,
-        });
-        messageSounds.playSend();
-        setMomentFile(null);
-        setMomentPreview(null);
-        setMomentToggle(false);
-        setReplyTo(null);
-        setMsgText("");
-        setAttachments([]);
-      } catch (error) {
-        toast.error(t("messages.momentSendError"));
-      }
-      return;
-    }
+    if ((!effectiveText && attachments.length === 0) || !activeChatId || !canSendMessages) return;
 
     const trimmed = effectiveText;
     const attachmentIds = attachments.map((att) => att.id).filter(Boolean);
@@ -838,48 +802,14 @@ const MessagesPage = () => {
     }
   };
 
-  const handleOpenMoment = async (msg: Message) => {
-    if (!msg.moment?.id) return;
-    if (msg.moment?.viewedAt || momentBlockedMap[msg.id] || momentLoadingMap[msg.id]) return;
-
-    try {
-      setMomentLoadingMap((prev) => ({ ...prev, [msg.id]: true }));
-      const res = await messagesAPI.openMoment(msg.moment.id);
-      const content = await messagesAPI.getMomentContent(msg.moment.id, res.token);
-      setMomentOpenMap((prev) => ({ ...prev, [msg.id]: content.url }));
-    } catch (e) {
-      const statusCode = (e as { error?: { statusCode?: number } })?.error?.statusCode;
-      if (statusCode === 410) {
-        setMomentBlockedMap((prev) => ({ ...prev, [msg.id]: true }));
-        toast.error("Фото уже просмотрено или истекло");
-      } else {
-        toast.error("Исчезающее фото недоступно");
-      }
-    } finally {
-      setMomentLoadingMap((prev) => ({ ...prev, [msg.id]: false }));
-    }
-  };
-
-  const closeMomentViewer = useCallback((messageId: string) => {
-    setMomentOpenMap((prev) => {
-      const copy = { ...prev };
-      delete copy[messageId];
-      return copy;
-    });
-    const target = messages.find((m) => m.id === messageId);
-    if (target?.moment?.id) {
-      messagesAPI.markMomentViewed(target.moment.id).catch(() => null);
-    }
-  }, [messages]);
-
   const setReplyFromMessage = (msg: Message) => {
     const firstAttachment = msg.attachments?.find((att) => att.type === "image");
     const authorName = msg.own ? currentUser?.name || "You" : selectedChat?.title || "User";
     setReplyTo({
       id: msg.id,
       author: authorName,
-      text: msg.type === "moment_image" ? t("messages.momentReplyLabel") : msg.text,
-      imageUrl: msg.type === "moment_image" ? undefined : firstAttachment?.url,
+      text: msg.text,
+      imageUrl: firstAttachment?.url,
     });
   };
 
@@ -921,15 +851,6 @@ const MessagesPage = () => {
     setHighlightedMessageId(messageId);
     setTimeout(() => setHighlightedMessageId(null), 1200);
   };
-
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (!document.hidden) return;
-      Object.keys(momentOpenMap).forEach((messageId) => closeMomentViewer(messageId));
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [momentOpenMap, closeMomentViewer]);
 
   const chats = useMemo(() => chatsData?.chats || [], [chatsData]);
   const resolveChatRoute = useCallback((chatIdValue: string) => {
@@ -1152,12 +1073,7 @@ const MessagesPage = () => {
                         }
                         onReplyJump={handleReplyJump}
                         onDeleteRequest={(msgId, x, y) => setShowDeleteMenu({ msgId, x, y })}
-                        onOpenMoment={handleOpenMoment}
                         onOpenSticker={handleOpenStickerModal}
-                        momentOpenMap={momentOpenMap}
-                        momentLoadingMap={momentLoadingMap}
-                        momentBlockedMap={momentBlockedMap}
-                        onCloseMoment={closeMomentViewer}
                         onOpenImage={(imageId, src) => {
                           setActiveImageId(imageId);
                           setActiveImageSrc(src);
@@ -1279,8 +1195,6 @@ const MessagesPage = () => {
                       t("messages.channelReadOnly") || "Только админы могут писать в канале."
                     )
                   }
-                  momentToggle={momentToggle}
-                  momentPreview={momentPreview}
                   attachments={attachments}
                   replyTo={replyTo ? { author: replyTo.author, text: replyTo.text, imageUrl: replyTo.imageUrl } : null}
                   stickersOpen={stickersOpen}
@@ -1297,16 +1211,6 @@ const MessagesPage = () => {
                     setActiveImageSrc(src);
                   }}
                   onClearReply={() => setReplyTo(null)}
-                  onToggleMoment={() => {
-                    setMomentToggle((prev) => !prev);
-                    if (!momentToggle) {
-                      setAttachments([]);
-                      setMsgText("");
-                    } else {
-                      setMomentFile(null);
-                      setMomentPreview(null);
-                    }
-                  }}
                   onSetMsgText={setMsgText}
                   onSend={handleSendMessage}
                   onSendVoice={handleSendVoice}

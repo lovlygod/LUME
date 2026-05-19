@@ -99,7 +99,7 @@ export const useChatWs = (params: {
                   type: "private",
                   title: undefined,
                   avatar: undefined,
-                  lastMessage: data.type === "moment_image" ? "Исчезающее фото" : data.text,
+                  lastMessage: data.text,
                   timestamp: data.timestamp,
                   unread: String(data.senderId) === String(params.currentUserId) ? 0 : 1,
                 },
@@ -111,7 +111,7 @@ export const useChatWs = (params: {
             String(chat.id) === String(data.chatId)
               ? {
                   ...chat,
-                  lastMessage: data.type === "moment_image" ? "Исчезающее фото" : data.text,
+                  lastMessage: data.text,
                   timestamp: data.timestamp,
                   unread:
                     String(data.senderId) === String(params.currentUserId)
