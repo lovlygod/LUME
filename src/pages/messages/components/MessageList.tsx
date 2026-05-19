@@ -15,6 +15,8 @@ import VoiceMessagePlayer from "@/components/chat/VoiceMessagePlayer";
 import { renderSafeTextWithLinks } from "../lib/messageText";
 import { ReplySwipeIndicator } from "@/components/chat/ReplySwipeIndicator";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { NpmPackageCard } from "@/components/npm/NpmPackageCard";
+import { detectNpmCommand } from "@/utils/npmDetector";
 
 interface ReplyPreview {
   id: string;
@@ -452,11 +454,19 @@ const MessageList = ({
                   ) : null}
                   {msg.text && !isVoiceMessage && !isStickerMessage && (
                     <div className={`${msg.attachments && msg.attachments.some((a) => a.type === "image") ? "px-3 pt-2" : ""}`}>
-                      <p className="break-words whitespace-pre-wrap leading-[1.25]">
-                        {renderSafeTextWithLinks(msg.text.replace(String.fromCharCode(11), ""), {
-                          onCommand,
-                        })}
-                      </p>
+                      {(() => {
+                        const npmPackage = detectNpmCommand(msg.text);
+                        if (npmPackage) {
+                          return <NpmPackageCard packageName={npmPackage} className="max-w-sm" />;
+                        }
+                        return (
+                          <p className="break-words whitespace-pre-wrap leading-[1.25]">
+                            {renderSafeTextWithLinks(msg.text.replace(String.fromCharCode(11), ""), {
+                              onCommand,
+                            })}
+                          </p>
+                        );
+                      })()}
                     </div>
                   )}
                   {msg.linkPreview && (

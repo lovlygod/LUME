@@ -33,6 +33,7 @@ const createWorkspaceRoutes = require('./routes/workspaceRoutes');
 const createProjectRoutes = require('./routes/projectRoutes');
 const createTaskRoutes = require('./routes/taskRoutes');
 const createExploreRoutes = require('./routes/exploreRoutes');
+const { getNpmPackageInfo, isValidPackageName } = require('./npm');
 
 // Helper function to extract @mentions from text
 function extractMentions(text) {
@@ -464,6 +465,23 @@ router.get('/csrf-token', (req, res) => {
   const { refreshCSRFToken } = require('./csrf');
   refreshCSRFToken(req, res);
 });
+
+// NPM package preview endpoint
+router.get('/npm/:packageName', asyncHandler(async (req, res) => {
+  const { packageName } = req.params;
+  
+  if (!isValidPackageName(packageName)) {
+    return res.status(400).json({ error: 'Invalid package name' });
+  }
+  
+  const packageInfo = await getNpmPackageInfo(packageName);
+  
+  if (!packageInfo) {
+    return res.status(404).json({ error: 'Package not found' });
+  }
+  
+  res.json(packageInfo);
+}));
 
 // CSRF protection for state-changing requests
 router.post('*', (req, res, next) => {
@@ -1905,7 +1923,7 @@ router.get('/chats/:chatId/messages', authenticateToken, (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 100);
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 10000, 1), 10000);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
 
     const messageQuery = `
