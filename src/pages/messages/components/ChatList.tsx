@@ -137,7 +137,7 @@ const ChatList = ({
               }`}
               whileHover={{ x: 2 }}
             >
-              <div className="flex items-center gap-3">
+              <div className={`flex items-center gap-3 ${selectedChatId === chat.id ? "justify-center" : ""}`}>
                 <div className="relative flex-shrink-0">
                   {user.avatar ? (
                     <img
