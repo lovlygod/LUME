@@ -249,7 +249,7 @@ const SidebarLeft = () => {
               <Bell className="h-5 w-5 text-white/60" />
               <span>{t('notifications.title') || 'Уведомления'}</span>
               {unreadNotifications > 0 && (
-                <span className="absolute right-4 top-2 h-5 min-w-[1.25rem] px-1.5 flex items-center justify-center text-xs font-bold bg-red-500 text-white rounded-full">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 h-5 min-w-[1.25rem] px-1 flex items-center justify-center text-xs font-bold bg-red-500 text-white rounded-full">
                   {unreadNotifications > 99 ? '99+' : unreadNotifications}
                 </span>
               )}
@@ -397,7 +397,7 @@ const SidebarLeft = () => {
               <Bell className="h-5 w-5" />
               <span className="sr-only">{t('notifications.title') || 'Уведомления'}</span>
               {unreadNotifications > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 flex items-center justify-center text-[10px] font-bold bg-red-500 text-white rounded-full">
+                <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-0.5 flex items-center justify-center text-[10px] font-bold bg-red-500 text-white rounded-full leading-none">
                   {unreadNotifications > 99 ? '99+' : unreadNotifications}
                 </span>
               )}
