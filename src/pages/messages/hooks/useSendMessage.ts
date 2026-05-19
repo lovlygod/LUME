@@ -173,14 +173,6 @@ export const useSendMessage = (currentUserId?: string) => {
         );
         return { chats: updated.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()) };
       });
-
-      if (!isE2EEMessage) {
-        await queryClient.invalidateQueries({
-          queryKey: messageQueryKeys.chatMessages(variables.chatId),
-          exact: true,
-          refetchType: "active",
-        });
-      }
     },
   });
 };

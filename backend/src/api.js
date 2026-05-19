@@ -2059,8 +2059,13 @@ router.post('/messages', authenticateToken, asyncHandler(async (req, res) => {
   const { getLinkPreview } = require('./linkPreview');
   const extractFirstUrl = (value) => {
     if (!value) return null;
-    const match = String(value).match(/https?:\/\/[^\s]+/i);
-    return match ? match[0] : null;
+    const match = String(value).match(/(?:https?:\/\/)?[^\s]+(?:\/[^\s]*)?/i);
+    if (!match) return null;
+    let url = match[0];
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
+    return url;
   };
 
   const previewUrl = extractFirstUrl(messageText);
