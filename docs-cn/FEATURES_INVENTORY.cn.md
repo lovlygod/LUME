@@ -2,7 +2,7 @@
 
 中文 | [Русский](../docs-ru/FEATURES_INVENTORY.ru.md) | [English](../docs/FEATURES_INVENTORY.md)
 
-**最后更新：** 2026-03-19
+**最后更新：** 2026-05-19
 **状态：** ✅ 最新
 
 以下列出的是 LUME 项目中**已实际实现**的功能。
@@ -103,11 +103,23 @@
   - 禁止下载
   - 缩略图预览
   - 已读标记
-  - 切换标签页自动关闭
+- 切换标签页自动关闭
+
+### NPM Package Preview（NPM 包预览）
+- **文件：** `backend/src/npm.js`, `src/components/npm/NpmPackageCard.tsx`, `src/utils/npmDetector.ts`
+- **状态:** ✅ 已实现
+- **功能：**
+  - 自动识别消息中的 npm 命令（`npm react`、`npm express`、`npm @types/node`）
+  - 端点：`GET /api/npm/:packageName` — 从 npm Registry 获取包数据
+  - UI 卡片显示包名、版本、描述和 npmjs.com 链接
+  - LUME 风格的 Glass UI 设计
+  - 加载时显示骨架屏
+  - 错误处理（未找到包时显示 fallback）
+  - 响应缓存（内存中，15 分钟）
 
 ### Reply Bar
 - **文件：** `src/components/chat/ReplyBar.tsx`
-- **状态：** ✅ 已实现
+- **状态:** ✅ 已实现
 - **说明：** 消息回复条组件
 
 ---
