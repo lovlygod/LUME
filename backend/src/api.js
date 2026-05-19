@@ -33,6 +33,7 @@ const createWorkspaceRoutes = require('./routes/workspaceRoutes');
 const createProjectRoutes = require('./routes/projectRoutes');
 const createTaskRoutes = require('./routes/taskRoutes');
 const createExploreRoutes = require('./routes/exploreRoutes');
+const createDiagramRoutes = require('./routes/diagramRoutes');
 const { getNpmPackageInfo, isValidPackageName } = require('./npm');
 
 // Helper function to extract @mentions from text
@@ -558,6 +559,11 @@ router.use('/', createTaskRoutes({
 }));
 
 router.use('/', createExploreRoutes({
+  authenticateToken,
+  asyncHandler,
+}));
+
+router.use('/', createDiagramRoutes({
   authenticateToken,
   asyncHandler,
 }));
