@@ -21,7 +21,7 @@ export interface Chat {
   }>;
   verified?: boolean;
   lastMessage: string;
-  lastMessageType?: "text" | "image" | "sticker" | "voice" | "moment_image";
+  lastMessageType?: "text" | "image" | "sticker" | "voice" | "moment_image" | "diagram";
   timestamp: string;
   unread?: number;
   projectId?: number | null;
@@ -62,6 +62,7 @@ export interface Message {
     verified?: boolean;
   } | null;
   text: string;
+  diagramSvg?: string | null;
   type?: "text" | "moment_image" | "voice" | "sticker";
   sticker?: {
     id: string;

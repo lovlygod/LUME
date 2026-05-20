@@ -4,6 +4,7 @@ import type { Chat } from "@/types/messages";
 import { normalizeImageUrl } from "@/lib/utils";
 import { VerifiedBadge, isVerifiedUser } from "@/contexts/AuthContext";
 import { Plus } from "lucide-react";
+import { TbHierarchy2 } from "react-icons/tb";
 import { MessageSearch } from "./MessageSearch";
 import { Loader } from "@/components/ui/Loader";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
@@ -184,7 +185,16 @@ const ChatList = ({
                         </div>
                       )}
                       <p className="truncate text-xs text-secondary">
-                        {chat.lastMessage || t("messages.noMessages")}
+                        {(() => {
+                          const isDiagramType = chat.lastMessageType === "diagram";
+                          const isDiagramText = /^(graph|flowchart|pie|gitGraph|sequenceDiagram|classDiagram|stateDiagram|erDiagram|journey|gantt|mindmap)\s/i.test(chat.lastMessage || "");
+                          return (isDiagramType || isDiagramText) ? (
+                            <span className="flex items-center gap-1">
+                              <TbHierarchy2 className="h-3 w-3" />
+                              Diagram
+                            </span>
+                          ) : (chat.lastMessage || t("messages.noMessages"));
+                        })()}
                       </p>
                     </motion.div>
                   )}

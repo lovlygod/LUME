@@ -4,16 +4,23 @@ import { Download, Copy, AlertCircle, Loader2, Check } from "lucide-react";
 interface DiagramMessageProps {
   code: string;
   type?: string;
+  diagramSvg?: string | null;
 }
 
-export function DiagramMessage({ code, type = "mermaid" }: DiagramMessageProps) {
-  const [svg, setSvg] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+export function DiagramMessage({ code, type = "mermaid", diagramSvg: preRenderedSvg }: DiagramMessageProps) {
+  const [svg, setSvg] = useState<string | null>(preRenderedSvg || null);
+  const [loading, setLoading] = useState(!preRenderedSvg);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
 
   useEffect(() => {
+    if (preRenderedSvg) {
+      setSvg(preRenderedSvg);
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
     async function renderDiagram() {
@@ -50,7 +57,7 @@ export function DiagramMessage({ code, type = "mermaid" }: DiagramMessageProps) 
     return () => {
       cancelled = true;
     };
-  }, [code, type]);
+  }, [code, type, preRenderedSvg]);
 
   const handleCopy = async () => {
     try {
