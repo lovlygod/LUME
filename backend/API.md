@@ -559,6 +559,35 @@ Delete a message.
 
 ---
 
+### POST `/chats/:chatId/messages/bulk-delete`
+Delete multiple messages at once.
+
+**Request Body:**
+```json
+{
+  "messageIds": ["1", "2", "3"],
+  "scope": "me" | "all"
+}
+```
+
+**Query Parameters:**
+- `chatId`: Chat ID
+- `scope`: `me` (for yourself) or `all` (for everyone, only own messages)
+
+**Response 200:**
+```json
+{
+  "message": "Messages deleted"
+}
+```
+
+**Notes:**
+- Maximum 100 messages per operation
+- For `scope=all`: only author's messages can be deleted for everyone
+- PostgreSQL uses `ANY($1::bigint[])` for IN clause with proper type casting
+
+---
+
 ### GET `/messages/search`
 Full-text message search (Meilisearch).
 

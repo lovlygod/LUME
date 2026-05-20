@@ -396,6 +396,13 @@
     "copyEmpty": "Нет текста для копирования",
     "typingIndicator": "{name} печатает...",
     "replyAction": "Ответить",
+    "select": "Выбрать",
+    "selected": "Выбрано",
+    "deleteSelected": "Удалить выбранные",
+    "deleteSelectedForMe": "Удалить для меня",
+    "deleteSelectedForAll": "Удалить для всех",
+    "cancelSelection": "Отменить выбор",
+    "maxSelectionError": "Максимум 100 сообщений можно выбрать",
     "voiceNoChat": "Чат не выбран",
     "voiceSent": "Голосовое сообщение отправлено",
     "voiceSendError": "Не удалось отправить голосовое сообщение"

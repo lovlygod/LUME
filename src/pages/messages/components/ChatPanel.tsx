@@ -107,7 +107,7 @@ const ChatPanel = ({
         ? <DeveloperCrownBadge className="h-4 w-4" />
         : isDeveloper(user.username) && <DeveloperBadge className="h-4 w-4" />
       }
-      {onLeave && !isPrivate && (
+      {onLeave && !isPrivate && chatType !== "channel" && (
         <button
           type="button"
           className="ml-2 rounded-full border border-white/10 px-3 py-1 text-xs text-white/70 hover:bg-white/10"

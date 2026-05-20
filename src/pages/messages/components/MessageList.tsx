@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { ImageThumb } from "@/components/media/ImageViewer";
 import StickerMessage from "@/components/stickers/StickerMessage";
 import type { Sticker } from "@/types/stickers";
-import { Paperclip, CheckCheck } from "lucide-react";
+import { Paperclip, CheckCheck, Check } from "lucide-react";
 import LinkPreview from "@/components/LinkPreview";
 import VoiceMessagePlayer from "@/components/chat/VoiceMessagePlayer";
 import { renderSafeTextWithLinks } from "../lib/messageText";
@@ -49,6 +49,8 @@ interface MessageListProps {
   onCloseImage: () => void;
   onLoadMore: () => void;
   onCommand?: (command: string) => void;
+  selectedMessages?: string[];
+  onSelectMessage?: (messageId: string) => void;
 }
 
 const MessageList = ({
@@ -74,6 +76,8 @@ const MessageList = ({
   onCloseImage,
   onLoadMore,
   onCommand,
+  selectedMessages,
+  onSelectMessage,
 }: MessageListProps) => {
   const parentRef = useRef<HTMLDivElement | null>(null);
   const lastMessageIdRef = useRef<string | null>(null);
@@ -277,9 +281,11 @@ const MessageList = ({
               }}
               onClick={(event) => {
                 const target = event.target as HTMLElement | null;
-                if (target?.closest("button")) {
-                  event.stopPropagation();
+                if (target?.closest("button") || target?.closest("a")) {
                   return;
+                }
+                if ((selectedMessages?.length ?? 0) > 0) {
+                  onSelectMessage?.(msg.id);
                 }
               }}
               onContextMenu={(event) => {
@@ -340,6 +346,17 @@ const MessageList = ({
                     size="sm"
                   />
                 </button>
+              )}
+              {selectedMessages?.includes(msg.id) && (
+                <>
+                  {isOwnMessage && (
+                    <div className="flex-shrink-0 self-center mr-2">
+                      <div className="w-5 h-5 rounded-full bg-white/20 border border-white/10 flex items-center justify-center">
+                        <Check className="h-3.5 w-3.5 text-white stroke-[3]" />
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
               <div
                 className={`relative w-fit break-words message-bubble ${
@@ -522,6 +539,13 @@ const MessageList = ({
                   </div>
                 )}
               </div>
+              {selectedMessages?.includes(msg.id) && !isOwnMessage && (
+                <div className="flex-shrink-0 self-center ml-2">
+                  <div className="w-5 h-5 rounded-full bg-white/20 border border-white/10 flex items-center justify-center">
+                    <Check className="h-3.5 w-3.5 text-white stroke-[3]" />
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}

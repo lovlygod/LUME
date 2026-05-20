@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LayoutGroup, AnimatePresence, motion } from "framer-motion";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, X, Trash2 } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -89,7 +89,12 @@ const MessagesPage = () => {
   const [publicJoinModalOpen, setPublicJoinModalOpen] = useState(false);
   const [blockedProject, setBlockedProject] = useState<any>(null);
   const [joiningProject, setJoiningProject] = useState(false);
+  const [selectedMessages, setSelectedMessages] = useState<string[]>([]);
   const { backgroundStyle } = useChatBackground();
+
+  useEffect(() => {
+    setSelectedMessages([]);
+  }, [selectedChatId]);
   const [reactionMap, setReactionMap] = useState<Record<string, boolean>>({});
   const [contextMenuState, setContextMenuState] = useState<{
     message: Message;
@@ -804,6 +809,50 @@ const MessagesPage = () => {
     }
   };
 
+  const handleSelectMessage = (messageId: string) => {
+    if (selectedMessages.includes(messageId)) {
+      setSelectedMessages(prev => prev.filter(id => id !== messageId));
+    } else {
+      if (selectedMessages.length >= 100) {
+        toast.error(t("messages.maxSelectionError"));
+        return;
+      }
+      setSelectedMessages(prev => [...prev, messageId]);
+    }
+  };
+
+  const handleClearSelection = () => setSelectedMessages([]);
+
+  const handleBulkDeleteMessages = async (scope: "me" | "all") => {
+    if (selectedMessages.length === 0 || !selectedChatId) return;
+    try {
+      const response = await fetch(`/api/chats/${selectedChatId}/messages/bulk-delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ messageIds: selectedMessages, scope }),
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Delete failed");
+      }
+      const result = await response.json();
+      toast.success(`${result.deleted} messages deleted`);
+      setSelectedMessages([]);
+      queryClient.invalidateQueries({ queryKey: messageQueryKeys.chatMessages(selectedChatId) });
+    } catch (error) {
+      toast.error("Failed to delete messages");
+    }
+  };
+
+  const isAllSelectedMessagesMine = useMemo(() => {
+    if (selectedMessages.length === 0) return true;
+    if (!messages) return true;
+    if (displayChat?.type === "private") return true;
+    const myMessages = messages.filter(m => m.own);
+    return selectedMessages.every(id => myMessages.some(m => m.id === id));
+  }, [selectedMessages, messages, displayChat?.type]);
+
   const setReplyFromMessage = (msg: Message) => {
     const firstAttachment = msg.attachments?.find((att) => att.type === "image");
     const authorName = msg.own ? currentUser?.name || "You" : selectedChat?.title || "User";
@@ -961,8 +1010,8 @@ const MessagesPage = () => {
               transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
               className="flex-1 flex flex-col min-w-0 p-3"
             >
-              <div className="flex-1 flex flex-col min-h-0">
-                  <div className="flex-1 flex flex-col min-h-0 rounded-3xl overflow-hidden border border-white/10 bg-transparent">
+              <div className="flex-1 flex flex-col min-h-0 relative">
+                  <div className="flex-1 flex flex-col min-h-0 rounded-3xl overflow-hidden border border-white/10 bg-transparent relative">
                     <ChatPanel
                     user={chatPanelUser}
                     chatType={displayChat?.type}
@@ -1052,12 +1101,49 @@ const MessagesPage = () => {
                         <p className="text-sm text-secondary">Загрузка...</p>
                       </div>
                     ) : messages.length === 0 ? (
-                      <div className="flex-1 flex items-center justify-center text-center px-6">
+                      <div className="flex-1 flex items-center justify-center text-center px-6 relative">
+                        {selectedMessages.length > 0 && (
+                          <div className="absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/10 border border-white/10 backdrop-blur-md">
+                            <span className="text-xs text-white/70">{selectedMessages.length} {t("messages.selected")}</span>
+                            {displayChat?.type !== "channel" && (
+                              <button type="button" onClick={() => handleBulkDeleteMessages("me")} className="flex items-center gap-1 px-2 py-1 text-xs text-white/80 hover:text-white hover:bg-white/10 rounded-md transition-colors ml-5">
+                                <Trash2 className="h-3 w-3" />{t("messages.deleteSelectedForMe")}
+                              </button>
+                            )}
+                            {isAllSelectedMessagesMine && (
+                              <button type="button" onClick={() => handleBulkDeleteMessages("all")} className="flex items-center gap-1 px-2 py-1 text-xs text-red-300 hover:text-red-200 hover:bg-white/10 rounded-md transition-colors">
+                                <Trash2 className="h-3 w-3" />{t("messages.deleteSelectedForAll")}
+                              </button>
+                            )}
+                            <button type="button" onClick={handleClearSelection} className="p-1 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors">
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        )}
                         <p className="text-sm text-secondary">
-                          No messages yet. Start the conversation.
+                          {t("messages.noMessages")}
                         </p>
                       </div>
                     ) : (
+                      <div className="flex-1 flex flex-col min-h-0 relative">
+                        {selectedMessages.length > 0 && (
+                          <div className="absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/10 border border-white/10 backdrop-blur-md z-10">
+                            <span className="text-xs text-white/70">{selectedMessages.length} {t("messages.selected")}</span>
+                            {displayChat?.type !== "channel" && (
+                              <button type="button" onClick={() => handleBulkDeleteMessages("me")} className="flex items-center gap-1 px-2 py-1 text-xs text-white/80 hover:text-white hover:bg-white/10 rounded-md transition-colors ml-5">
+                                <Trash2 className="h-3 w-3" />{t("messages.deleteSelectedForMe")}
+                              </button>
+                            )}
+                            {isAllSelectedMessagesMine && (
+                              <button type="button" onClick={() => handleBulkDeleteMessages("all")} className="flex items-center gap-1 px-2 py-1 text-xs text-red-300 hover:text-red-200 hover:bg-white/10 rounded-md transition-colors">
+                                <Trash2 className="h-3 w-3" />{t("messages.deleteSelectedForAll")}
+                              </button>
+                            )}
+                            <button type="button" onClick={handleClearSelection} className="p-1 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors">
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        )}
                       <MessageList
                         messages={messages}
                         currentUser={currentUser}
@@ -1101,7 +1187,10 @@ const MessagesPage = () => {
                           }
                         }}
                         onCommand={handleCommandClick}
+                        selectedMessages={selectedMessages}
+                        onSelectMessage={handleSelectMessage}
                       />
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1159,10 +1248,10 @@ const MessagesPage = () => {
                           </Button>
                         ) : joinStatus === "pending" ? (
                           <span>{t("messages.joinRequestSent")}</span>
-                        ) : channelRole !== "owner" ? (
+                        ) : channelRole !== "owner" && displayChat?.type === "channel" ? (
                           <Button
                             size="sm"
-                            variant="ghost"
+                            variant="outline"
                             onClick={() => {
                               if (!displayChat?.id) return;
                               messagesAPI
@@ -1263,6 +1352,10 @@ const MessagesPage = () => {
                         ? (messageId) => handleDeleteMessage(messageId, "all")
                         : undefined
                     }
+                    onSelect={handleSelectMessage}
+                    isSelected={selectedMessages.includes(contextMenuState.message.id)}
+                    chatType={displayChat?.type || "private"}
+                    chatRole={displayChat?.role}
                   />
                 )}
               </AnimatePresence>
@@ -1282,13 +1375,13 @@ const MessagesPage = () => {
                         onClick={() => handleDeleteMessage(showDeleteMenu.msgId, "me")}
                         className="w-full flex items-center gap-2 px-4 py-3 text-sm text-white hover:bg-white/5 transition-smooth border-b border-white/10"
                       >
-                        Delete for me
+                        {t("messages.deleteForMe")}
                       </button>
                       <button
                         onClick={() => handleDeleteMessage(showDeleteMenu.msgId, "all")}
                         className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-200 hover:bg-white/5 transition-smooth"
                       >
-                        Delete for everyone
+                        {t("messages.deleteForEveryone")}
                       </button>
                     </motion.div>
                   </>

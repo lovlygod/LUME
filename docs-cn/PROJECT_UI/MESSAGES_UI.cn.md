@@ -144,6 +144,50 @@ Messages 提供实时的一对一私聊。
 
 ---
 
+## 消息多选
+
+**文件：**
+- 状态：`src/pages/messages/MessagesPage.tsx`（`selectedMessages` 状态）
+- UI：选择消息时在消息列表上方显示工具栏
+- 上下文菜单：`src/components/chat/MessageContextMenu.tsx`
+
+### 功能
+
+- **选择触发：** 点击消息仅在已处于多选模式时选择（首次选择操作后）
+- **视觉反馈：** 选中的消息显示勾号（白色/20 背景，白色边框）
+- **工具栏：** 出现在消息区域顶部，显示：选中数量 + 删除按钮 + 取消按钮
+- **清除选择：** 切换聊天时自动清除（useEffect）
+
+### 权限
+
+| 聊天类型 | 角色 | 可用操作 |
+|----------|------|----------|
+| 私聊 | - | 选择、复制、仅为我删除、为所有人删除 |
+| 群组 | - | 选择、复制、仅为我删除、为所有人删除（仅自己的消息） |
+| 频道 | 参与者 | 仅复制 |
+| 频道 | 管理员 | 回复、复制 |
+| 频道 | 所有者 | 回复、选择、复制、为所有人删除 |
+
+### 批量删除
+
+- **接口：** `POST /api/chats/:chatId/messages/bulk-delete`
+- **请求体：** `{ messageIds: string[], scope: "me" | "all" }`
+- **限制：** 每次最多 100 条消息
+- **PostgreSQL：** 使用 `ANY($1::bigint[])` 数组语法
+
+### 翻译
+
+新增键值到 `src/i18n/locales/`：
+- `messages.select` — "选择"
+- `messages.selected` — "已选择"
+- `messages.deleteSelected` — "删除已选择"
+- `messages.deleteSelectedForMe` — "仅为我删除"
+- `messages.deleteSelectedForAll` — "为所有人删除"
+- `messages.cancelSelection` — "取消选择"
+- `messages.maxSelectionError` — "最多可以选择100条消息"
+
+---
+
 ## 相关文档
 
 - [Overview](./OVERVIEW.cn.md)

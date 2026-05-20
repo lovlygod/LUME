@@ -2,7 +2,7 @@
 
 English | [Русский](../../docs-ru/PROJECT_UI/MESSAGES_UI.ru.md) | [中文](../../docs-cn/PROJECT_UI/MESSAGES_UI.cn.md)
 
-**Last updated:** 2026-05-19
+**Last updated:** 2026-05-20
 
 ---
 
@@ -141,6 +141,50 @@ Chat Panel (right)
 - Recording UI in chat composer
 - Playback UI in message bubble
 - Upload endpoint: `POST /messages/voice`
+
+---
+
+## Multi-select messages
+
+**Files:**
+- State: `src/pages/messages/MessagesPage.tsx` (`selectedMessages` state)
+- UI: Toolbar appears above message list when messages are selected
+- Context menu: `src/components/chat/MessageContextMenu.tsx`
+
+### Features
+
+- **Selection trigger:** Click on message selects only if already in multi-select mode (after first Select action)
+- **Visual feedback:** Checkmark appears on selected messages (white/20 background with white border)
+- **Toolbar:** Appears at top of message area showing: count selected + Delete buttons + Cancel button
+- **Clear selection:** Happens automatically on chat switch (useEffect)
+
+### Permissions
+
+| Chat type | Role | Actions available |
+|-----------|------|-------------------|
+| Private | - | Select, Copy, Delete for me, Delete for all |
+| Group | - | Select, Copy, Delete for me, Delete for all (own messages only) |
+| Channel | participant | Copy only |
+| Channel | admin | Reply, Copy |
+| Channel | owner | Reply, Select, Copy, Delete for all |
+
+### Bulk delete
+
+- **Endpoint:** `POST /api/chats/:chatId/messages/bulk-delete`
+- **Body:** `{ messageIds: string[], scope: "me" | "all" }`
+- **Limit:** Max 100 messages per operation
+- **PostgreSQL:** Uses `ANY($1::bigint[])` array syntax for IN clause
+
+### Translations
+
+New keys added to `src/i18n/locales/`:
+- `messages.select` — "Select"
+- `messages.selected` — "Selected"
+- `messages.deleteSelected` — "Delete selected"
+- `messages.deleteSelectedForMe` — "Delete for me"
+- `messages.deleteSelectedForAll` — "Delete for all"
+- `messages.cancelSelection` — "Cancel selection"
+- `messages.maxSelectionError` — "Maximum 100 messages can be selected"
 
 ---
 

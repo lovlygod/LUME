@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import type { Message } from "@/types/messages";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Check, Square } from "lucide-react";
 
 interface MessageContextMenuProps {
   message: Message;
@@ -11,6 +12,10 @@ interface MessageContextMenuProps {
   onCopyText?: (message: Message) => void;
   onDeleteForMe?: (messageId: string) => void;
   onDeleteForAll?: (messageId: string) => void;
+  onSelect?: (messageId: string) => void;
+  isSelected?: boolean;
+  chatType?: "private" | "group" | "channel";
+  chatRole?: "owner" | "admin" | "member";
 }
 
 const MessageContextMenu = ({
@@ -21,7 +26,13 @@ const MessageContextMenu = ({
   onCopyText,
   onDeleteForMe,
   onDeleteForAll,
+  onSelect,
+  isSelected,
+  chatType = "private",
+  chatRole = "member",
 }: MessageContextMenuProps) => {
+  const isChannel = chatType === "channel";
+  const isOwner = chatRole === "owner";
   const { t } = useLanguage();
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -61,16 +72,36 @@ const MessageContextMenu = ({
       className="fixed z-50 min-w-[160px] max-w-[220px] rounded-[16px] border border-white/10 bg-white/10 backdrop-blur-[24px] shadow-[0_12px_30px_rgba(0,0,0,0.25)]"
       style={{ left: position.x, top: position.y }}
     >
-      <button
-        type="button"
-        onClick={() => {
-          onReply(message);
-          onClose();
-        }}
+      {(!isChannel || (chatRole === "admin" || chatRole === "owner")) && (
+        <button
+          type="button"
+          onClick={() => {
+            onReply(message);
+            onClose();
+          }}
           className="w-full px-4 py-2.5 text-left text-sm text-white/90 hover:bg-white/10 transition-smooth rounded-t-[16px]"
         >
-        {t("messages.replyAction")}
-      </button>
+          {t("messages.replyAction")}
+        </button>
+      )}
+      {onSelect && !isChannel && (
+        <button
+          type="button"
+          onClick={() => { onSelect(message.id); onClose(); }}
+          className="w-full px-4 py-2.5 text-left text-sm text-white/80 hover:bg-white/10 transition-smooth flex items-center gap-2 rounded-[16px]"
+        >
+          {isSelected ? <><Check className="h-4 w-4 text-cyan-400" />{t("messages.selected") || "Selected"}</> : <><Square className="h-4 w-4" />{t("messages.select") || "Select"}</>}
+        </button>
+      )}
+      {onSelect && isChannel && isOwner && (
+        <button
+          type="button"
+          onClick={() => { onSelect(message.id); onClose(); }}
+          className="w-full px-4 py-2.5 text-left text-sm text-white/80 hover:bg-white/10 transition-smooth flex items-center gap-2 rounded-[16px]"
+        >
+          {isSelected ? <><Check className="h-4 w-4 text-cyan-400" />{t("messages.selected") || "Selected"}</> : <><Square className="h-4 w-4" />{t("messages.select") || "Select"}</>}
+        </button>
+      )}
       {onCopyText && (
         <button
           type="button"
@@ -78,24 +109,24 @@ const MessageContextMenu = ({
             onCopyText(message);
             onClose();
           }}
-          className="w-full px-4 py-2.5 text-left text-sm text-white/80 hover:bg-white/10 transition-smooth"
+          className="w-full px-4 py-2.5 text-left text-sm text-white/80 hover:bg-white/10 transition-smooth rounded-[16px]"
         >
           {t("messages.copyMessage")}
         </button>
       )}
-      {onDeleteForMe && (
+      {onDeleteForMe && !isChannel && message.own && (
         <button
           type="button"
           onClick={() => {
             onDeleteForMe(message.id);
             onClose();
           }}
-          className="w-full px-4 py-2.5 text-left text-sm text-white/80 hover:bg-white/10 transition-smooth"
+          className="w-full px-4 py-2.5 text-left text-sm text-white/80 hover:bg-white/10 transition-smooth rounded-[16px]"
         >
           {t("messages.deleteForMe")}
         </button>
       )}
-      {onDeleteForAll && (
+      {onDeleteForAll && (!isChannel || isOwner) && message.own && (
         <button
           type="button"
           onClick={() => {

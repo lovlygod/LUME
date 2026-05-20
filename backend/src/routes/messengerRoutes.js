@@ -489,4 +489,76 @@ module.exports = function registerMessengerRoutes(router, deps) {
 
       res.status(201).json({ chatId: chatId.toString() });
   }));
+
+  // Bulk delete messages
+  router.post('/chats/:chatId/messages/bulk-delete', authenticateToken, asyncHandler(async (req, res) => {
+    const userId = req.user.userId;
+    const chatId = req.params.chatId;
+    const { messageIds, scope } = req.body || {};
+
+    if (!messageIds || !Array.isArray(messageIds) || messageIds.length === 0) {
+      throw new ValidationError('Message IDs are required');
+    }
+
+    if (messageIds.length > 100) {
+      throw new ValidationError('Maximum 100 messages can be deleted at once');
+    }
+
+    if (!['me', 'all'].includes(scope)) {
+      throw new ValidationError('Scope must be "me" or "all"');
+    }
+
+    const userIdNum = parseInt(userId, 10);
+    const chatIdNum = parseInt(chatId, 10);
+
+    const memberQuery = `SELECT cm.role, c.type FROM chat_members cm JOIN chats c ON c.id = cm.chat_id WHERE cm.chat_id = $1 AND cm.user_id = $2`;
+    const memberResult = await db.query(memberQuery, [chatIdNum, userIdNum]);
+    const membership = memberResult.rows[0];
+
+    if (!membership) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const isGroupChat = membership.type !== 'private';
+    const messageIdsNum = messageIds.map(id => parseInt(id, 10)).filter(id => !isNaN(id));
+
+    if (messageIdsNum.length === 0) {
+      throw new ValidationError('Invalid message IDs');
+    }
+
+    const placeholders = messageIdsNum.map((_, i) => `$${i + 2}`).join(',');
+    const userIdStr = String(userIdNum);
+
+    if (scope === 'all') {
+      if (isGroupChat) {
+        const messagesResult = await db.query(`SELECT id::bigint as id, sender_id::bigint as sender_id FROM messages WHERE id::bigint = ANY($1::bigint[])`, [[...messageIdsNum]]);
+        const myMessages = messagesResult.rows.filter(m => String(m.sender_id) === userIdStr);
+        if (myMessages.length === 0) {
+          return res.status(403).json({ error: 'You can only delete your own messages' });
+        }
+        const myIds = myMessages.map(m => Number(m.id));
+        await db.query(`UPDATE messages SET deleted_for_all_at = NOW(), deleted_for_all_by = $1::bigint WHERE id::bigint = ANY($2::bigint[])`, [userIdNum, myIds]);
+        const sendChatMessage = req.app.get('sendChatMessage');
+        if (sendChatMessage) {
+          myIds.forEach(id => sendChatMessage({ chatId: String(chatIdNum), type: 'message:deleted', data: { messageId: String(id), scope: 'all', byUserId: userIdStr } }));
+        }
+        res.json({ deleted: myIds.length, scope: 'all' });
+      } else {
+        await db.query(`UPDATE messages SET deleted_for_all_at = NOW(), deleted_for_all_by = $1::bigint WHERE id::bigint = ANY($2::bigint[])`, [userIdNum, messageIdsNum]);
+        const sendChatMessage = req.app.get('sendChatMessage');
+        if (sendChatMessage) {
+          messageIdsNum.forEach(id => sendChatMessage({ chatId: String(chatIdNum), type: 'message:deleted', data: { messageId: String(id), scope: 'all', byUserId: userIdStr } }));
+        }
+        res.json({ deleted: messageIdsNum.length, scope: 'all' });
+      }
+    } else {
+      for (const msgId of messageIdsNum) {
+        const existingDeletion = await db.query('SELECT 1 FROM message_deletions WHERE message_id::bigint = $1 AND user_id::bigint = $2', [msgId, userIdNum]);
+        if (existingDeletion.rows.length === 0) {
+          await db.query('INSERT INTO message_deletions (message_id, user_id) VALUES ($1::bigint, $2::bigint)', [msgId, userIdNum]);
+        }
+      }
+      res.json({ deleted: messageIdsNum.length, scope: 'me' });
+    }
+  }));
 };
