@@ -474,7 +474,7 @@ const MessageList = ({
 
                         const { isDiagram, code, type } = detectDiagramCode(msg.text);
                         if (isDiagram) {
-                          return <DiagramMessage code={code} type={type} />;
+                          return <DiagramMessage code={code} type={type} diagramSvg={msg.diagramSvg} />;
                         }
 
                         return (

@@ -2006,6 +2006,7 @@ router.get('/chats/:chatId/messages', authenticateToken, (req, res) => {
             verified: msg.verified === 1,
           },
           text: msg.text,
+          diagramSvg: msg.diagram_svg || null,
           type: msg.type || 'text',
           sticker: msg.sticker_id ? {
             id: msg.sticker_id.toString(),
@@ -2142,9 +2143,58 @@ router.post('/messages', authenticateToken, asyncHandler(async (req, res) => {
     messageBody = messageText || '[sticker]';
   }
 
+  const detectDiagramCode = (text) => {
+    const trimmed = text?.trim() || '';
+    const diagramPatterns = [
+      { pattern: /^graph\s+(TD|BT|LR|RL)/i, type: 'mermaid' },
+      { pattern: /^flowchart\s+(TD|BT|LR|RL)/i, type: 'mermaid' },
+      { pattern: /^pie\s+/i, type: 'mermaid' },
+      { pattern: /^gitGraph/i, type: 'mermaid' },
+      { pattern: /^sequenceDiagram/i, type: 'mermaid' },
+      { pattern: /^classDiagram/i, type: 'mermaid' },
+      { pattern: /^stateDiagram-v2/i, type: 'mermaid' },
+      { pattern: /^erDiagram/i, type: 'mermaid' },
+      { pattern: /^journey/i, type: 'mermaid' },
+      { pattern: /^gantt/i, type: 'mermaid' },
+      { pattern: /^mindmap/i, type: 'mermaid' },
+    ];
+    for (const { pattern, type } of diagramPatterns) {
+      if (pattern.test(trimmed)) {
+        return { isDiagram: true, code: trimmed, type };
+      }
+    }
+    return { isDiagram: false, code: '', type: 'mermaid' };
+  };
+
+  const renderDiagram = async (code, type = 'mermaid') => {
+    const krokiType = type === 'graphviz' ? 'dot' : type;
+    const krokiUrl = `https://kroki.io/${krokiType}/svg`;
+    try {
+      const response = await fetch(krokiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain', 'Accept': 'image/svg+xml' },
+        body: code,
+      });
+      if (!response.ok) return null;
+      const svg = await response.text();
+      if (!svg.includes('<svg')) return null;
+      return svg;
+    } catch (err) {
+      console.error('[Diagram] Render error:', err.message);
+      return null;
+    }
+  };
+
+  const { isDiagram, code: diagramCode, type: diagramType } = detectDiagramCode(messageText);
+  let diagramSvg = null;
+  if (isDiagram && diagramCode) {
+    diagramSvg = await renderDiagram(diagramCode, diagramType);
+    messageType = 'diagram';
+  }
+
   const insertMessageQuery = `
-    INSERT INTO messages (chat_id, sender_id, text, type, reply_to_message_id, link_preview, sticker_id)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    INSERT INTO messages (chat_id, sender_id, text, type, reply_to_message_id, link_preview, sticker_id, diagram_svg)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
   `;
 
   db.serialize(() => {
@@ -2155,7 +2205,7 @@ router.post('/messages', authenticateToken, asyncHandler(async (req, res) => {
 
       db.run(
         insertMessageQuery,
-        [chatId, senderId, messageBody, messageType, replyToMessageId || null, linkPreview ? JSON.stringify(linkPreview) : null, sticker ? sticker.id : null],
+        [chatId, senderId, messageBody, messageType, replyToMessageId || null, linkPreview ? JSON.stringify(linkPreview) : null, sticker ? sticker.id : null, diagramSvg],
         function(err) {
           if (err) {
             return db.run('ROLLBACK', () => res.status(500).json({ error: 'Database error' }));
