@@ -2,7 +2,7 @@
 
 中文 | [Русский](../docs-ru/FEATURES_INVENTORY.ru.md) | [English](../docs/FEATURES_INVENTORY.md)
 
-**最后更新：** 2026-03-09
+**最后更新：** 2026-05-19
 **状态：** ✅ 最新
 
 以下列出的是 LUME 项目中**已实际实现**的功能。
@@ -103,55 +103,52 @@
   - 禁止下载
   - 缩略图预览
   - 已读标记
-  - 切换标签页自动关闭
+- 切换标签页自动关闭
+
+### NPM Package Preview（NPM 包预览）
+- **文件：** `backend/src/npm.js`, `src/components/npm/NpmPackageCard.tsx`, `src/utils/npmDetector.ts`
+- **状态:** ✅ 已实现
+- **功能：**
+  - 自动识别消息中的 npm 命令（`npm react`、`npm express`、`npm @types/node`）
+  - 端点：`GET /api/npm/:packageName` — 从 npm Registry 获取包数据
+  - UI 卡片显示包名、版本、描述和 npmjs.com 链接
+  - LUME 风格的 Glass UI 设计
+  - 加载时显示骨架屏
+  - 错误处理（未找到包时显示 fallback）
+  - 响应缓存（内存中，15 分钟）
+
+### 图表渲染（Mermaid）
+- **文件：** `backend/src/routes/diagramRoutes.js`, `src/components/chat/DiagramMessage.tsx`
+- **文档：** [DIAGRAM_RENDERING.cn.md](DIAGRAM_RENDERING.cn.md)
+- **状态：** ✅ 已实现
+- **功能：**
+  - 自动检测 Mermaid 图表（graph TD/BT/LR/RL, flowchart TD/LR, pie, gitGraph）
+  - 端点：`POST /api/diagram/render` — 通过 Kroki API 渲染（`https://kroki.io/mermaid/svg`）
+  - Redis 缓存（SHA256 哈希，TTL: 1小时）
+  - SVG 渲染带清理（安全性）
+  - 按钮：复制代码、下载 SVG（带勾号动画）
+  - 加载时显示骨架屏
+  - 发送后自动滚动聊天
 
 ### Reply Bar
 - **文件：** `src/components/chat/ReplyBar.tsx`
-- **状态：** ✅ 已实现
+- **状态:** ✅ 已实现
 - **说明：** 消息回复条组件
 
 ---
 
-## 👥 Servers (Communities)
+## 👥 Groups & Channels (Chats)
 
-### 服务器目录
-- **路由：** `/servers`
-- **文件：** `src/pages/ServersPage.tsx`, `src/components/servers/CreateServerDialog.tsx`
+### 群组与频道（聊天）
+- **路由：** `/messages`, `/messages/:chatId`
+- **文件：** `src/pages/Messages.tsx`, `src/pages/messages/MessagesPage.tsx`, `src/pages/messages/components/ChatList.tsx`, `src/pages/messages/components/ChatPanel.tsx`, `src/pages/messages/components/ChatSettingsModal.tsx`, `src/pages/messages/components/CreateChatModal.tsx`
 - **状态：** ✅ 已实现
 - **功能：**
-  - 标签页：“Discover”（公共）与“My Servers”（我的）
-  - 服务器搜索
-  - 创建服务器（公开/私密）
-  - 加入服务器
-
-### 服务器页面
-- **路由：** `/server/:identifier`, `/server/:identifier/channel/:channelName`
-- **文件：** `src/pages/ServerPage.tsx`, `src/pages/server/components/ServerLayout.tsx`, `src/pages/server/components/ServerSidebar.tsx`, `src/pages/server/components/ChannelHeader.tsx`, `src/pages/server/components/ChannelMessageList.tsx`, `src/pages/server/components/ChannelComposer.tsx`, `src/pages/server/components/ChannelMessageRow.tsx`
-- **状态：** ✅ 已实现
-- **功能：**
-  - 频道侧边栏
-  - 频道聊天
-  - 实时消息
-  - 上传附件
-  - 加入申请（Owner）
-
-### 服务器设置
-- **路由：** `/server/:identifier/settings`
-- **文件：** `src/pages/ServerSettingsPage.tsx`
-- **状态：** ✅ 已实现
-- **功能：**
-  - 修改名称、描述、username
-  - 上传图标
-  - 删除服务器（Owner）
-
-### 服务器成员
-- **路由：** `/server/:identifier/members`
-- **文件：** `src/pages/ServerMembersPage.tsx`, `src/pages/server/components/MembersPanel.tsx`
-- **状态：** ✅ 已实现
-- **功能：**
-  - 成员列表
-  - 角色变更（Owner/Admin）
-  - 踢人（Owner/Admin/Moderator）
+  - 聊天类型：`group`、`channel`、`private`
+  - 创建群组/频道
+  - 公开频道的搜索与加入
+  - 加入申请（approve/reject）
+  - 成员与角色管理
 
 ---
 
@@ -261,7 +258,7 @@
 - **状态：** ✅ 已实现
 - **功能：**
   - 用户搜索
-  - 服务器搜索
+  - 公开频道/聊天搜索
   - 趋势（热门话题）
   - 推荐用户
 
@@ -335,7 +332,7 @@
   - `chat:read_update` — 已读更新
   - `message:deleted` — 消息删除
   - `presence:update` — 在线状态
-  - `server:created`, `server:deleted`, `server:member_joined`
+  - `chat:read_update`
   - `channel:new_message` — 频道消息
 
 ---
@@ -373,6 +370,6 @@
 ## 相关文档
 
 - [Error Handling](./ERROR_HANDLING.cn.md)
-- [Servers Module](./SERVERS_MODULE.cn.md)
+- [Groups Module](./GROUPS_MODULE.cn.md)
 - [Project UI](./PROJECT_UI/)
 - [README](../README.cn.md)

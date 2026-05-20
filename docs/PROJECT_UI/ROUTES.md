@@ -2,7 +2,7 @@
 
 English | [Русский](../../docs-ru/PROJECT_UI/ROUTES.ru.md) | [中文](../../docs-cn/PROJECT_UI/ROUTES.cn.md)
 
-**Last updated:** 2026-03-11
+**Last updated:** 2026-03-19
 
 ---
 
@@ -45,16 +45,11 @@ English | [Русский](../../docs-ru/PROJECT_UI/ROUTES.ru.md) | [中文](../
 | `/messages` | Messages | `src/pages/Messages.tsx` | Chat list |
 | `/messages/:chatId` | Messages | `src/pages/Messages.tsx` | Chat view |
 | `/messages?userId=:id` | Messages | `src/pages/Messages.tsx` | Open chat via query param |
-
-### Servers
-
-| Path | Component | File | Description |
-|------|-----------|------|-------------|
-| `/servers` | ServersPage | `src/pages/ServersPage.tsx` | Servers catalog |
-| `/server/:identifier` | ServerPage | `src/pages/ServerPage.tsx` | Server page |
-| `/server/:identifier/channel/:channelName` | ServerPage | `src/pages/ServerPage.tsx` | Channel chat |
-| `/server/:identifier/settings` | ServerSettingsPage | `src/pages/ServerSettingsPage.tsx` | Settings |
-| `/server/:identifier/members` | ServerMembersPage | `src/pages/ServerMembersPage.tsx` | Members |
+| `/onboarding` | OnboardingPage | `src/pages/onboarding/OnboardingPage.tsx` | Onboarding flow |
+| `/workspaces` | WorkspacesPage | `src/pages/workspaces/WorkspacesPage.tsx` | Workspaces list |
+| `/workspaces/:slug` | WorkspaceDetailPage | `src/pages/workspaces/WorkspaceDetailPage.tsx` | Workspace detail |
+| `/projects` | ProjectsPage | `src/pages/projects/ProjectsPage.tsx` | Projects list |
+| `/projects/:slug` | ProjectDetailPage | `src/pages/projects/ProjectDetailPage.tsx` | Project detail |
 
 ### Profile
 
@@ -100,14 +95,8 @@ English | [Русский](../../docs-ru/PROJECT_UI/ROUTES.ru.md) | [中文](../
   </Route>
 
   <Route element={<ProtectedRoute />}>
-    <Route path="/server/:identifier/channel/:channelName" element={<ServerPage />} />
-    <Route path="/server/:identifier/settings" element={<ServerSettingsPage />} />
-    <Route path="/server/:identifier/members" element={<ServerMembersPage />} />
-    <Route path="/server/:identifier" element={<ServerPage />} />
-
     <Route element={<MainLayout />}>
       <Route path="/feed" element={<Index />} />
-      <Route path="/servers" element={<ServersPage />} />
       <Route path="/messages" element={<Messages />} />
       <Route path="/messages/:chatId" element={<Messages />} />
       <Route path="/profile" element={<Profile />} />
@@ -140,9 +129,6 @@ const hideRightSidebar = pathname.startsWith("/messages");
 
 ```
 /messages/:chatId
-/server/:identifier/channel/:channelName
-/server/:identifier/settings
-/server/:identifier/members
 ```
 
 ---

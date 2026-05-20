@@ -9,6 +9,7 @@ export interface Sticker {
 export interface StickerPack {
   id: string;
   name: string;
+  slug?: string | null;
   description?: string | null;
   author?: string | null;
   createdAt?: string | null;

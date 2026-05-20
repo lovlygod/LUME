@@ -88,8 +88,8 @@ class TooManyRequestsError extends AppError {
  * Внутренняя ошибка сервера
  */
 class InternalError extends AppError {
-  constructor(message = 'Internal server error', code = 'INTERNAL_ERROR') {
-    super(message, 500, code);
+  constructor(message = 'Internal server error', code = 'INTERNAL_ERROR', details = {}) {
+    super(message, 500, code, details);
     this.isOperational = false; // Не операционная ошибка (неожидаемая)
   }
 }
@@ -149,9 +149,15 @@ const errorHandler = (err, req, res, next) => {
 
   // Обработка ошибок multer (загрузка файлов)
   if (err.code === 'LIMIT_FILE_SIZE') {
-    const validationError = new ValidationError('File too large', {
+    const validationDetails = {
       maxSize: err.maxSize || '5MB',
-    });
+    };
+    if (process.env.NODE_ENV !== 'production') {
+      validationDetails.code = err.code;
+      validationDetails.message = err.message;
+      validationDetails.name = err.name;
+    }
+    const validationError = new ValidationError('File too large', validationDetails);
     return res.status(validationError.statusCode).json(validationError.toJSON());
   }
 
@@ -170,7 +176,13 @@ const errorHandler = (err, req, res, next) => {
 
   // Все остальные ошибки - внутренняя ошибка сервера
   console.error('Unhandled error:', err);
-  const internalError = new InternalError();
+  const internalDetails = {};
+  if (process.env.NODE_ENV !== 'production') {
+    internalDetails.message = err.message;
+    internalDetails.name = err.name;
+    internalDetails.code = err.code;
+  }
+  const internalError = new InternalError('Internal server error', 'INTERNAL_ERROR', internalDetails);
   return res.status(internalError.statusCode).json(internalError.toJSON());
 };
 
@@ -247,5 +259,4 @@ module.exports = {
   asyncHandler,
   logError,
 };
-
 

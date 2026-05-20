@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Camera, MapPin, Link as LinkIcon, Edit2, Save, X, MessageCircle, Pin, ExternalLink, UserPlus, UserCheck, Users, BadgeCheck } from "lucide-react";
+import { Calendar, Camera, MapPin, Link as LinkIcon, Edit2, Save, X, MessageCircle, Pin, ExternalLink, UserPlus, UserCheck, Users, BadgeCheck, Github, Code, Briefcase, FolderKanban, CheckCircle, Search, Clock, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { profileAPI, postsAPI, usersAPI, onboardingAPI, searchAPI } from "@/services/api";
+import { profileAPI, postsAPI, usersAPI, onboardingAPI, searchAPI, projectsAPI } from "@/services/api";
 import type { User } from "@/types/api";
 import { useAuth, isVerifiedUser, isDeveloper, isDeveloperCrown, VerifiedBadge, DeveloperBadge, DeveloperCrownBadge } from "@/contexts/AuthContext";
 import Post from "@/components/post/Post";
@@ -17,7 +17,9 @@ type PostItem = {
   userId?: string | number;
   text?: string;
   image_url?: string;
+  image_urls?: string[];
   imageUrl?: string;
+  imageUrls?: string[];
   timestamp?: string;
   replies?: number;
   resonance?: number;
@@ -25,6 +27,14 @@ type PostItem = {
   username?: string;
   avatar?: string;
   verified?: boolean;
+};
+
+type UserProject = {
+  id: number;
+  name: string;
+  slug: string;
+  status: string;
+  description?: string | null;
 };
 
 const ProfilePage = () => {
@@ -40,7 +50,14 @@ const ProfilePage = () => {
     username: '',
     bio: '',
     city: '',
-    website: ''
+    website: '',
+    primaryRole: '',
+    skills: '',
+    availability: 'open',
+    availabilityOpen: false,
+    roleOpen: false,
+    githubUrl: '',
+    telegramUsername: ''
   });
   const [isUpdating, setIsUpdating] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -53,6 +70,13 @@ const ProfilePage = () => {
   const [modalTab, setModalTab] = useState<'followers' | 'following'>('followers');
   const [followersList, setFollowersList] = useState<User[]>([]);
   const [followingList, setFollowingList] = useState<User[]>([]);
+
+  // Dev profile data
+  const [projects, setProjects] = useState<UserProject[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+
+  // Type helpers for dev profile fields
+  const devUser = user as { primaryRole?: string; skills?: string[]; availability?: string; githubUrl?: string; telegramUsername?: string } | null;
 
   // Determine if viewing own profile
   const isOwnProfile = authUser && user 
@@ -115,8 +139,26 @@ const ProfilePage = () => {
         username: response.user.username,
         bio: response.user.bio || '',
         city: response.user.city || '',
-        website: response.user.website || ''
+        website: response.user.website || '',
+        primaryRole: response.user.primaryRole || '',
+        skills: response.user.skills?.join(', ') || '',
+        availability: response.user.availability || 'open',
+        githubUrl: response.user.githubUrl || '',
+        telegramUsername: response.user.telegramUsername || ''
       });
+
+      // Load user's projects if dev profile fields exist
+      if (response.user.onboardingCompleted || response.user.skills?.length || response.user.primaryRole) {
+        try {
+          setLoadingProjects(true);
+          const projectsRes = await projectsAPI.getMy();
+          setProjects((projectsRes.projects || []).slice(0, 4));
+        } catch (e) {
+          console.error('Failed to load projects:', e);
+        } finally {
+          setLoadingProjects(false);
+        }
+      }
 
       // Check if we're viewing another user's profile - load follow status
       const isAnotherUser = authUser && String(authUser.id) !== String(response.user.id);
@@ -193,21 +235,31 @@ const ProfilePage = () => {
     try {
       // Update via new API
       await usersAPI.updateProfile({
+        name: editData.name,
+        username: editData.username,
         bio: editData.bio,
         city: editData.city,
-        website: editData.website
+        website: editData.website,
+        primaryRole: editData.primaryRole,
+        skills: editData.skills ? editData.skills.split(',').map(s => s.trim()).filter(Boolean) : [],
+        availability: editData.availability,
+        githubUrl: editData.githubUrl,
+        telegramUsername: editData.telegramUsername
       });
 
-      // Update local state
-      await profileAPI.updateProfile({ name: editData.name, username: editData.username });
-
+      // Update local state (already done in usersAPI.updateProfile)
       setUser(prev => prev ? {
         ...prev,
         name: editData.name,
         username: editData.username,
         bio: editData.bio,
         city: editData.city,
-        website: editData.website
+        website: editData.website,
+        primaryRole: editData.primaryRole,
+        skills: editData.skills ? editData.skills.split(',').map(s => s.trim()).filter(Boolean) : [],
+        availability: editData.availability,
+        githubUrl: editData.githubUrl,
+        telegramUsername: editData.telegramUsername
       } : null);
 
       setIsEditing(false);
@@ -230,8 +282,10 @@ const ProfilePage = () => {
       const response = await profileAPI.uploadAvatar(file);
       const uploaded = response as { avatar?: string };
       setUser(prev => prev ? { ...prev, avatar: uploaded.avatar } : null);
+      toast.success(t("profile.avatarUpdated") || "Аватар обновлён");
     } catch (error) {
       console.error('Failed to upload avatar:', error);
+      toast.error(t("profile.avatarError") || "Не удалось загрузить аватар");
     }
   };
 
@@ -371,13 +425,17 @@ const ProfilePage = () => {
             )}
             {!isOwnProfile && user && (
               <div className="flex gap-2">
-                <motion.button
-                  onClick={handleFollowToggle}
-                  disabled={isFollowLoading}
-                  className="btn-glass"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
+              <motion.button
+                onClick={handleFollowToggle}
+                disabled={isFollowLoading}
+                className={`btn-glass ${
+                  !isFollowing && isVerifiedUser(user)
+                    ? "bg-blue-500/80 text-white hover:bg-blue-500"
+                    : ""
+                }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
                   {isFollowLoading ? (
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                   ) : isFollowing ? (
@@ -469,6 +527,112 @@ const ProfilePage = () => {
                   />
                 </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">Роль</label>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setEditData({...editData, roleOpen: !editData.roleOpen})}
+                      className="glass-input w-full px-5 py-3 text-sm text-white flex items-center justify-between"
+                    >
+                      <span>{editData.primaryRole || 'Выберите роль'}</span>
+                      <ChevronDown className="h-4 w-4" />
+                    </button>
+                    {editData.roleOpen && (
+                      <div className="absolute z-10 mt-1 w-full glass-dropdown max-h-60 overflow-y-auto">
+                        {['Frontend Developer', 'Backend Developer', 'Fullstack Developer', 'Mobile Developer', 'DevOps', 'Designer', 'Product Manager', 'QA Engineer', 'Data Scientist', 'AI/ML Engineer', 'Game Developer', 'Other'].map((role) => (
+                          <button
+                            key={role}
+                            type="button"
+                            onClick={() => setEditData({...editData, primaryRole: role, roleOpen: false})}
+                            className={`w-full px-5 py-2.5 text-sm text-left text-white hover:bg-white/10 ${
+                              editData.primaryRole === role ? 'bg-white/10' : ''
+                            }`}
+                          >
+                            {role}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">Навыки (через запятую)</label>
+                  <input
+                    type="text"
+                    value={editData.skills}
+                    onChange={(e) => setEditData({...editData, skills: e.target.value})}
+                    className="glass-input w-full px-5 py-3 text-sm text-white"
+                    placeholder="React, TypeScript, Node.js"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">Доступность</label>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setEditData({...editData, availabilityOpen: !editData.availabilityOpen})}
+                      className="glass-input w-full px-5 py-3 text-sm text-white flex items-center justify-between"
+                    >
+                      <span>
+                        {editData.availability === 'open' && 'Открыт к предложениям'}
+                        {editData.availability === 'busy' && 'Занят'}
+                        {editData.availability === 'looking' && 'Ищу проект'}
+                      </span>
+                      <ChevronDown className="h-4 w-4" />
+                    </button>
+                    {editData.availabilityOpen && (
+                      <div className="absolute z-10 mt-1 w-full glass-dropdown">
+                        <button
+                          type="button"
+                          onClick={() => setEditData({...editData, availability: 'open', availabilityOpen: false})}
+                          className="w-full px-5 py-2.5 text-sm text-left text-white hover:bg-white/10"
+                        >
+                          Открыт к предложениям
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditData({...editData, availability: 'busy', availabilityOpen: false})}
+                          className="w-full px-5 py-2.5 text-sm text-left text-white hover:bg-white/10"
+                        >
+                          Занят
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditData({...editData, availability: 'looking', availabilityOpen: false})}
+                          className="w-full px-5 py-2.5 text-sm text-left text-white hover:bg-white/10"
+                        >
+                          Ищу проект
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">GitHub URL</label>
+                  <input
+                    type="text"
+                    value={editData.githubUrl}
+                    onChange={(e) => setEditData({...editData, githubUrl: e.target.value})}
+                    className="glass-input w-full px-5 py-3 text-sm text-white"
+                    placeholder="https://github.com/username"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">Telegram</label>
+                  <input
+                    type="text"
+                    value={editData.telegramUsername}
+                    onChange={(e) => setEditData({...editData, telegramUsername: e.target.value})}
+                    className="glass-input w-full px-5 py-3 text-sm text-white"
+                    placeholder="username"
+                  />
+                </div>
+
                 <motion.button
                   disabled={isUpdating}
                   onClick={handleSaveProfile}
@@ -496,40 +660,45 @@ const ProfilePage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
               >
-                {/* Name */}
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-semibold text-white">{user.name}</h1>
-                  {isOwnProfile && (
-                    <button
-                      type="button"
-                      onClick={() => navigate("/verified")}
-                      className="inline-flex items-center justify-center rounded-full p-1 text-sky-300 hover:text-sky-200 hover:bg-white/10 transition-smooth"
-                      aria-label={t("verified")}
-                      title={t("verified")}
-                    >
-                      <BadgeCheck className="h-5 w-5" />
-                    </button>
-                  )}
-                  {isVerifiedUser(user) && (
-                    <VerifiedBadge className="h-5 w-5" />
-                  )}
-                  {isDeveloperCrown(user.username)
-                    ? <DeveloperCrownBadge className="h-5 w-5" />
-                    : isDeveloper(user.username) && <DeveloperBadge className="h-5 w-5" />
-                  }
+                {/* Name with role badge */}
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-semibold text-white">{user.name}</h1>
+                    {isOwnProfile && (
+                      <button
+                        type="button"
+                        onClick={() => navigate("/verified")}
+                        className="inline-flex items-center justify-center rounded-full p-1 text-sky-300 hover:text-sky-200 hover:bg-white/10 transition-smooth"
+                        aria-label={t("verified")}
+                        title={t("verified")}
+                      >
+                        <BadgeCheck className="h-5 w-5" />
+                      </button>
+                    )}
+                    {isVerifiedUser(user) && (
+                      <VerifiedBadge className="h-5 w-5" />
+                    )}
+                    {isDeveloperCrown(user.username)
+                      ? <DeveloperCrownBadge className="h-5 w-5" />
+                      : isDeveloper(user.username) && <DeveloperBadge className="h-5 w-5" />
+                    }
+                    {/* Role badge */}
+                    {devUser?.primaryRole && (
+                      <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-medium text-blue-300">
+                        {devUser.primaryRole}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-sm text-secondary font-mono">@{user.username}</p>
+                    {devUser?.availability && (
+                      <span className="flex items-center gap-1 text-[10px]">
+                        <span className={`h-1.5 w-1.5 rounded-full ${devUser.availability === 'open' ? 'bg-green-400' : devUser.availability === 'looking' ? 'bg-yellow-400' : 'bg-red-400'}`} />
+                        <span className="text-white/40">{devUser.availability === 'open' ? t('profile.available') : devUser.availability === 'looking' ? t('profile.looking') : t('profile.busy')}</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
-
-                {/* Username */}
-                <p className="text-sm text-secondary font-mono mt-0.5">
-                  @{user.username}
-                </p>
-
-                {/* Bio */}
-                {user.bio && (
-                  <p className="mt-4 text-white/90 leading-relaxed">
-                    {user.bio}
-                  </p>
-                )}
 
                 {/* City & Website */}
                 <div className="mt-3 flex flex-col gap-2 text-sm text-secondary">
@@ -552,40 +721,64 @@ const ProfilePage = () => {
                   )}
                 </div>
 
-                {/* Meta Info */}
-                <div className="mt-4 flex items-center gap-4 text-sm text-secondary">
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="h-4 w-4" />
-                    <span>
-                      {t("profile.joined")}{" "}
-                      {user.joinDate && !Number.isNaN(Date.parse(user.joinDate))
-                        ? new Date(user.joinDate).toLocaleDateString("ru-RU", {
-                            day: "2-digit",
-                            month: "long",
-                            year: "numeric",
-                          })
-                        : "-"}
-                    </span>
+                {/* Bio */}
+                <p className="mt-4 text-sm text-white/80 leading-relaxed break-words">
+                  {user.bio || t("profile.noBio")}
+                </p>
+
+                {/* Skills - compact row */}
+                {devUser?.skills?.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {devUser.skills.slice(0, 10).map((skill: string) => (
+                      <span key={skill} className="rounded-md bg-white/5 px-2 py-0.5 text-[11px] text-white/50">
+                        {skill}
+                      </span>
+                    ))}
                   </div>
-                </div>
+                )}
+
+                {/* Links & Projects */}
+                {(devUser?.githubUrl || devUser?.telegramUsername || projects.length > 0) && (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {/* Links */}
+                    {devUser?.githubUrl && (
+                      <a href={devUser.githubUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 text-xs text-white/60 hover:text-white hover:bg-white/10 transition-colors">
+                        <Github className="h-3 w-3" />
+                        <span>GitHub</span>
+                      </a>
+                    )}
+                    {devUser?.telegramUsername && (
+                      <a href={`https://t.me/${devUser.telegramUsername}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 text-xs text-white/60 hover:text-white hover:bg-white/10 transition-colors">
+                        <MessageCircle className="h-3 w-3" />
+                        <span>Telegram</span>
+                      </a>
+                    )}
+
+                    {/* Projects */}
+                    {projects.length > 0 && (
+                      <div className="flex gap-2">
+                        {projects.slice(0, 3).map((project) => (
+                          <button key={project.id} onClick={() => navigate(`/projects/${project.slug}`)} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 transition-colors">
+                            <FolderKanban className="h-3 w-3" />
+                            <span>{project.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Stats */}
-                <div className="mt-4 flex items-center gap-6">
+                <div className="mt-4 flex items-center gap-4 pt-3 text-sm border-t border-white/5">
                   <div className="flex items-center gap-1">
                     <span className="font-semibold text-white">{posts.length + (pinnedPost ? 1 : 0)}</span>
                     <span className="text-secondary">{t("profile.signals")}</span>
                   </div>
-                  <button
-                    onClick={() => openFollowModal('followers')}
-                    className="flex items-center gap-1 hover:text-white transition-smooth"
-                  >
+                  <button onClick={() => openFollowModal('followers')} className="flex items-center gap-1 hover:text-white">
                     <span className="font-semibold text-white">{user.followers_count || 0}</span>
                     <span className="text-secondary">{t("profile.followers")}</span>
                   </button>
-                  <button
-                    onClick={() => openFollowModal('following')}
-                    className="flex items-center gap-1 hover:text-white transition-smooth"
-                  >
+                  <button onClick={() => openFollowModal('following')} className="flex items-center gap-1 hover:text-white">
                     <span className="font-semibold text-white">{user.following_count || 0}</span>
                     <span className="text-secondary">{t("profile.following")}</span>
                   </button>
@@ -608,6 +801,7 @@ const ProfilePage = () => {
             userId={String(pinnedPost.user_id || pinnedPost.userId)}
             text={pinnedPost.text}
             imageUrl={pinnedPost.image_url || pinnedPost.imageUrl}
+            imageUrls={pinnedPost.image_urls || pinnedPost.imageUrls}
             timestamp={pinnedPost.timestamp}
             replies={pinnedPost.replies}
             resonance={pinnedPost.resonance}
@@ -646,6 +840,7 @@ const ProfilePage = () => {
                 userId={String(post.user_id || post.userId)}
                 text={post.text}
                 imageUrl={post.image_url || post.imageUrl}
+                imageUrls={post.image_urls || post.imageUrls}
                 timestamp={post.timestamp}
                 replies={post.replies}
                 resonance={post.resonance}
@@ -657,7 +852,7 @@ const ProfilePage = () => {
             ))}
           </div>
         ) : (
-          <div className="rounded-[24px] border border-white/10 bg-white/5 px-5 py-6 text-center">
+          <div className="rounded-3xl border border-white/10 bg-white/5 px-5 py-6 text-center">
             <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-white/8 mb-3">
               <Calendar className="h-6 w-6 text-white/60" />
             </div>
@@ -675,4 +870,3 @@ const ProfilePage = () => {
 // User List Item Component
 
 export default ProfilePage;
-

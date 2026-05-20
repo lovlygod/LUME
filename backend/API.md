@@ -23,13 +23,17 @@ All requests (except `/login`, `/register`) require:
 - [Users](#users)
 - [Posts](#posts)
 - [Messages](#messages)
-- [Servers](#servers)
+- [groups](#groups)
 - [Verification](#verification)
 - [Admin](#admin)
 - [Uploads](#uploads)
 - [Errors](#errors)
 - [Notifications](#notifications)
 - [WebSocket Events](#websocket-events)
+- [Workspaces](#workspaces)
+- [Projects](#projects)
+- [Tasks](#tasks)
+- [Explore](#explore)
 - [Related Documents](#related-documents)
 
 ---
@@ -160,8 +164,8 @@ Get current user profile.
     "name": "John Doe",
     "username": "johndoe",
     "bio": "Hello!",
-    "avatar": "http://localhost:5000/uploads/...",
-    "banner": "http://localhost:5000/uploads/...",
+    "avatar": "https://res.cloudinary.com/dbmpcpvrr/image/upload/...",
+    "banner": "https://res.cloudinary.com/dbmpcpvrr/image/upload/...",
     "verified": false,
     "joinDate": "2024-01-01T00:00:00.000Z",
     "followersCount": 42,
@@ -230,7 +234,7 @@ Upload avatar.
 ```json
 {
   "message": "Avatar uploaded successfully",
-  "avatar": "http://localhost:5000/uploads/..."
+  "avatar": "https://res.cloudinary.com/dbmpcpvrr/image/upload/..."
 }
 ```
 
@@ -248,7 +252,7 @@ Upload banner.
 ```json
 {
   "message": "Banner uploaded successfully",
-  "banner": "http://localhost:5000/uploads/..."
+  "banner": "https://res.cloudinary.com/dbmpcpvrr/image/upload/..."
 }
 ```
 
@@ -290,7 +294,7 @@ Get feed posts.
       "id": "1",
       "userId": "1",
       "text": "Hello world!",
-      "imageUrl": "http://localhost:5000/uploads/...",
+      "imageUrl": "https://res.cloudinary.com/dbmpcpvrr/image/upload/...",
       "timestamp": "2024-01-01T12:00:00.000Z",
       "replies": 5,
       "reposts": 2,
@@ -636,10 +640,10 @@ Get read status.
 
 ---
 
-## Servers
+## groups
 
-### POST `/servers`
-Create a server.
+### POST `/groups`
+Create a group.
 
 **Content-Type:** `multipart/form-data`
 
@@ -653,8 +657,8 @@ Create a server.
 **Response 201:**
 ```json
 {
-  "message": "Server created successfully",
-  "server": {
+  "message": "group created successfully",
+  "group": {
     "id": 1,
     "name": "Gaming Hub",
     "username": "gaminghub",
@@ -672,13 +676,13 @@ Create a server.
 
 ---
 
-### GET `/servers/my`
-Get my servers.
+### GET `/groups/my`
+Get my groups.
 
 **Response 200:**
 ```json
 {
-  "servers": [
+  "groups": [
     {
       "id": 1,
       "username": "gaminghub",
@@ -696,25 +700,25 @@ Get my servers.
 
 ---
 
-### GET `/servers/public`
-Get public servers.
+### GET `/groups/public`
+Get public groups.
 
 **Response 200:**
 ```json
 {
-  "servers": [...]
+  "groups": [...]
 }
 ```
 
 ---
 
-### GET `/servers/:identifier`
-Get server by username or ID.
+### GET `/groups/:identifier`
+Get group by username or ID.
 
 **Response 200:**
 ```json
 {
-  "server": {
+  "group": {
     "id": 1,
     "username": "gaminghub",
     "name": "Gaming Hub",
@@ -738,12 +742,12 @@ Get server by username or ID.
 ```
 
 **Errors:**
-- `404` - Server not found
+- `404` - group not found
 
 ---
 
-### PUT `/servers/:id`
-Update server (Owner).
+### PUT `/groups/:id`
+Update group (Owner).
 
 **Body:**
 ```json
@@ -757,51 +761,51 @@ Update server (Owner).
 **Response 200:**
 ```json
 {
-  "message": "Server updated"
+  "message": "group updated"
 }
 ```
 
 **Errors:**
 - `403` - Not owner
-- `404` - Server not found
+- `404` - group not found
 
 ---
 
-### DELETE `/servers/:id`
-Delete server (Owner).
+### DELETE `/groups/:id`
+Delete group (Owner).
 
 **Response 200:**
 ```json
 {
-  "message": "Server deleted"
+  "message": "group deleted"
 }
 ```
 
 **Errors:**
 - `403` - Not owner
-- `404` - Server not found
+- `404` - group not found
 
 ---
 
-### POST `/servers/:id/join`
-Join a public server.
+### POST `/groups/:id/join`
+Join a public group.
 
 **Response 200:**
 ```json
 {
-  "message": "Joined server successfully"
+  "message": "Joined group successfully"
 }
 ```
 
 **Errors:**
 - `400` - Already a member
-- `403` - Cannot join private server (use request-join)
-- `404` - Server not found
+- `403` - Cannot join private group (use request-join)
+- `404` - group not found
 
 ---
 
-### POST `/servers/:id/request-join`
-Request to join a private server.
+### POST `/groups/:id/request-join`
+Request to join a private group.
 
 **Response 200:**
 ```json
@@ -813,12 +817,12 @@ Request to join a private server.
 
 **Errors:**
 - `400` - Already a member or pending request
-- `403` - Can only request join to private servers
-- `404` - Server not found
+- `403` - Can only request join to private groups
+- `404` - group not found
 
 ---
 
-### GET `/servers/:id/requests`
+### GET `/groups/:id/requests`
 Get join requests (Owner).
 
 **Response 200:**
@@ -843,7 +847,7 @@ Get join requests (Owner).
 
 ---
 
-### POST `/servers/:id/requests/:requestId/approve`
+### POST `/groups/:id/requests/:requestId/approve`
 Approve request (Owner).
 
 **Response 200:**
@@ -859,7 +863,7 @@ Approve request (Owner).
 
 ---
 
-### POST `/servers/:id/requests/:requestId/reject`
+### POST `/groups/:id/requests/:requestId/reject`
 Reject request (Owner).
 
 **Response 200:**
@@ -875,24 +879,24 @@ Reject request (Owner).
 
 ---
 
-### POST `/servers/:id/leave`
-Leave a server.
+### POST `/groups/:id/leave`
+Leave a group.
 
 **Response 200:**
 ```json
 {
-  "message": "Left server successfully"
+  "message": "Left group successfully"
 }
 ```
 
 **Errors:**
 - `400` - Not a member
 - `403` - Owner cannot leave
-- `404` - Server not found
+- `404` - group not found
 
 ---
 
-### POST `/servers/:id/channels`
+### POST `/groups/:id/channels`
 Create a channel (Admin+).
 
 **Body:**
@@ -917,11 +921,11 @@ Create a channel (Admin+).
 
 **Errors:**
 - `403` - Insufficient rank (Admin+ required)
-- `404` - Server not found
+- `404` - group not found
 
 ---
 
-### GET `/servers/:serverId/channels/:channelId/messages`
+### GET `/groups/:groupId/channels/:channelId/messages`
 Get channel messages.
 
 **Query Parameters:**
@@ -957,7 +961,7 @@ Get channel messages.
 
 ---
 
-### POST `/servers/:serverId/channels/:channelId/messages`
+### POST `/groups/:groupId/channels/:channelId/messages`
 Send a message to a channel.
 
 **Body:**
@@ -982,7 +986,7 @@ Send a message to a channel.
 
 ---
 
-### DELETE `/servers/:serverId/channels/:channelId/messages/:messageId`
+### DELETE `/groups/:groupId/channels/:channelId/messages/:messageId`
 Delete a message (Author/Moderator+).
 
 **Body:**
@@ -1005,8 +1009,8 @@ Delete a message (Author/Moderator+).
 
 ---
 
-### GET `/servers/:id/members`
-Get server members.
+### GET `/groups/:id/members`
+Get group members.
 
 **Response 200:**
 ```json
@@ -1033,7 +1037,7 @@ Get server members.
 
 ---
 
-### PUT `/servers/:serverId/members/:memberId/role`
+### PUT `/groups/:groupId/members/:memberId/role`
 Change member role (Admin+).
 
 **Body:**
@@ -1056,7 +1060,7 @@ Change member role (Admin+).
 
 ---
 
-### DELETE `/servers/:serverId/members/:memberId`
+### DELETE `/groups/:groupId/members/:memberId`
 Kick a member (Moderator+).
 
 **Response 200:**
@@ -1243,7 +1247,7 @@ Upload a file.
 {
   "message": "File uploaded successfully",
   "attachmentId": "123",
-  "url": "http://localhost:5000/uploads/...",
+  "url": "https://res.cloudinary.com/dbmpcpvrr/...",
   "type": "image",
   "mime": "image/jpeg",
   "size": 102400
@@ -1263,7 +1267,7 @@ Get attachment info.
 {
   "attachment": {
     "id": "123",
-    "url": "http://localhost:5000/uploads/...",
+    "url": "https://res.cloudinary.com/dbmpcpvrr/...",
     "type": "image",
     "mime": "image/jpeg",
     "size": 102400,
@@ -1351,11 +1355,11 @@ Get attachment info.
 }
 ```
 
-### 500 Internal Server Error
+### 500 Internal group Error
 ```json
 {
   "error": {
-    "message": "Internal server error",
+    "message": "Internal group error",
     "code": "INTERNAL_ERROR",
     "statusCode": 500
   }
@@ -1394,7 +1398,7 @@ Get user notifications.
 - `reply` - reply to your post
 - `mention` - mention (@username)
 - `reaction` - post reaction (Resonance)
-- `server_invite` - server join request
+- `group_invite` - group join request
 
 ---
 
@@ -1442,9 +1446,630 @@ New notification event.
 
 ---
 
+## Onboarding
+
+### GET `/onboarding/status`
+Get user's onboarding status.
+
+**Response 200:**
+```json
+{
+  "onboarding": {
+    "completed": false,
+    "primary_role": "Developer",
+    "skills": ["React", "Node.js"],
+    "goals": ["Find a team"]
+  }
+}
+```
+
+### POST `/onboarding/profile`
+Save profile step (role).
+
+**Body:**
+```json
+{
+  "primaryRole": "Frontend Developer"
+}
+```
+
+### POST `/onboarding/skills`
+Save skills step.
+
+**Body:**
+```json
+{
+  "skills": ["React", "TypeScript", "Node.js"]
+}
+```
+
+### POST `/onboarding/goals`
+Save goals step.
+
+**Body:**
+```json
+{
+  "goals": ["Find a team", "Show my project"]
+}
+```
+
+### POST `/onboarding/workspace`
+Handle workspace creation or joining.
+
+**Body (Create):**
+```json
+{
+  "action": "create",
+  "workspace": {
+    "name": "My Team",
+    "slug": "my-team",
+    "description": "Building awesome projects",
+    "type": "public",
+    "focus": ["Web Development"]
+  }
+}
+```
+
+### POST `/onboarding/complete`
+Mark onboarding as completed.
+
+---
+
+## Workspaces
+
+### POST `/workspaces`
+Create a new workspace.
+
+**Body:**
+```json
+{
+  "name": "My Workspace",
+  "slug": "my-workspace",
+  "description": "Building awesome projects together",
+  "type": "public",
+  "focusTags": ["Web Development", "Open Source"]
+}
+```
+
+### GET `/workspaces/my`
+Get user's workspaces.
+
+### GET `/workspaces/public`
+Get public workspaces.
+
+### GET `/workspaces/:slug`
+Get workspace by slug.
+
+### PATCH `/workspaces/:id`
+Update workspace (owner/admin only).
+
+### DELETE `/workspaces/:id`
+Delete workspace (owner only).
+
+### POST `/workspaces/:id/members`
+Add member to workspace.
+
+### PATCH `/workspaces/:id/members/:userId`
+Update member role.
+
+### DELETE `/workspaces/:id/members/:userId`
+Remove member.
+
+### GET `/workspaces/:id/members`
+Get workspace members.
+
+### POST `/workspaces/:id/invites`
+Generate invite code.
+
+### POST `/workspaces/join/:inviteCode`
+Join workspace via invite code.
+
+---
+
+## Projects
+
+### POST `/projects`
+Create a new project.
+
+**Body:**
+```json
+{
+  "name": "Awesome App",
+  "slug": "awesome-app",
+  "description": "Building the next big thing",
+  "status": "building",
+  "visibility": "public",
+  "stack": ["React", "Node.js", "PostgreSQL"],
+  "tags": ["Web", "SaaS"],
+  "githubUrl": "https://github.com/user/awesome-app",
+  "demoUrl": "https://awesome-app.com",
+  "lookingForMembers": true,
+  "isOpenSource": true
+}
+```
+
+**Response 201:**
+```json
+{
+  "project": {
+    "id": "1",
+    "name": "Awesome App",
+    "slug": "awesome-app",
+    "owner_id": "1",
+    "status": "building",
+    "visibility": "public",
+    "created_at": "2024-01-01T12:00:00.000Z"
+  }
+}
+```
+
+---
+
+### GET `/projects/my`
+Get user's projects (owned + member of).
+
+**Response 200:**
+```json
+{
+  "projects": [
+    {
+      "id": "1",
+      "name": "Awesome App",
+      "slug": "awesome-app",
+      "status": "building",
+      "visibility": "public",
+      "owner_id": "1"
+    }
+  ]
+}
+```
+
+---
+
+### GET `/projects/public`
+Get public projects for explore.
+
+**Response 200:**
+```json
+{
+  "projects": [...]
+}
+```
+
+---
+
+### GET `/projects/:slug`
+Get project by slug.
+
+**Response 200:**
+```json
+{
+  "project": {
+    "id": "1",
+    "name": "Awesome App",
+    "slug": "awesome-app",
+    "description": "...",
+    "status": "building",
+    "visibility": "public",
+    "stack": ["React", "Node.js"],
+    "tags": ["Web"],
+    "github_url": "https://github.com/...",
+    "demo_url": "https://...",
+    "logo_url": "https://res.cloudinary.com/...",
+    "looking_for_members": true,
+    "is_open_source": true,
+    "owner_id": "1",
+    "created_at": "2024-01-01T12:00:00.000Z"
+  }
+}
+```
+
+---
+
+### PATCH `/projects/:id`
+Update project. **Requires:** admin, lead, or manager role.
+
+**Body:**
+```json
+{
+  "name": "Updated Name",
+  "description": "New description",
+  "status": "launched",
+  "visibility": "private",
+  "stack": ["React", "TypeScript"],
+  "githubUrl": "https://github.com/...",
+  "demoUrl": "https://...",
+  "lookingForMembers": false,
+  "isOpenSource": true
+}
+```
+
+**Response 200:**
+```json
+{
+  "project": { ... },
+  "message": "Project updated"
+}
+```
+
+---
+
+### POST `/projects/:id/logo`
+Upload project logo. **Requires:** admin, lead, or manager role.
+
+**Content-Type:** `multipart/form-data`
+
+**Body:**
+- `file`: image file
+
+**Response 200:**
+```json
+{
+  "project": { ... },
+  "logoUrl": "https://res.cloudinary.com/..."
+}
+```
+
+---
+
+### DELETE `/projects/:id`
+Delete project. **Requires:** owner only.
+
+**Response 200:**
+```json
+{
+  "message": "Project deleted"
+}
+```
+
+---
+
+### POST `/projects/:id/members`
+Add or update project member. **Requires:** admin, lead, or manager role.
+
+**Body:**
+```json
+{
+  "userId": 2,
+  "role": "developer"
+}
+```
+
+**Response 201:**
+```json
+{
+  "message": "Project member upserted"
+}
+```
+
+---
+
+### GET `/projects/:id/members`
+Get all project members.
+
+**Response 200:**
+```json
+{
+  "members": [
+    {
+      "id": "1",
+      "project_id": "1",
+      "user_id": "1",
+      "role": "owner",
+      "joined_at": "2024-01-01T12:00:00.000Z",
+      "user": {
+        "id": "1",
+        "username": "johndoe",
+        "name": "John Doe",
+        "avatar": "https://..."
+      }
+    }
+  ]
+}
+```
+
+---
+
+### DELETE `/projects/:id/members/:userId`
+Remove member from project. **Requires:** admin, lead, or manager role.
+
+**Response 200:**
+```json
+{
+  "message": "Project member removed"
+}
+```
+
+---
+
+### POST `/projects/:id/leave`
+Leave project. **Owner cannot leave.**
+
+**Response 200:**
+```json
+{
+  "message": "Left project"
+}
+```
+
+---
+
+### POST `/projects/:id/invite`
+Generate invite code. **Requires:** admin, lead, or manager role.
+
+**Body:**
+```json
+{
+  "expiresInHours": 168,
+  "maxUses": 5
+}
+```
+
+**Response 201:**
+```json
+{
+  "invite": {
+    "id": "1",
+    "code": "XYZ789ABC",
+    "project_id": "1",
+    "expires_at": "2024-01-08T12:00:00.000Z",
+    "max_uses": 5
+  }
+}
+```
+
+---
+
+### POST `/projects/:id/join`
+Join a public project.
+
+**Response 200:**
+```json
+{
+  "message": "Joined project"
+}
+```
+
+---
+
+### POST `/projects/:id/chat`
+Link a chat to the project. **Requires:** owner only.
+
+**Body:**
+```json
+{
+  "chatId": "6"
+}
+```
+
+**Response 200:**
+```json
+{
+  "message": "Chat linked to project"
+}
+```
+
+---
+
+### DELETE `/projects/:id/chat`
+Unlink chat from project. **Requires:** owner only.
+
+**Response 200:**
+```json
+{
+  "message": "Chat unlinked from project"
+}
+```
+
+---
+
+### GET `/projects/:id/chat`
+Get linked chat for project.
+
+**Response 200:**
+```json
+{
+  "chat": {
+    "id": "6",
+    "title": "Project Chat",
+    "username": "project-chat"
+  }
+}
+```
+
+---
+
+### GET `/projects/:id/search-users`
+Search users by username. **Requires:** admin, lead, or manager role.
+
+**Query:** `?q=john`
+
+**Response 200:**
+```json
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "johndoe",
+      "name": "John Doe",
+      "avatar": "https://..."
+    }
+  ]
+}
+```
+
+---
+
+### GET `/chats/:chatId/project`
+Get project info from chat context.
+
+**Response 200:**
+```json
+{
+  "project": {
+    "id": "2",
+    "name": "Lume",
+    "slug": "lume",
+    "status": "launched",
+    "member_role": "admin"
+  }
+}
+```
+
+---
+
+## Tasks
+
+### POST `/projects/:projectId/tasks`
+Create a task. **Requires:** admin, lead, or manager role.
+
+**Body:**
+```json
+{
+  "title": "Implement user authentication",
+  "description": "Add JWT-based auth with refresh tokens",
+  "status": "todo",
+  "priority": "high",
+  "assigneeId": "2",
+  "sourceMessageId": "123"
+}
+```
+
+**Response 201:**
+```json
+{
+  "task": {
+    "id": "1",
+    "project_id": "1",
+    "title": "Implement user authentication",
+    "status": "todo",
+    "priority": "high",
+    "assignee_id": "2",
+    "source_message_id": "123",
+    "created_by": "1",
+    "created_at": "2024-01-01T12:00:00.000Z"
+  }
+}
+```
+
+---
+
+### GET `/projects/:projectId/tasks`
+Get all tasks for a project.
+
+**Response 200:**
+```json
+{
+  "tasks": [
+    {
+      "id": "1",
+      "title": "Implement user authentication",
+      "status": "in_progress",
+      "priority": "high",
+      "assignee_id": "2",
+      "assignee": { "id": "2", "username": "janedoe", "name": "Jane Doe" },
+      "creator": { "id": "1", "username": "johndoe", "name": "John Doe" }
+    }
+  ]
+}
+```
+
+---
+
+### PATCH `/tasks/:taskId`
+Update a task.
+
+**Permissions:**
+- Admin/Lead/Manager: can update any task
+- Task creator: can update own tasks
+- Assignee: can update assigned tasks
+
+**Body:**
+```json
+{
+  "title": "Updated title",
+  "status": "review",
+  "priority": "medium",
+  "assigneeId": "3"
+}
+```
+
+**Response 200:**
+```json
+{
+  "task": { ... },
+  "message": "Task updated"
+}
+```
+
+---
+
+### DELETE `/tasks/:taskId`
+Delete a task. **Requires:** admin, lead, or manager role.
+
+**Response 200:**
+```json
+{
+  "message": "Task deleted"
+}
+```
+
+---
+
+### POST `/tasks/:taskId/comments`
+Add a comment to a task.
+
+**Body:**
+```json
+{
+  "content": "I've started working on this."
+}
+```
+
+**Response 201:**
+```json
+{
+  "comment": {
+    "id": "1",
+    "task_id": "1",
+    "user_id": "2",
+    "content": "I've started working on this.",
+    "created_at": "2024-01-01T12:00:00.000Z",
+    "user": { "id": "2", "username": "janedoe", "name": "Jane Doe" }
+  }
+}
+```
+
+---
+
+## Explore
+
+### GET `/explore/builders`
+Search for builders/developers.
+
+**Query Parameters:**
+- `role`: filter by role
+- `availability`: filter by availability
+- `skills`: comma-separated skills
+
+### GET `/explore/projects`
+Search for public projects.
+
+### GET `/explore/workspaces`
+Search for public workspaces.
+
+### GET `/explore/looking-for-team`
+Get projects looking for team members.
+
+---
+
 ## Related Documents
 
 - [Features Inventory](../docs/FEATURES_INVENTORY.md)
 - [Error Handling](../docs/ERROR_HANDLING.md)
-- [Servers Module](../docs/SERVERS_MODULE.md)
+- [Groups Module](../docs/GROUPS_MODULE.md)
+- [Onboarding Module](../docs/ONBOARDING_MODULE.md)
+- [Workspaces Module](../docs/WORKSPACES_MODULE.md)
+- [Projects Module](../docs/PROJECTS_MODULE.md)
+- [Tasks Module](../docs/TASKS_MODULE.md)
 - [README](../README.md)

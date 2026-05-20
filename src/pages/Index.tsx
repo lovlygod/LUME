@@ -163,7 +163,7 @@ const Index = () => {
   return (
     <div className="py-7" ref={feedRef}>
       {/* Header with Tabs */}
-      <div className="mb-6 rounded-[28px] border border-white/10 bg-white/5 backdrop-blur-[24px]">
+      <div className="mb-6 rounded-3xl border border-white/10 bg-white/5">
         <div className="flex items-center justify-between px-6 py-5">
           <div className="flex items-center gap-3">
             {activeTab === "recommended" ? (
@@ -256,7 +256,7 @@ const Index = () => {
       </div>
 
       {/* Post Composer */}
-      <div className="mb-6 rounded-[28px] border border-white/10 bg-white/5 backdrop-blur-[24px]">
+      <div className="mb-6 rounded-3xl border border-white/10 bg-white/5">
         <PostComposer />
       </div>
 
@@ -264,18 +264,19 @@ const Index = () => {
       <div className="space-y-[16px]">
         {posts.length > 0 ? (
           posts.map((post) => (
-            <Post
-              key={post.id}
-              id={post.id.toString()}
-              dataPostId={post.id.toString()}
-              userId={String(post.userId)}
-              text={post.text}
-              imageUrl={post.imageUrl}
-              timestamp={post.timestamp}
-              replies={post.replies}
-              resonance={post.resonance}
-              name={post.name}
-              username={post.username}
+              <Post
+                key={post.id}
+                id={post.id.toString()}
+                dataPostId={post.id.toString()}
+                userId={String(post.userId)}
+                text={post.text}
+                imageUrl={post.imageUrl}
+                imageUrls={post.imageUrls}
+                timestamp={post.timestamp}
+                replies={post.replies}
+                resonance={post.resonance}
+                name={post.name}
+                username={post.username}
               avatar={post.avatar}
               verified={post.verified}
             />
@@ -295,5 +296,4 @@ const Index = () => {
 };
 
 export default Index;
-
 

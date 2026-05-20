@@ -1,39 +1,5 @@
 const db = require('./db');
-const { getPublicBaseUrl } = require('./utils/baseUrl');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-
-// Set up multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const filename = `${Date.now()}-${Math.round(Math.random() * 1E9)}${ext}`;
-    cb(null, filename);
-  }
-});
-
-const upload = multer({ 
-  storage,
-  fileFilter: (req, file, cb) => {
-    // Allow only images
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
-    }
-  },
-  limits: {
-    fileSize: 25 * 1024 * 1024 // 25MB limit
-  }
-});
+const { upload } = require('./middleware/upload');
 
 // Get user profile
 const getUserProfile = (req, res) => {
@@ -41,7 +7,9 @@ const getUserProfile = (req, res) => {
   const isNumericId = /^\d+$/.test(userRef);
   const query = `
     SELECT id, email, name, username, bio, city, website, pinned_post_id,
-           avatar, banner, verified, followers_count, join_date, created_at
+           avatar, banner, verified, followers_count, join_date, created_at,
+           onboarding_completed, primary_role, goals, skills, availability,
+           github_url, telegram_username, portfolio_url
     FROM users
     WHERE ${isNumericId ? 'id = $1' : 'LOWER(username) = LOWER($1)'}
   `;
@@ -80,7 +48,15 @@ const getUserProfile = (req, res) => {
           verified: user.verified === 1,
           followers_count: user.followers_count || 0,
           following_count: followingCount,
-          joinDate: user.join_date
+          joinDate: user.join_date,
+          onboardingCompleted: user.onboarding_completed,
+          primaryRole: user.primary_role,
+          goals: user.goals || [],
+          skills: user.skills || [],
+          availability: user.availability,
+          githubUrl: user.github_url,
+          telegramUsername: user.telegram_username,
+          portfolioUrl: user.portfolio_url,
         }
       });
     });
@@ -181,28 +157,28 @@ const uploadAvatar = async (req, res) => {
     }
 
     const userId = req.user.userId;
-    // Сохраняем полный URL для корректного отображения
-    const avatarPath = `${getPublicBaseUrl(req)}/uploads/${req.file.filename}`;
+    const avatarPath = req.file.path || req.file.secure_url || req.file.url;
+
+    if (!avatarPath) {
+      console.error('Avatar upload missing Cloudinary URL', { file: req.file });
+      return res.status(500).json({ error: 'Upload failed: missing file URL' });
+    }
 
     // Update user's avatar in database
     const query = 'UPDATE users SET avatar = $1 WHERE id = $2';
 
     db.run(query, [avatarPath, userId], function(err) {
       if (err) {
-        // Delete the uploaded file if DB update fails
-        fs.unlinkSync(path.join(__dirname, '../uploads', req.file.filename));
         return res.status(500).json({ error: 'Database error' });
       }
 
       if (this.changes === 0) {
-        // Delete the uploaded file if user not found
-        fs.unlinkSync(path.join(__dirname, '../uploads', req.file.filename));
         return res.status(404).json({ error: 'User not found' });
       }
 
       res.json({
         message: 'Avatar updated successfully',
-        avatar: avatarPath
+        avatar: avatarPath,
       });
     });
   } catch (error) {
@@ -218,22 +194,22 @@ const uploadBanner = async (req, res) => {
     }
 
     const userId = req.user.userId;
-    // Сохраняем полный URL для корректного отображения
-    const bannerPath = `${getPublicBaseUrl(req)}/uploads/${req.file.filename}`;
+    const bannerPath = req.file.path || req.file.secure_url || req.file.url;
+
+    if (!bannerPath) {
+      console.error('Banner upload missing Cloudinary URL', { file: req.file });
+      return res.status(500).json({ error: 'Upload failed: missing file URL' });
+    }
 
     // Update user's banner in database
     const query = 'UPDATE users SET banner = $1 WHERE id = $2';
 
     db.run(query, [bannerPath, userId], function(err) {
       if (err) {
-        // Delete the uploaded file if DB update fails
-        fs.unlinkSync(path.join(__dirname, '../uploads', req.file.filename));
         return res.status(500).json({ error: 'Database error' });
       }
 
       if (this.changes === 0) {
-        // Delete the uploaded file if user not found
-        fs.unlinkSync(path.join(__dirname, '../uploads', req.file.filename));
         return res.status(404).json({ error: 'User not found' });
       }
 

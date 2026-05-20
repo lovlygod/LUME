@@ -30,7 +30,7 @@ const StickerModal = ({ open, onOpenChange, sticker, pack, onAddPack }: StickerM
           animate={{ scale: 1, opacity: 1 }}
           className="flex flex-col items-center gap-4"
         >
-          <div className="h-56 w-56 rounded-[28px] border border-white/10 bg-white/5 flex items-center justify-center">
+          <div className="h-56 w-56 rounded-3xl border border-white/10 bg-white/5 flex items-center justify-center">
             <StickerCanvas
               src={sticker.url}
               size={192}
@@ -40,7 +40,7 @@ const StickerModal = ({ open, onOpenChange, sticker, pack, onAddPack }: StickerM
           <button
             type="button"
             onClick={onAddPack}
-            className="w-full rounded-full bg-white/15 text-white py-2 text-sm font-semibold hover:bg-white/20 transition-smooth"
+            className="btn-glass w-full py-2"
           >
             {t("stickers.addPack")}
           </button>

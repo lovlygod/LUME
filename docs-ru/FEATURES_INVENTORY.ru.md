@@ -2,7 +2,7 @@
 
 [English](../docs/FEATURES_INVENTORY.md) | Русский | [中文](../docs-cn/FEATURES_INVENTORY.cn.md)
 
-**Последнее обновление:** 9 марта 2026 г.
+**Последнее обновление:** 19 мая 2026 г.
 **Статус:** ✅ Актуально
 
 Ниже перечислены **реально реализованные** функции проекта LUME.
@@ -105,6 +105,31 @@
   - Отметка о просмотре
   - Автоматическое закрытие при переключении вкладки
 
+### NPM Package Preview
+- **Файлы:** `backend/src/npm.js`, `src/components/npm/NpmPackageCard.tsx`, `src/utils/npmDetector.ts`
+- **Статус:** ✅ Реализовано
+- **Функции:**
+  - Автоматическое определение npm команд в сообщениях (`npm react`, `npm express`, `npm @types/node`)
+  - Endpoint: `GET /api/npm/:packageName` — получение данных о пакете из npm Registry
+  - UI карточка с названием пакета, версией, описанием и ссылкой на npmjs.com
+  - Glass UI дизайн в стиле LUME
+  - Loading skeleton при загрузке
+  - Обработка ошибок (пакет не найден — fallback)
+  - Кеширование ответов (in-memory, 15 минут)
+
+### Рендеринг диаграмм (Mermaid)
+- **Файлы:** `backend/src/routes/diagramRoutes.js`, `src/components/chat/DiagramMessage.tsx`
+- **Документация:** [DIAGRAM_RENDERING.ru.md](DIAGRAM_RENDERING.ru.md)
+- **Статус:** ✅ Реализовано
+- **Функции:**
+  - Автоматическое определение Mermaid диаграмм (graph TD/BT/LR/RL, flowchart TD/LR, pie, gitGraph)
+  - Endpoint: `POST /api/diagram/render` — рендеринг через Kroki API (`https://kroki.io/mermaid/svg`)
+  - Кеширование в Redis по SHA256 хешу (TTL: 1 час)
+  - SVG рендеринг с санитизацией (безопасность)
+  - Кнопки: Copy code, Download SVG (с анимацией галочки)
+  - Loading skeleton при загрузке
+  - Автоматическая прокрутка чата после отправки
+
 ### Reply Bar
 - **Файл:** `src/components/chat/ReplyBar.tsx`
 - **Статус:** ✅ Реализовано
@@ -112,46 +137,18 @@
 
 ---
 
-## 👥 Servers (Communities)
+## 👥 Groups & Channels (Chats)
 
-### Каталог серверов
-- **Маршрут:** `/servers`
-- **Файлы:** `src/pages/ServersPage.tsx`, `src/components/servers/CreateServerDialog.tsx`
+### Чаты (группы и каналы)
+- **Маршруты:** `/messages`, `/messages/:chatId`
+- **Файлы:** `src/pages/Messages.tsx`, `src/pages/messages/MessagesPage.tsx`, `src/pages/messages/components/ChatList.tsx`, `src/pages/messages/components/ChatPanel.tsx`, `src/pages/messages/components/ChatSettingsModal.tsx`, `src/pages/messages/components/CreateChatModal.tsx`
 - **Статус:** ✅ Реализовано
 - **Функции:**
-  - Вкладки: "Обзор" (публичные) и "Мои серверы"
-  - Поиск серверов
-  - Создание сервера (публичный/приватный)
-  - Вступление в сервер
-
-### Страница сервера
-- **Маршруты:** `/server/:identifier`, `/server/:identifier/channel/:channelName`
-- **Файлы:** `src/pages/ServerPage.tsx`, `src/pages/server/components/ServerLayout.tsx`, `src/pages/server/components/ServerSidebar.tsx`, `src/pages/server/components/ChannelHeader.tsx`, `src/pages/server/components/ChannelMessageList.tsx`, `src/pages/server/components/ChannelComposer.tsx`, `src/pages/server/components/ChannelMessageRow.tsx`
-- **Статус:** ✅ Реализовано
-- **Функции:**
-  - Боковая панель с каналами
-  - Чат канала
-  - Real-time сообщения
-  - Загрузка файлов в сообщения
-  - Заявки на вступление (для Owner)
-
-### Настройки сервера
-- **Маршрут:** `/server/:identifier/settings`
-- **Файлы:** `src/pages/ServerSettingsPage.tsx`
-- **Статус:** ✅ Реализовано
-- **Функции:**
-  - Изменение названия, описания, username
-  - Загрузка иконки
-  - Удаление сервера (Owner)
-
-### Участники сервера
-- **Маршрут:** `/server/:identifier/members`
-- **Файлы:** `src/pages/ServerMembersPage.tsx`, `src/pages/server/components/MembersPanel.tsx`
-- **Статус:** ✅ Реализовано
-- **Функции:**
-  - Список участников
-  - Изменение ролей (Owner/Admin)
-  - Кик участников (Owner/Admin/Moderator)
+  - Типы чатов: `group`, `channel`, `private`
+  - Создание группы/канала
+  - Публичные каналы (поиск и join)
+  - Заявки на вступление (approve/reject)
+  - Управление участниками и ролями
 
 ---
 
@@ -261,7 +258,7 @@
 - **Статус:** ✅ Реализовано
 - **Функции:**
   - Поиск пользователей
-  - Поиск серверов
+  - Поиск чатов/каналов (public)
   - Тренды (популярные хэштеги)
   - Рекомендуемые пользователи
 
@@ -335,7 +332,7 @@
   - `chat:read_update` — прочтение чата
   - `message:deleted` — сообщение удалено
   - `presence:update` — статус онлайн/оффлайн
-  - `server:created`, `server:deleted`, `server:member_joined`
+  - `chat:read_update`
   - `channel:new_message` — сообщение в канале
 
 ---
@@ -348,7 +345,7 @@
 | Компоненты | 60+ | 0 | 0 | 60+ |
 | API endpoints | 40+ | 0 | 0 | 40+ |
 | WebSocket события | 12+ | 0 | 0 | 12+ |
-| i18n языки | 2 | 0 | 0 | 2 |
+| i18n языки | 5 | 0 | 0 | 5 |
 
 **Общий статус:** ✅ Production-ready
 
@@ -373,6 +370,6 @@
 ## Связанные документы
 
 - [Error Handling](./ERROR_HANDLING.ru.md)
-- [Servers Module](./SERVERS_MODULE.ru.md)
+- [Groups Module](./GROUPS_MODULE.ru.md)
 - [Project UI](./PROJECT_UI/)
 - [README](../README.md)

@@ -7,7 +7,7 @@
  * - new_message
  * - post_created
  * - notification
- * - server_message
+ * - chat_message
  */
 
 const redis = require('./redis');
@@ -22,11 +22,11 @@ const localHandlers = new Map();
  * @param {object} deps - зависимости
  * @param {Function} deps.sendToUser - функция отправки события пользователю
  * @param {Function} deps.broadcast - функция широковещательной рассылки
- * @param {Function} deps.broadcastToServer - функция рассылки по серверу
+ * @param {Function} deps.broadcastToChat - функция рассылки по чату
  * @param {Map} deps.clients - карта подключенных клиентов
  * @returns {Promise<object>}
  */
-async function initWsRedisAdapter({ sendToUser, broadcast, broadcastToServer, clients }) {
+async function initWsRedisAdapter({ sendToUser, broadcast, broadcastToChat, clients }) {
   console.info('[WsRedisAdapter] Initializing...');
 
   // Инициализируем Redis подключения
@@ -45,8 +45,8 @@ async function initWsRedisAdapter({ sendToUser, broadcast, broadcastToServer, cl
     handleNotification(data, { sendToUser, clients });
   });
 
-  await subscribeToChannel(CHANNELS.SERVER_MESSAGE, (data) => {
-    handleServerMessage(data, { broadcastToServer, clients });
+  await subscribeToChannel(CHANNELS.CHAT_MESSAGE, (data) => {
+    handleChatMessage(data, { broadcastToChat, clients });
   });
 
   console.info('[WsRedisAdapter] Initialized successfully');
@@ -55,7 +55,7 @@ async function initWsRedisAdapter({ sendToUser, broadcast, broadcastToServer, cl
     publishNewMessage,
     publishPostCreated,
     publishNotification,
-    publishServerMessage,
+    publishChatMessage,
     isRedisAvailable: redis.isAvailable,
   };
 }
@@ -125,20 +125,19 @@ async function publishNotification(data) {
 }
 
 /**
- * Публикует событие сервера (сообщение в канале)
+ * Публикует событие чата
  * 
  * @param {object} data - данные события
- * @param {string} data.serverId - ID сервера
- * @param {string} data.channelId - ID канала
+ * @param {string} data.chatId - ID чата
  * @param {string} data.messageId - ID сообщения
  * @param {string} data.userId - ID отправителя
  * @param {string} data.text - текст
- * @param {string} data.type - тип события (channel:new_message, channel:message_deleted, etc.)
+ * @param {string} data.type - тип события (new_message, chat_updated)
  * @param {string} data.timestamp - временная метка
  * @returns {Promise<number>}
  */
-async function publishServerMessage(data) {
-  return redis.publish(CHANNELS.SERVER_MESSAGE, data);
+async function publishChatMessage(data) {
+  return redis.publish(CHANNELS.CHAT_MESSAGE, data);
 }
 
 /**
@@ -211,19 +210,19 @@ function handleNotification(data, { sendToUser, clients }) {
 }
 
 /**
- * Обработчик события server_message из Redis
+ * Обработчик события chat_message из Redis
  */
-function handleServerMessage(data, { broadcastToServer, clients }) {
-  const { serverId, type } = data;
-  
-  if (!serverId) {
-    console.warn('[WsRedisAdapter] server_message: missing serverId');
+function handleChatMessage(data, { broadcastToChat, clients }) {
+  const { chatId, type } = data;
+
+  if (!chatId) {
+    console.warn('[WsRedisAdapter] chat_message: missing chatId');
     return;
   }
 
-  // Рассылаем подписчикам сервера
-  broadcastToServer(serverId, {
-    type: type || 'channel:new_message',
+  // Рассылаем участникам чата
+  broadcastToChat(chatId, {
+    type: type || 'new_message',
     data: data?.data || data,
   });
 }
@@ -249,7 +248,7 @@ module.exports = {
   publishNewMessage,
   publishPostCreated,
   publishNotification,
-  publishServerMessage,
+  publishChatMessage,
   isRedisAvailable,
   shutdown,
 };

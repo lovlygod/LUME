@@ -72,6 +72,8 @@
   },
   "navigation": {
     "home": "Главная",
+    "workspaces": "Воркспейсы",
+    "projects": "Проекты",
     "explore": "Поиск",
     "messages": "Сообщения",
     "profile": "Профиль",
@@ -92,7 +94,7 @@
     "enterName": "Введите имя",
     "name": "Имя",
     "username": "Имя пользователя",
-    "chooseUsername": "Выберите имя пользователя (мин. 5 символов)",
+    "chooseUsername": "Выберите имя пользователя (мин. 3 символа, буквы/цифры/_/.)",
     "createPassword": "Придумайте пароль",
     "confirmPasswordPlaceholder": "Подтвердите пароль",
     "welcomeBack": "С возвращением",
@@ -104,10 +106,22 @@
     "hasAccount": "Уже есть аккаунт?",
     "loginError": "Неверный email или пароль",
     "registerError": "Не удалось зарегистрироваться",
-    "usernameError": "Имя пользователя должно быть не менее 5 символов и содержать только английские буквы и цифры",
+    "usernameError": "Имя пользователя должно быть не менее 3 символов и содержать только английские буквы, цифры, нижнее подчёркивание и точку",
     "passwordError": "Пароль должен быть не менее 6 символов",
     "passwordMismatch": "Пароли не совпадают",
     "allFieldsRequired": "Все поля обязательны для заполнения"
+  },
+  "onboarding": {
+    "title": "Онбординг",
+    "step1Title": "Выберите основную роль",
+    "step2Title": "Выберите навыки",
+    "step3Title": "Ваши цели в LUME",
+    "step4Title": "Завершение онбординга",
+    "goalsListToggle": "Список целей",
+    "progressSaved": "Прогресс сохраняется автоматически",
+    "saving": "Сохраняем...",
+    "continue": "Продолжить",
+    "complete": "Завершить"
   },
   "logout": {
     "title": "Выход",
@@ -118,6 +132,7 @@
   "settings": {
     "title": "Настройки",
     "subtitle": "Управление предпочтениями аккаунта",
+    "backToSettings": "Назад к настройкам",
     "appearance": "Внешний вид",
     "theme": "Тема",
     "themeDescription": "Выберите предпочитаемую тему",
@@ -132,6 +147,10 @@
     "snowVariantDots": "Точки",
     "snowVariantFlakes": "Снежинки",
     "snowVariantHearts": "Сердечки",
+    "timeFormat": "Формат времени",
+    "timeFormatDescription": "Выберите 12-часовой или 24-часовой формат",
+    "timeFormat12": "12 часов",
+    "timeFormat24": "24 часа",
     "privacy": "Приватность",
     "postPrivacy": "Приватность постов",
     "postPrivacyDescription": "Кто может видеть ваши посты",
@@ -183,6 +202,24 @@
     "chatBackgroundCustomApplied": "Пользовательский фон применён",
     "chatBackgroundCustomError": "Не удалось загрузить пользовательский фон",
     "doubleClickHeart": "Реакция ❤️"
+    ,
+    "sections": {
+      "appearance": {
+        "description": "Тема, снег и визуальные эффекты."
+      },
+      "privacy": {
+        "description": "Кто может видеть контент и писать вам."
+      },
+      "chat": {
+        "description": "Действия двойного клика и фон чата."
+      },
+      "language": {
+        "description": "Язык интерфейса и локаль."
+      },
+      "danger": {
+        "description": "Удаление аккаунта и чувствительные действия."
+      }
+    }
   },
   "sessions": {
     "title": "Активные сессии",
@@ -245,13 +282,85 @@
     "profileNotFoundDesc": "Пользователь, которого вы ищете, не существует или у вас нет прав для просмотра этого профиля.",
     "userNotFound": "Пользователь не найден",
     "noFollowers": "Пока нет подписчиков",
-    "noFollowing": "Пока ни на кого не подписан"
+    "noFollowing": "Пока ни на кого не подписан",
+    "available": "Доступен",
+    "looking": "Ищу проект",
+    "busy": "Занят"
   },
   "messages": {
     "title": "Сообщения",
     "selectChat": "Выберите чат",
     "chooseConversation": "Выберите чат из списка",
     "noConversations": "Нет чатов",
+    "createChatTitle": "Создать чат",
+    "createChatDescription": "Создайте группу или канал. Участников можно добавить позже.",
+    "chatSettingsButton": "Настройки",
+    "chatLeaveButton": "Выйти",
+    "chatDeleteButton": "Удалить",
+    "chatDeleteTitle": "Удалить чат?",
+    "chatDeleteDescription": "Все сообщения и данные будут удалены. Это действие нельзя отменить.",
+    "chatDeleteConfirm": "Удалить",
+    "publicJoinTitle": "Вступить в чат",
+    "publicChannelJoinDescription": "Подпишитесь на канал, чтобы видеть сообщения.",
+    "publicGroupJoinDescription": "Вступите в группу, чтобы видеть сообщения.",
+    "chatSettingsTitle": "Настройки чата",
+    "chatSettingsDescription": "Управляйте названием, аватаром и участниками",
+    "chatSettingsEmpty": "Чат не выбран",
+    "chatAvatar": "Аватар",
+    "chatAvatarChoose": "Выбрать файл",
+    "chatAvatarHint": "PNG/JPG до 5MB",
+    "chatAvatarUploaded": "Аватар обновлён",
+    "chatAvatarUploadError": "Не удалось загрузить аватар",
+    "chatTitle": "Название",
+    "chatTitleRequired": "Введите название",
+    "chatUsername": "Юзернейм",
+    "chatPublic": "Публичный чат",
+    "chatPublicHint": "Доступен по юзернейму",
+    "chatSaved": "Изменения сохранены",
+    "chatSaveError": "Не удалось сохранить чат",
+    "chatAddMember": "Добавить участника",
+    "chatMemberIdPlaceholder": "ID пользователя",
+    "chatMemberUsernamePlaceholder": "юзернейм",
+    "chatMemberIdRequired": "Введите ID пользователя или юзернейм",
+    "chatMemberAdded": "Участник добавлен",
+    "chatMemberAddError": "Не удалось добавить участника",
+    "chatAddMemberAction": "Добавить",
+    "chatManageOnlyAdmins": "Добавлять участников могут только админы",
+    "chatMembersCount": "{count} участников",
+    "channelSubscribe": "Подписаться",
+    "channelUnsubscribe": "Отписаться",
+    "channelMembers": "Подписчиков: {count}",
+    "channelSubscribeToView": "Подпишитесь, чтобы видеть сообщения канала.",
+    "groupJoin": "Вступить",
+    "joinRequestSent": "Заявка отправлена",
+    "chatInviteLink": "Ссылка для приглашения",
+    "chatInviteRegenerate": "Обновить",
+    "chatInviteRegenerateError": "Не удалось обновить ссылку",
+    "chatUsernameTaken": "Юзернейм уже занят",
+    "chatUsernameInvalid": "Юзернейм может содержать только латиницу и цифры и быть от 5 символов",
+    "chatPublicLink": "Публичная ссылка",
+    "joinRequests": "Заявки на вступление",
+    "joinRequestsEmpty": "Нет заявок",
+    "joinRequestApprove": "Принять",
+    "joinRequestReject": "Отклонить",
+    "joinRequestApproved": "Заявка подтверждена",
+    "joinRequestRejected": "Заявка отклонена",
+    "joinRequestReviewError": "Не удалось обновить заявку",
+    "inviteCopied": "Ссылка скопирована",
+    "createChatType": "Тип",
+    "chatTypeGroup": "Группа",
+    "chatTypeChannel": "Канал",
+    "createChatName": "Название",
+    "createChatNamePlaceholder": "Например, Команда",
+    "createChatUsername": "Юзернейм (опционально)",
+    "createChatUsernamePlaceholder": "например, lume_team",
+    "createChatUsernameRequired": "Для публичного чата нужен юзернейм",
+    "createChatUsernamePrivateHint": "Для приватных чатов юзернейм недоступен",
+    "createChatPublic": "Публичный чат",
+    "createChatPublicHint": "Публичные чаты видны по юзернейму",
+    "createChatSubmit": "Создать",
+    "createChatTitleRequired": "Введите название группы или канала",
+    "createChatError": "Не удалось создать чат",
     "sendMessage": "Отправить сообщение...",
     "send": "Отправить",
     "sending": "Отправка...",
@@ -286,13 +395,26 @@
     "copyError": "Не удалось скопировать текст",
     "copyEmpty": "Нет текста для копирования",
     "typingIndicator": "{name} печатает...",
-    "replyAction": "Ответить"
+    "replyAction": "Ответить",
+    "voiceNoChat": "Чат не выбран",
+    "voiceSent": "Голосовое сообщение отправлено",
+    "voiceSendError": "Не удалось отправить голосовое сообщение"
+  },
+  "voice": {
+    "record": "Записать голосовое сообщение",
+    "send": "Отправить",
+    "delete": "Удалить",
+    "recordEmpty": "Запись не получилась, попробуйте ещё раз",
+    "microphoneError": "Не удалось получить доступ к микрофону"
   },
   "stickers": {
     "myStickers": "Мои стикеры",
     "lumeStickers": "Стикеры LUME",
+    "pack": "Набор",
     "empty": "Пока нет стикеров",
     "browsePacks": "Открыть наборы стикеров",
+    "loading": "Загрузка набора стикеров...",
+    "upload": "Загрузить стикеры",
     "packTitleFallback": "Набор стикеров",
     "packDescriptionFallback": "Добавьте этот набор в свою коллекцию.",
     "addPack": "Добавить набор",
@@ -300,6 +422,158 @@
     "packAddError": "Не удалось добавить набор стикеров",
     "packRefreshError": "Не удалось обновить наборы стикеров",
     "packLoadError": "Не удалось загрузить набор стикеров"
+  },
+  "workspaces": {
+    "title": "Воркспейсы",
+    "common": {
+      "loading": "Загрузка...",
+      "creating": "Создание...",
+      "joining": "Вход...",
+      "close": "Закрыть"
+    },
+    "errors": {
+      "load": "Не удалось загрузить воркспейсы",
+      "create": "Не удалось создать воркспейс",
+      "join": "Не удалось войти в воркспейс"
+    },
+    "toast": {
+      "created": "Воркспейс создан",
+      "joined": "Вы вошли в воркспейс"
+    },
+    "create": {
+      "title": "Создать воркспейс",
+      "openButton": "Новый воркспейс",
+      "submit": "Создать воркспейс"
+    },
+    "join": {
+      "title": "Войти по инвайту",
+      "inviteCode": "Код приглашения",
+      "submit": "Войти"
+    },
+    "list": {
+      "my": "Мои воркспейсы",
+      "public": "Публичные воркспейсы"
+    },
+    "empty": {
+      "my": "У вас пока нет воркспейсов",
+      "public": "Публичные воркспейсы не найдены",
+      "projects": "Пока нет проектов",
+      "members": "Пока нет участников",
+      "channels": "Пока нет каналов"
+    },
+    "form": {
+      "name": "Название",
+      "slug": "slug",
+      "description": "Описание",
+      "type": "Тип",
+      "private": "Приватный",
+      "public": "Публичный",
+      "focusTags": "Теги фокуса (через запятую)"
+    },
+    "tabs": {
+      "overview": "Обзор",
+      "channels": "Каналы",
+      "projects": "Проекты",
+      "members": "Участники"
+    },
+    "overview": {
+      "projects": "Проекты",
+      "members": "Участники"
+    },
+    "channels": {
+      "title": "Каналы"
+    },
+    "projects": {
+      "title": "Проекты",
+      "create": "Создать проект"
+    },
+    "members": {
+      "title": "Участники"
+    }
+  },
+  "projects": {
+    "title": "Проекты",
+    "common": {
+      "loading": "Загрузка...",
+      "creating": "Создание...",
+      "close": "Закрыть"
+    },
+    "errors": {
+      "load": "Не удалось загрузить проекты",
+      "create": "Не удалось создать проект",
+      "update": "Не удалось обновить проект"
+    },
+    "toast": {
+      "created": "Проект создан",
+      "updated": "Проект обновлён"
+    },
+    "create": {
+      "title": "Создать проект",
+      "openButton": "Новый проект",
+      "submit": "Создать проект"
+    },
+    "list": {
+      "my": "Мои проекты",
+      "public": "Публичные проекты"
+    },
+    "empty": {
+      "my": "У вас пока нет проектов",
+      "public": "Публичные проекты не найдены"
+    },
+    "status": {
+      "idea": "Идея",
+      "building": "В разработке",
+      "testing": "Тестирование",
+      "launched": "Запущен",
+      "paused": "На паузе",
+      "archived": "Архив"
+    },
+    "form": {
+      "name": "Название",
+      "slug": "slug",
+      "description": "Описание",
+      "visibility": "Видимость",
+      "status": "Статус",
+      "public": "Публичный",
+      "private": "Приватный",
+      "workspace": "Воркспейс",
+      "noWorkspace": "Без воркспейса",
+      "stack": "Стек (через запятую)",
+      "tags": "Теги (через запятую)",
+      "github": "GitHub URL",
+      "demo": "Demo URL"
+    },
+    "tabs": {
+      "overview": "Обзор",
+      "tasks": "Задачи",
+      "members": "Участники",
+      "chat": "Чат"
+    },
+    "tasks": {
+      "title": "Задачи",
+      "create": "Добавить задачу",
+      "todo": "К выполнению",
+      "inProgress": "В работе",
+      "review": "На проверке",
+      "done": "Готово",
+      "priority": {
+        "low": "Низкий",
+        "medium": "Средний",
+        "high": "Высокий"
+      },
+      "form": {
+        "title": "Название",
+        "description": "Описание",
+        "status": "Статус",
+        "priority": "Приоритет"
+      }
+    },
+    "empty": {
+      "my": "У вас пока нет проектов",
+      "public": "Публичные проекты не найдены",
+      "tasks": "Пока нет задач",
+      "members": "Пока нет участников"
+    }
   },
   "feed": {
     "title": "Главная",
@@ -345,27 +619,62 @@
     "imageUploadError": "Не удалось загрузить изображение"
   },
   "explore": {
-    "title": "Обзор",
-    "subtitle": "Поиск пользователей и серверов",
-    "searchUsers": "Поиск пользователей...",
-    "searchServers": "Поиск серверов...",
+    "title": "Поиск",
+    "subtitle": "Найди разработчиков, проекты и команды",
+    "builders": "Разработчики",
+    "projects": "Проекты",
+    "workspaces": "Воркспейсы",
+    "lookingForTeam": "Ищу команду",
+    "releases": "Релизы",
     "search": "Поиск",
-    "trending": "В тренде",
-    "trendingSignals": "Популярные сигналы",
-    "suggestedNodes": "Рекомендуемые пользователи",
-    "users": "Пользователи",
-    "servers": "Серверы",
-    "noUsersFound": "Пользователи не найдены",
-    "noServersFound": "Серверы не найдены",
+    "filters": "Фильтры",
+    "role": "Роль",
+    "skill": "Навык",
+    "availability": "Доступность",
+    "status": "Статус",
+    "noBuildersFound": "Разработчики не найдены",
+    "noProjectsFound": "Проекты не найдены",
+    "noWorkspacesFound": "Воркспейсы не найдены",
+    "noResults": "Ничего не найдено",
     "searching": "Поиск...",
-    "noTrendingSignals": "Пока нет популярных сигналов",
-    "noSuggestedNodes": "Нет рекомендуемых пользователей",
-    "connect": "Посмотреть профиль",
-    "signals": "сигналов"
+    "connect": "Связаться",
+    "viewProject": "Смотреть проект",
+    "joinWorkspace": "Присоединиться",
+    "lookingForWork": "Ищу работу",
+    "notAvailable": "Не доступен"
   },
   "verified": {
-    "title": "Получить верификацию",
+    "title": "Верификация",
     "subtitle": "Подтвердите свой статус и получите официальный значок",
+    "pageTitle": "Верификация в LUME",
+    "pageSubtitle": "Выделяйся среди других разработчиков",
+    "comparisonTitle": "Как выглядит верификация",
+    "comparisonAlt": "Верифицированный и обычный профиль",
+    "benefitsTitle": "Что даёт верификация",
+    "benefitBadge": "Значок рядом с именем",
+    "benefitSearch": "Приоритет в поиске",
+    "benefitTrust": "Больше доверия к профилю",
+    "benefitFeatures": "Доступ к новым функциям",
+    "stepsTitle": "Как пройти верификацию",
+    "stepOne": "Создайте контент о LUME",
+    "stepTwo": "Опубликуйте в соцсетях",
+    "stepThree": "Наберите 2000 просмотров",
+    "stepFour": "Отправьте заявку",
+    "verifiedUsersTitle": "Проверенные разработчики",
+    "verifiedUsersHint": "Профили кликабельны",
+    "verifiedUsersEmpty": "Пока нет пользователей для отображения",
+    "statusPending": "Заявка на рассмотрении",
+    "statusRejected": "Заявка отклонена",
+    "statusVerified": "Вы получили верификацию",
+    "platformLabelShort": "Платформа",
+    "videoUrlPlaceholder": "Ссылка на видео",
+    "reasonLabelShort": "Почему вы хотите верификацию",
+    "reasonPlaceholderShort": "Почему вы хотите верификацию",
+    "submitButton": "Отправить заявку",
+    "requestSubmitted": "Заявка отправлена!",
+    "requestError": "Ошибка при отправке заявки",
+    "submitToast": "Заявка отправлена",
+    "minDaysError": "Вы должны находиться на платформе не менее {days} дней, чтобы получить верификацию",
     "bannerAlt": "Верификация",
     "alreadyVerified": "Вы уже верифицированы!",
     "requestPending": "Ваш запрос на верификацию ожидает рассмотрения.",
@@ -979,14 +1288,6 @@
         }
       },
       "messages": {
-        "q1": {
-          "title": "Как отправить исчезающее фото?",
-          "answer": "В чате включите режим момента и добавьте изображение.",
-          "bullet1": "Открывается один раз",
-          "bullet2": "Без сохранения",
-          "bullet3": "Срок жизни до 24 часов",
-          "popular": "true"
-        },
         "q2": {
           "title": "Как удалить сообщение?",
           "answer": "Нажмите и выберите удаление для себя или для всех.",

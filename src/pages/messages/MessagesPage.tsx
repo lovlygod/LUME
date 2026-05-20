@@ -5,18 +5,17 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import type { User } from "@/types";
-import type { Attachment, Message } from "@/types/messages";
+import type { Attachment, Chat, Message } from "@/types/messages";
 import type { Sticker, StickerPack } from "@/types/stickers";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getProfileRoute } from "@/lib/profileRoute";
-import { messagesAPI, profileAPI, uploadsAPI, usersAPI, stickersAPI } from "@/services/api";
+import { messagesAPI, profileAPI, uploadsAPI, usersAPI, stickersAPI, projectsAPI, chatsAPI } from "@/services/api";
 import { messageSounds } from "@/services/messageSounds";
 import { wsService } from "@/services/websocket";
 import { messageQueryKeys } from "./hooks/queryKeys";
 import { useChats } from "./hooks/useChats";
-import { useChat } from "./hooks/useChat";
 import { useChatMessages } from "./hooks/useChatMessages";
 import { useSendMessage } from "./hooks/useSendMessage";
 import { useDeleteMessage } from "./hooks/useDeleteMessage";
@@ -28,6 +27,10 @@ import ChatPanel from "./components/ChatPanel";
 import MessageList from "./components/MessageList";
 import MessageComposer from "./components/MessageComposer";
 import { MessageSearch } from "./components/MessageSearch";
+import CreateChatModal from "./components/CreateChatModal";
+import ChatSettingsModal from "./components/ChatSettingsModal";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ImageViewer } from "@/components/media/ImageViewer";
 import StickerModal from "@/components/stickers/StickerModal";
 import TypingIndicator from "@/components/chat/TypingIndicator";
@@ -44,9 +47,14 @@ const MessagesPage = () => {
   const { user: currentUser } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { chatId } = useParams();
+  const params = useParams();
+  const chatId = params.chatId;
+  const rest = params.rest;
+  const inviteParam = params.token;
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
   const targetUserId = searchParams.get("userId");
+  const addStickerPackId = searchParams.get("addStickerPack");
 
   const [selectedChatId, setSelectedChatId] = useState<string | null>(chatId || null);
   const [msgText, setMsgText] = useState("");
@@ -55,12 +63,6 @@ const MessagesPage = () => {
   const [isOnline, setIsOnline] = useState(false);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [momentFile, setMomentFile] = useState<File | null>(null);
-  const [momentPreview, setMomentPreview] = useState<string | null>(null);
-  const [momentToggle, setMomentToggle] = useState(false);
-  const [momentOpenMap, setMomentOpenMap] = useState<Record<string, string>>({});
-  const [momentLoadingMap, setMomentLoadingMap] = useState<Record<string, boolean>>({});
-  const [momentBlockedMap, setMomentBlockedMap] = useState<Record<string, boolean>>({});
   const [replyTo, setReplyTo] = useState<ReplyPreview | null>(null);
   const [showDeleteMenu, setShowDeleteMenu] = useState<{ msgId: string; x: number; y: number } | null>(null);
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
@@ -68,6 +70,7 @@ const MessagesPage = () => {
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const [scrollToMessageId, setScrollToMessageId] = useState<string | null>(null);
   const [scrollToMessageNonce, setScrollToMessageNonce] = useState(0);
+  const [scrollToBottomTrigger, setScrollToBottomTrigger] = useState(0);
   const [stickersOpen, setStickersOpen] = useState(false);
   const [myStickerPacks, setMyStickerPacks] = useState<StickerPack[]>([]);
   const [lumeStickerPacks, setLumeStickerPacks] = useState<StickerPack[]>([]);
@@ -77,6 +80,15 @@ const MessagesPage = () => {
   const [activeSticker, setActiveSticker] = useState<Sticker | null>(null);
   const [activeStickerPack, setActiveStickerPack] = useState<StickerPack | null>(null);
   const [doubleClickAction, setDoubleClickAction] = useState<"reply" | "heart">("reply");
+  const [createChatOpen, setCreateChatOpen] = useState(false);
+  const [chatSettingsOpen, setChatSettingsOpen] = useState(false);
+  const [channelMeta, setChannelMeta] = useState<{ role?: string | null; membersCount?: number } | null>(null);
+  const [publicChannel, setPublicChannel] = useState<Chat | null>(null);
+  const [joinStatus, setJoinStatus] = useState<string | null>(null);
+  const [channelLoading, setChannelLoading] = useState(false);
+  const [publicJoinModalOpen, setPublicJoinModalOpen] = useState(false);
+  const [blockedProject, setBlockedProject] = useState<any>(null);
+  const [joiningProject, setJoiningProject] = useState(false);
   const { backgroundStyle } = useChatBackground();
   const [reactionMap, setReactionMap] = useState<Record<string, boolean>>({});
   const [contextMenuState, setContextMenuState] = useState<{
@@ -89,62 +101,423 @@ const MessagesPage = () => {
   const queryClient = useQueryClient();
 
   const { data: chatsData, isLoading } = useChats();
-  const { data: chatUserData } = useChat(selectedChatId);
-  const { data: messagesData, isLoading: messagesLoading } = useChatMessages(selectedChatId);
+  const selectedChat = useMemo(
+    () =>
+      (chatsData?.chats || []).find((chat) =>
+        String(chat.id) === String(selectedChatId) || String(chat.routeId) === String(selectedChatId)
+      ) || null,
+    [chatsData?.chats, selectedChatId]
+  );
+  const displayChat = useMemo(() => selectedChat || publicChannel, [selectedChat, publicChannel]);
+  const chatPanelUser = useMemo(() => {
+    if (!displayChat) return null;
+
+    if (displayChat.type === "private") {
+      const otherMember = displayChat.members?.find((m) => String(m.id) !== String(currentUser?.id));
+      if (otherMember) {
+        return {
+          id: otherMember.id,
+          name: otherMember.name || otherMember.username || "User",
+          username: otherMember.username || "",
+          avatar: otherMember.avatar || undefined,
+          verified: Boolean(otherMember.verified),
+          email: "",
+        };
+      }
+    }
+
+    if (displayChat.title) {
+      return {
+        id: displayChat.id,
+        name: displayChat.title,
+        username: displayChat.username || "",
+        avatar: displayChat.avatar || undefined,
+        verified: false,
+        email: "",
+      };
+    }
+
+    if (displayChat.type === "group" || displayChat.type === "channel") {
+      return {
+        id: displayChat.id,
+        name: displayChat.title || displayChat.username || "Chat",
+        username: displayChat.username || "",
+        avatar: displayChat.avatar || undefined,
+        verified: false,
+        email: "",
+      };
+    }
+
+    return null;
+  }, [displayChat, currentUser?.id]);
+  const activeChatId = useMemo(() => selectedChat?.id || publicChannel?.id || null, [selectedChat, publicChannel]);
+  const { data: messagesData, isLoading: messagesLoading } = useChatMessages(activeChatId);
   const sendMessage = useSendMessage(currentUser?.id);
-  const deleteMessage = useDeleteMessage(selectedChatId);
-  const markRead = useMarkRead(selectedChatId);
+  const deleteMessage = useDeleteMessage(activeChatId);
+  const markRead = useMarkRead(activeChatId);
 
   const messages = useMemo(() => messagesData?.messages || [], [messagesData?.messages]);
-  const selectedChatUser = chatUserData?.user || null;
+  const channelRole = useMemo(
+    () => selectedChat?.role || channelMeta?.role || publicChannel?.role || null,
+    [selectedChat?.role, channelMeta?.role, publicChannel?.role]
+  );
+
+  const canSendMessages = useMemo(() => {
+    if (selectedChat) {
+      if (selectedChat.type !== "channel") return true;
+      return selectedChat.role === "owner" || selectedChat.role === "admin";
+    }
+    if (displayChat?.type === "channel") return false;
+    return true;
+  }, [selectedChat, displayChat]);
 
   useEffect(() => {
-    if (chatId) {
-      setSelectedChatId(chatId);
+    const routeId = chatId && rest ? `${chatId}/${rest}` : chatId;
+    setInviteToken(null);
+    if (inviteParam) {
+      setSelectedChatId(null);
       return;
     }
-    if (targetUserId) {
-      setSelectedChatId(targetUserId);
+    if (routeId) {
+      if (routeId.startsWith("@")) {
+        const username = routeId.slice(1).toLowerCase();
+        const matchedChat = (chatsData?.chats || []).find(
+          (chat) => chat.username && chat.isPublic && chat.username.toLowerCase() === username
+        );
+        setSelectedChatId(matchedChat?.id || null);
+        return;
+      }
+      setSelectedChatId(routeId);
       return;
     }
+    if (!targetUserId) {
+      setSelectedChatId(null);
+      setIsTyping(false);
+      setIsOnline(false);
+      setLastSeen(null);
+      return;
+    }
+
+    const chats = chatsData?.chats || [];
+    const existingChat = chats.find((chat) => chat.type === "private" && chat.members?.some((m) => String(m.id) === String(targetUserId)));
+    if (existingChat) {
+      setSelectedChatId(existingChat.id);
+      if (chatId !== existingChat.id) {
+        navigate(`/messages/${existingChat.id}`, { replace: true });
+      }
+      return;
+    }
+
+    let cancelled = false;
+    messagesAPI
+      .createChat({ type: "private", userId: targetUserId })
+      .then((res) => {
+        if (cancelled || !res.chatId) return;
+        setSelectedChatId(res.chatId);
+        navigate(`/messages/${res.chatId}`, { replace: true });
+      })
+      .catch(() => null);
+    return () => {
+      cancelled = true;
+    };
+  }, [chatId, rest, targetUserId, chatsData?.chats, navigate, inviteParam]);
+
+  useEffect(() => {
+    const isPublicPreview = Boolean(chatId && chatId.startsWith("@"));
+    const isInvitePreview = Boolean(inviteToken || inviteParam);
+    const isApprovedInvite = Boolean(publicChannel?.role) || joinStatus === "approved";
+    if (blockedProject) {
+      setPublicJoinModalOpen(false);
+      return;
+    }
+    if ((isPublicPreview || isInvitePreview) && publicChannel && !selectedChat && !isApprovedInvite) {
+      setPublicJoinModalOpen(true);
+      return;
+    }
+    setPublicJoinModalOpen(false);
+  }, [chatId, inviteToken, inviteParam, publicChannel, selectedChat, joinStatus, blockedProject]);
+
+  useEffect(() => {
+    if (inviteParam) {
+      setInviteToken(inviteParam);
+      setSelectedChatId(null);
+      return;
+    }
+    if (!chatId || chatId !== "invite" || !rest) {
+      return;
+    }
+    setInviteToken(rest);
     setSelectedChatId(null);
-    setIsTyping(false);
-    setIsOnline(false);
-    setLastSeen(null);
-  }, [chatId, targetUserId]);
+  }, [chatId, rest, inviteParam]);
+
+  useEffect(() => {
+    const shouldFetchSelected = selectedChat?.type === "channel" && selectedChat?.isPublic && !selectedChat?.role;
+    if (selectedChat) {
+      setPublicChannel(null);
+      if (!shouldFetchSelected || !selectedChat?.id) {
+        setChannelMeta(null);
+        return;
+      }
+      let cancelled = false;
+      setChannelLoading(true);
+      messagesAPI
+        .getPublicChannel(selectedChat.id)
+        .then((res) => {
+          if (cancelled) return;
+          setChannelMeta({ role: res.channel.role, membersCount: res.channel.membersCount });
+          setJoinStatus(null);
+        })
+        .catch(() => null)
+        .finally(() => {
+          if (!cancelled) setChannelLoading(false);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (inviteToken) {
+      setPublicChannel(null);
+      setChannelMeta(null);
+      setChannelLoading(true);
+
+      let cancelled = false;
+      messagesAPI
+        .getChatInvite(inviteToken)
+        .then((res) => {
+          if (cancelled) return;
+          const isMember = Boolean(res.chat.role) || res.chat.joinStatus === "approved";
+          setPublicChannel({
+            id: res.chat.id,
+            type: res.chat.type,
+            title: res.chat.title,
+            username: res.chat.username,
+            avatar: res.chat.avatar,
+            isPublic: res.chat.isPublic,
+            isPrivate: res.chat.isPrivate,
+            role: (res.chat.role || undefined) as Chat["role"],
+            inviteToken: res.chat.inviteToken || null,
+            publicNumber: res.chat.publicNumber || null,
+            routeId: res.chat.routeId || null,
+            members: [],
+            lastMessage: "",
+            timestamp: new Date().toISOString(),
+            unread: 0,
+          });
+          setJoinStatus(res.chat.joinStatus || null);
+          setChannelMeta({ role: res.chat.role, membersCount: res.chat.membersCount });
+          if (isMember) {
+            if (res.chat.username && res.chat.isPublic) {
+              navigate(`/messages/@${res.chat.username}`, { replace: true });
+            } else if (res.chat.routeId) {
+              navigate(`/messages/${res.chat.routeId}`, { replace: true });
+            } else {
+              navigate(`/messages/${res.chat.id}`, { replace: true });
+            }
+          }
+          setPublicJoinModalOpen(!isMember);
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setPublicChannel(null);
+            setChannelMeta(null);
+            setJoinStatus(null);
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setChannelLoading(false);
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (!chatId) {
+      setPublicChannel(null);
+      setChannelMeta(null);
+      return;
+    }
+
+    let cancelled = false;
+    setChannelLoading(true);
+
+    const loadChat = async () => {
+      setPublicJoinModalOpen(false);
+      try {
+        if (chatId === "invite" || inviteParam) {
+          return;
+        }
+        if (chatId.startsWith("@")) {
+          const username = chatId.slice(1);
+          const res = await messagesAPI.getChatByUsername(username);
+          if (cancelled) return;
+          
+          if (res.project && !res.project.member_role) {
+            setBlockedProject(res.project);
+            setPublicChannel(null);
+            setChannelMeta(null);
+            setJoinStatus(null);
+            return;
+          }
+          setBlockedProject(null);
+          
+          setPublicChannel({
+            id: res.chat.id,
+            type: res.chat.type,
+            title: res.chat.title,
+            username: res.chat.username,
+            avatar: res.chat.avatar,
+            isPublic: res.chat.isPublic,
+            isPrivate: res.chat.isPrivate,
+            role: (res.chat.role || undefined) as Chat["role"],
+            inviteToken: res.chat.inviteToken || null,
+            publicNumber: res.chat.publicNumber || null,
+            routeId: res.chat.routeId || null,
+            members: [],
+            lastMessage: "",
+            timestamp: new Date().toISOString(),
+            unread: 0,
+          });
+          setJoinStatus(res.chat.joinStatus || null);
+          setChannelMeta({ role: res.chat.role, membersCount: res.chat.membersCount });
+          return;
+        }
+
+        if (chatId.startsWith("-100") || chatId.startsWith("-200")) {
+          const matchedChat = (chatsData?.chats || []).find(
+            (chat) => String(chat.routeId) === String(chatId)
+          );
+          if (matchedChat?.isPublic && matchedChat.username) {
+            navigate(`/messages/@${matchedChat.username}`, { replace: true });
+            return;
+          }
+          if (!matchedChat) {
+            setPublicChannel(null);
+            setChannelMeta(null);
+            setJoinStatus(null);
+          }
+          return;
+        }
+
+        const matchedChat = (chatsData?.chats || []).find(
+          (chat) => String(chat.id) === String(chatId)
+        );
+        if (!matchedChat) {
+          setPublicChannel(null);
+          setChannelMeta(null);
+          setJoinStatus(null);
+          return;
+        }
+
+        if (matchedChat.projectId) {
+          const projectRes = await chatsAPI.getProject(chatId);
+          if (cancelled) return;
+          if (!projectRes.project) {
+            setPublicChannel(null);
+            setChannelMeta(null);
+            setBlockedProject(null);
+            return;
+          }
+          if (!projectRes.project.member_role) {
+            setBlockedProject(projectRes.project);
+            setPublicChannel(null);
+            setChannelMeta(null);
+            setJoinStatus(null);
+            return;
+          }
+          setBlockedProject(null);
+        } else {
+          setBlockedProject(null);
+        }
+
+        if (matchedChat.type === "group" || matchedChat.type === "channel") {
+          setPublicChannel({
+            id: matchedChat.id,
+            type: matchedChat.type,
+            title: matchedChat.title,
+            username: matchedChat.username,
+            avatar: matchedChat.avatar,
+            isPublic: matchedChat.isPublic,
+            isPrivate: matchedChat.isPrivate,
+            role: matchedChat.role as Chat["role"],
+            inviteToken: matchedChat.inviteToken || null,
+            publicNumber: matchedChat.publicNumber || null,
+            routeId: matchedChat.routeId || null,
+            members: matchedChat.members || [],
+            lastMessage: matchedChat.lastMessage || "",
+            timestamp: matchedChat.timestamp || new Date().toISOString(),
+            unread: matchedChat.unread || 0,
+          });
+          setJoinStatus(null);
+          setChannelMeta({ role: matchedChat.role, membersCount: matchedChat.members?.length || 0 });
+        } else if (matchedChat.type !== "channel" || !matchedChat.isPublic) {
+          setPublicChannel(null);
+          setChannelMeta(null);
+          setJoinStatus(null);
+          return;
+        } else {
+          const res = await messagesAPI.getPublicChannel(chatId);
+          if (cancelled) return;
+          setPublicChannel({
+            id: res.channel.id,
+            type: "channel",
+            title: res.channel.title,
+            username: res.channel.username,
+            avatar: res.channel.avatar,
+            isPublic: res.channel.isPublic,
+            role: (res.channel.role || undefined) as Chat["role"],
+            members: [],
+            lastMessage: "",
+            timestamp: new Date().toISOString(),
+            unread: 0,
+          });
+          setJoinStatus(null);
+          setChannelMeta({ role: res.channel.role, membersCount: res.channel.membersCount });
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setPublicChannel(null);
+          setChannelMeta(null);
+          setJoinStatus(null);
+        }
+      } finally {
+        if (!cancelled) setChannelLoading(false);
+      }
+    };
+
+    loadChat();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [chatId, rest, selectedChat?.id, selectedChat?.type, selectedChat?.role, selectedChat?.isPublic, selectedChat?.projectId, chatsData?.chats, navigate]);
 
   useEffect(() => {
     if (!targetUserId) return;
     const controller = new AbortController();
-    const chats = chatsData?.chats || [];
-    const existingChat = chats.find((chat) => String(chat.userId) === String(targetUserId));
-
-    if (existingChat) {
-      if (chatId !== existingChat.userId) {
-        navigate(`/messages/${existingChat.userId}`, { replace: true });
-      }
-      return;
-    }
     profileAPI.getUserById(targetUserId, controller.signal).catch(() => null);
     return () => controller.abort();
-  }, [chatId, chatsData, navigate, targetUserId]);
+  }, [targetUserId]);
 
   useEffect(() => {
-    if (!selectedChatId) return;
+    if (!selectedChatId || !selectedChat || selectedChat.type !== "private") return;
+    const otherMember = selectedChat.members?.find((m) => String(m.id) !== String(currentUser?.id));
+    if (!otherMember?.id) return;
     const controller = new AbortController();
     usersAPI
-      .getPresence(selectedChatId, controller.signal)
+      .getPresence(otherMember.id, controller.signal)
       .then((res: { online: boolean; lastSeenAt: string | null }) => {
         setIsOnline(res.online);
         setLastSeen(res.lastSeenAt);
       })
       .catch(() => null);
     return () => controller.abort();
-  }, [selectedChatId]);
+  }, [selectedChatId, selectedChat, currentUser?.id]);
 
   useChatWs({
     currentUserId: currentUser?.id,
-    selectedChatId,
+    selectedChatId: activeChatId,
     onTyping: (typing, userId) => {
       setIsTyping(typing);
       setTypingUserId(typing ? userId || null : null);
@@ -156,15 +529,15 @@ const MessagesPage = () => {
   });
 
   useEffect(() => {
-    if (!selectedChatId) return;
+    if (!activeChatId) return;
     if (typingDebounceRef.current) {
       window.clearTimeout(typingDebounceRef.current);
     }
     typingDebounceRef.current = window.setTimeout(() => {
       if (msgText.trim()) {
-        wsService.sendTypingStart(selectedChatId);
+        wsService.sendTypingStart(activeChatId);
       } else {
-        wsService.sendTypingStop(selectedChatId);
+        wsService.sendTypingStop(activeChatId);
       }
     }, 500);
 
@@ -173,7 +546,7 @@ const MessagesPage = () => {
     }
     if (msgText.trim()) {
       typingStopTimerRef.current = window.setTimeout(() => {
-        wsService.sendTypingStop(selectedChatId);
+        wsService.sendTypingStop(activeChatId);
       }, 2000);
     }
 
@@ -182,7 +555,7 @@ const MessagesPage = () => {
         window.clearTimeout(typingDebounceRef.current);
       }
     };
-  }, [msgText, selectedChatId]);
+  }, [msgText, activeChatId]);
 
   useEffect(() => {
     const storedAction = localStorage.getItem("doubleClickAction") as "reply" | "heart" | null;
@@ -220,11 +593,11 @@ const MessagesPage = () => {
       if (typingDebounceRef.current) {
         window.clearTimeout(typingDebounceRef.current);
       }
-      if (selectedChatId) {
-        wsService.sendTypingStop(selectedChatId);
+      if (activeChatId) {
+        wsService.sendTypingStop(activeChatId);
       }
     };
-  }, [selectedChatId]);
+  }, [activeChatId]);
 
   useEffect(() => {
     let mounted = true;
@@ -242,25 +615,33 @@ const MessagesPage = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedChatId && messages.length > 0) {
+    if (!addStickerPackId) return;
+    const openFromQuery = async () => {
+      try {
+        const res = await stickersAPI.getPack(addStickerPackId);
+        setActiveStickerPack(res.pack || null);
+        const first = res.stickers?.[0] || null;
+        if (first) {
+          setActiveSticker(first);
+          setStickerModalOpen(true);
+        }
+      } catch (_error) {
+        toast.error(t("stickers.packLoadError"));
+      }
+    };
+    openFromQuery();
+  }, [addStickerPackId, t]);
+
+  useEffect(() => {
+    if (activeChatId && messages.length > 0) {
       const lastMsg = messages[messages.length - 1];
       if (lastMsg && !lastMsg.own) {
         markRead.mutate({ lastReadMessageId: lastMsg.id.toString() });
       }
     }
-  }, [messages, markRead, selectedChatId]);
+  }, [messages, markRead, activeChatId]);
 
   const handleFileSelect = async (files: File[]) => {
-    if (momentToggle) {
-      const first = files[0];
-      if (!first) return;
-      setMomentFile(first);
-      const reader = new FileReader();
-      reader.onloadend = () => setMomentPreview(reader.result as string);
-      reader.readAsDataURL(first);
-      return;
-    }
-
     const tasks = files.map(async (file) => {
       try {
         const uploaded = await uploadsAPI.uploadFile(file);
@@ -275,56 +656,54 @@ const MessagesPage = () => {
     await Promise.all(tasks);
   };
 
-  const handleSendMessage = async () => {
-    if ((!msgText.trim() && attachments.length === 0 && !momentFile) || !selectedChatId) return;
+  const handleSendMessage = async (overrideText?: string) => {
+    const resolvedOverride = typeof overrideText === "string" ? overrideText : undefined;
+    const effectiveText = (resolvedOverride ?? msgText).trim();
+    if ((!effectiveText && attachments.length === 0) || !activeChatId || !canSendMessages) return;
 
-    if (momentFile) {
-      try {
-        await messagesAPI.sendMoment({
-          receiverId: selectedChatId,
-          file: momentFile,
-          ttlSeconds: 86400,
-        });
-        messageSounds.playSend();
-        setMomentFile(null);
-        setMomentPreview(null);
-        setMomentToggle(false);
-        setReplyTo(null);
-        setMsgText("");
-        setAttachments([]);
-      } catch (error) {
-        toast.error("?????????? ???? ??????????");
-      }
-      return;
-    }
-
-    const trimmed = msgText.trim();
+    const trimmed = effectiveText;
     const attachmentIds = attachments.map((att) => att.id).filter(Boolean);
     sendMessage.mutate({
-      receiverId: selectedChatId,
+      chatId: activeChatId,
       ...(trimmed ? { text: trimmed } : {}),
       ...(attachmentIds.length ? { attachmentIds } : {}),
       ...(replyTo?.id ? { replyToMessageId: replyTo.id } : {}),
     });
-    wsService.sendTypingStop(selectedChatId);
+    wsService.sendTypingStop(activeChatId);
     setMsgText("");
     setAttachments([]);
     setReplyTo(null);
+    setScrollToBottomTrigger((prev) => prev + 1);
   };
 
   const handleSendSticker = async (sticker: Sticker) => {
-    if (!selectedChatId) return;
+    if (!activeChatId || !canSendMessages) return;
     sendMessage.mutate({
-      receiverId: selectedChatId,
+      chatId: activeChatId,
       stickerId: sticker.id,
       ...(replyTo?.id ? { replyToMessageId: replyTo.id } : {}),
     });
     setStickersOpen(false);
   };
 
-  const handleOpenStickerModal = (sticker: Sticker) => {
+  const handleCommandClick = (command: string) => {
+    if (!command) return;
+    if (!activeChatId || !canSendMessages) return;
+    const normalized = command.startsWith("/") ? command : `/${command}`;
+    handleSendMessage(normalized);
+  };
+
+  const handleOpenStickerModal = async (sticker: Sticker) => {
     setActiveSticker(sticker);
-    const pack = [...myStickerPacks, ...lumeStickerPacks].find((p) => p.id === sticker.packId) || null;
+    let pack = [...myStickerPacks, ...lumeStickerPacks].find((p) => p.id === sticker.packId) || null;
+    if (!pack && sticker.packId) {
+      try {
+        const res = await stickersAPI.getPack(sticker.packId);
+        pack = res.pack || null;
+      } catch (_error) {
+        pack = null;
+      }
+    }
     setActiveStickerPack(pack);
     setStickerModalOpen(true);
   };
@@ -343,6 +722,10 @@ const MessagesPage = () => {
     try {
       const refreshed = await stickersAPI.getMyPacks();
       setMyStickerPacks(refreshed.packs || []);
+      if (activeStickerPack?.id) {
+        setActiveStickerPackId(activeStickerPack.id);
+      }
+      setStickersOpen(true);
     } catch (_error) {
       console.error("Sticker pack refresh failed", _error);
       toast.error(t("stickers.packRefreshError"));
@@ -372,28 +755,28 @@ const MessagesPage = () => {
   }, [stickersOpen, myStickerPacks, lumeStickerPacks, activeStickerPackId, loadPackStickers]);
 
   const handleSendVoice = async (blob: Blob, duration: number): Promise<void> => {
-    if (!selectedChatId) {
-      toast.error("??? ?? ??????");
+    if (!activeChatId) {
+      toast.error(t("messages.voiceNoChat"));
       throw new Error("No chat selected");
     }
 
     try {
-      await messagesAPI.sendVoice({
-        receiverId: selectedChatId,
-        audio: blob,
-        duration,
-        replyToMessageId: replyTo?.id || null,
-      });
+        await messagesAPI.sendVoice({
+          chatId: activeChatId,
+          audio: blob,
+          duration,
+          replyToMessageId: replyTo?.id || null,
+        });
 
-      queryClient.invalidateQueries({
-        queryKey: messageQueryKeys.chatMessages(selectedChatId),
-      });
+        queryClient.invalidateQueries({
+          queryKey: messageQueryKeys.chatMessages(activeChatId),
+        });
 
       messageSounds.playSend();
       setReplyTo(null);
-      toast.success("????????? ????????? ??????????");
+      toast.success(t("messages.voiceSent"));
     } catch (error) {
-      toast.error("?? ??????? ????????? ????????? ?????????");
+      toast.error(t("messages.voiceSendError"));
       throw error;
     }
   };
@@ -421,48 +804,14 @@ const MessagesPage = () => {
     }
   };
 
-  const handleOpenMoment = async (msg: Message) => {
-    if (!msg.moment?.id) return;
-    if (msg.moment?.viewedAt || momentBlockedMap[msg.id] || momentLoadingMap[msg.id]) return;
-
-    try {
-      setMomentLoadingMap((prev) => ({ ...prev, [msg.id]: true }));
-      const res = await messagesAPI.openMoment(msg.moment.id);
-      const url = `${API_BASE_URL}/api/moments/${msg.moment.id}/content?token=${res.token}`;
-      setMomentOpenMap((prev) => ({ ...prev, [msg.id]: url }));
-    } catch (e) {
-      const statusCode = (e as { error?: { statusCode?: number } })?.error?.statusCode;
-      if (statusCode === 410) {
-        setMomentBlockedMap((prev) => ({ ...prev, [msg.id]: true }));
-        toast.error("Фото уже просмотрено или истекло");
-      } else {
-        toast.error("Исчезающее фото недоступно");
-      }
-    } finally {
-      setMomentLoadingMap((prev) => ({ ...prev, [msg.id]: false }));
-    }
-  };
-
-  const closeMomentViewer = useCallback((messageId: string) => {
-    setMomentOpenMap((prev) => {
-      const copy = { ...prev };
-      delete copy[messageId];
-      return copy;
-    });
-    const target = messages.find((m) => m.id === messageId);
-    if (target?.moment?.id) {
-      messagesAPI.markMomentViewed(target.moment.id).catch(() => null);
-    }
-  }, [messages]);
-
   const setReplyFromMessage = (msg: Message) => {
     const firstAttachment = msg.attachments?.find((att) => att.type === "image");
-    const authorName = msg.own ? currentUser?.name || "You" : selectedChatUser?.name || "User";
+    const authorName = msg.own ? currentUser?.name || "You" : selectedChat?.title || "User";
     setReplyTo({
       id: msg.id,
       author: authorName,
-      text: msg.type === "moment_image" ? "?????????? ????" : msg.text,
-      imageUrl: msg.type === "moment_image" ? undefined : firstAttachment?.url,
+      text: msg.text,
+      imageUrl: firstAttachment?.url,
     });
   };
 
@@ -505,16 +854,17 @@ const MessagesPage = () => {
     setTimeout(() => setHighlightedMessageId(null), 1200);
   };
 
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (!document.hidden) return;
-      Object.keys(momentOpenMap).forEach((messageId) => closeMomentViewer(messageId));
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [momentOpenMap, closeMomentViewer]);
-
   const chats = useMemo(() => chatsData?.chats || [], [chatsData]);
+  const resolveChatRoute = useCallback((chatIdValue: string) => {
+    const chat = chats.find((item) => String(item.id) === String(chatIdValue));
+    if (chat?.username && chat.isPublic) {
+      return `/messages/@${chat.username}`;
+    }
+    if (chat?.routeId) {
+      return `/messages/${chat.routeId}`;
+    }
+    return `/messages/${chatIdValue}`;
+  }, [chats]);
 
   return (
     <LayoutGroup>
@@ -523,13 +873,86 @@ const MessagesPage = () => {
           chats={chats}
           loading={isLoading}
           selectedChatId={selectedChatId}
-          onSelectChat={(userId) => navigate(`/messages/${userId}`)}
+          onSelectChat={(chatIdValue) => navigate(resolveChatRoute(chatIdValue))}
           onCloseChat={() => navigate("/messages")}
+          onCreateChat={() => setCreateChatOpen(true)}
           t={t}
         />
 
+        <CreateChatModal
+          open={createChatOpen}
+          onOpenChange={setCreateChatOpen}
+          onCreated={(chatIdValue) => navigate(resolveChatRoute(chatIdValue))}
+          t={t}
+        />
+
+        <ChatSettingsModal
+          open={chatSettingsOpen}
+          onOpenChange={setChatSettingsOpen}
+          chat={selectedChat}
+          t={t}
+        />
+
+        <Dialog open={publicJoinModalOpen && !blockedProject} onOpenChange={setPublicJoinModalOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-white">
+                {publicChannel?.title || t("messages.publicJoinTitle")}
+              </DialogTitle>
+              <DialogDescription className="text-white/60">
+                {publicChannel?.type === "channel"
+                  ? t("messages.publicChannelJoinDescription")
+                  : t("messages.publicGroupJoinDescription")}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="mt-4">
+              {joinStatus === "pending" ? (
+                <span className="text-sm text-white/70">{t("messages.joinRequestSent")}</span>
+              ) : (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={channelLoading}
+                  onClick={() => {
+                    if (!publicChannel?.id) return;
+                    setChannelLoading(true);
+                    const action =
+                      publicChannel.type === "channel"
+                        ? messagesAPI.subscribeChannel(publicChannel.id)
+                        : messagesAPI.requestJoin(publicChannel.id);
+                    action
+                      .then((res: { status?: string }) => {
+                        queryClient.invalidateQueries({ queryKey: messageQueryKeys.chatList() });
+                        const nextStatus = res?.status;
+                        if (nextStatus) {
+                          setJoinStatus(nextStatus);
+                        }
+                        if (!nextStatus || nextStatus === "approved") {
+                          if (publicChannel?.username && publicChannel?.isPublic) {
+                            navigate(`/messages/@${publicChannel.username}`, { replace: true });
+                          } else if (publicChannel?.routeId) {
+                            navigate(`/messages/${publicChannel.routeId}`, { replace: true });
+                          } else if (publicChannel?.id) {
+                            navigate(`/messages/${publicChannel.id}`, { replace: true });
+                          }
+                        }
+                        setPublicJoinModalOpen(false);
+                      })
+                      .catch(() => null)
+                      .finally(() => setChannelLoading(false));
+                  }}
+                >
+                  {publicChannel?.type === "channel"
+                    ? t("messages.channelSubscribe")
+                    : t("messages.groupJoin")}
+                </Button>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <AnimatePresence>
-          {selectedChatId ? (
+            {selectedChatId || displayChat || blockedProject ? (
             <motion.div
               key="chat-panel"
               initial={{ opacity: 0, x: 20 }}
@@ -539,18 +962,92 @@ const MessagesPage = () => {
               className="flex-1 flex flex-col min-w-0 p-3"
             >
               <div className="flex-1 flex flex-col min-h-0">
-                <div className="flex-1 flex flex-col min-h-0 rounded-[28px] overflow-hidden border border-white/10 bg-transparent">
-                  <ChatPanel
-                    user={selectedChatUser}
+                  <div className="flex-1 flex flex-col min-h-0 rounded-3xl overflow-hidden border border-white/10 bg-transparent">
+                    <ChatPanel
+                    user={chatPanelUser}
+                    chatType={displayChat?.type}
+                    memberCount={displayChat?.members?.length || channelMeta?.membersCount}
+                    memberCountLabel={
+                      displayChat?.type === "channel"
+                        ? t("messages.channelMembers", {
+                            count: String(channelMeta?.membersCount ?? selectedChat?.members?.length ?? 0),
+                          })
+                        : undefined
+                    }
                     isOnline={isOnline}
                     isTyping={isTyping}
                     lastSeen={lastSeen}
-                    onOpenProfile={() => navigate(getProfileRoute(selectedChatUser))}
-                    t={t}
-                  />
+                    onOpenProfile={() => {
+                      if (selectedChat?.type === "private") {
+                        const otherMember = selectedChat.members?.find((m) => String(m.id) !== String(currentUser?.id));
+                        if (otherMember?.id) {
+                          navigate(getProfileRoute({ id: otherMember.id }));
+                        }
+                      }
+                    }}
+                    onOpenSettings={
+                      selectedChat?.type !== "private" && (selectedChat?.role === "owner" || selectedChat?.role === "admin")
+                        ? () => setChatSettingsOpen(true)
+                        : undefined
+                    }
+                    onLeave={
+                      selectedChat?.type !== "private" && selectedChat?.role !== "owner"
+                        ? () => {
+                            if (!selectedChat?.id || !currentUser?.id) return;
+                            messagesAPI
+                              .leaveChat(selectedChat.id, currentUser.id)
+                              .then(() => {
+                                queryClient.invalidateQueries({ queryKey: messageQueryKeys.chatList() });
+                                navigate("/messages");
+                              })
+                              .catch(() => null);
+                          }
+                        : undefined
+                    }
+                      t={t}
+                    />
 
                   <div className="flex-1 min-h-0 bg-white/5 backdrop-blur-[24px] overflow-hidden flex flex-col" style={backgroundStyle}>
-                    {messagesLoading ? (
+                    {blockedProject ? (
+                      <div className="flex-1 flex items-center justify-center p-6">
+                        <div className="max-w-md w-full rounded-3xl border border-white/10 bg-black/40 p-8 text-center">
+                          <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-white/10 text-2xl font-bold mb-4">
+                            {blockedProject.name?.charAt(0) || "P"}
+                          </div>
+                          <h3 className="text-xl font-semibold mb-2">{blockedProject.name}</h3>
+                          <p className="text-white/60 text-sm mb-6">{blockedProject.description || "Приватный проект"}</p>
+                          <div className="flex items-center justify-center gap-4 text-xs text-white/40 mb-6">
+                            <span className="rounded-full bg-white/10 px-3 py-1">{blockedProject.status || "idea"}</span>
+                          </div>
+                          <button
+                            onClick={async () => {
+                              if (!blockedProject.id) return;
+                              setJoiningProject(true);
+                              try {
+                                await projectsAPI.join(blockedProject.id);
+                                setBlockedProject(null);
+                                toast.success('Вы вступили в проект!');
+                                navigate(0);
+                              } catch {
+                                toast.error('Ошибка при вступлении');
+                              } finally {
+                                setJoiningProject(false);
+                              }
+                            }}
+                            disabled={joiningProject}
+                            className="btn-glass w-full py-3"
+                          >
+                            {joiningProject ? '...' : 'Вступить в проект'}
+                          </button>
+                          <button
+                            onClick={() => navigate('/projects')}
+                            className="mt-3 text-sm text-white/60 hover:text-white"
+                          >
+                            ← Назад к проектам
+                          </button>
+                        </div>
+                      </div>
+                    ) : messagesLoading ? (
                       <div className="flex-1 flex items-center justify-center text-center px-6">
                         <p className="text-sm text-secondary">Загрузка...</p>
                       </div>
@@ -564,10 +1061,12 @@ const MessagesPage = () => {
                       <MessageList
                         messages={messages}
                         currentUser={currentUser}
-                        selectedChatUser={selectedChatUser}
+                        selectedChatUser={null}
+                        chatType={displayChat?.type}
                         highlightedMessageId={highlightedMessageId}
                         scrollToMessageId={scrollToMessageId}
                         scrollToMessageNonce={scrollToMessageNonce}
+                        scrollToBottomTrigger={scrollToBottomTrigger}
                         onReply={setReplyFromMessage}
                         onToggleHeart={handleToggleHeart}
                         doubleClickAction={doubleClickAction}
@@ -577,12 +1076,7 @@ const MessagesPage = () => {
                         }
                         onReplyJump={handleReplyJump}
                         onDeleteRequest={(msgId, x, y) => setShowDeleteMenu({ msgId, x, y })}
-                        onOpenMoment={handleOpenMoment}
                         onOpenSticker={handleOpenStickerModal}
-                        momentOpenMap={momentOpenMap}
-                        momentLoadingMap={momentLoadingMap}
-                        momentBlockedMap={momentBlockedMap}
-                        onCloseMoment={closeMomentViewer}
                         onOpenImage={(imageId, src) => {
                           setActiveImageId(imageId);
                           setActiveImageSrc(src);
@@ -594,32 +1088,116 @@ const MessagesPage = () => {
                           setActiveImageSrc(null);
                         }}
                         onLoadMore={() => {
-                          if (messages.length > 0 && selectedChatId) {
+                          if (messages.length > 0 && activeChatId) {
                             messagesAPI
-                              .getMessages(selectedChatId)
+                              .getMessages(activeChatId)
                               .then((response) => {
                                 queryClient.setQueryData(
-                                  messageQueryKeys.chatMessages(selectedChatId),
+                                  messageQueryKeys.chatMessages(activeChatId),
                                   response
                                 );
                               })
                               .catch(() => null);
                           }
                         }}
+                        onCommand={handleCommandClick}
                       />
                     )}
                   </div>
                 </div>
 
-                {isTyping && typingUserId && selectedChatUser && (
-                  <TypingIndicator label={t("messages.typingIndicator", { name: selectedChatUser.name })} />
+                {isTyping && typingUserId && selectedChat && (
+                  <TypingIndicator label={t("messages.typingIndicator", { name: selectedChat.title || "User" })} />
                 )}
 
                 <MessageComposer
                   msgText={msgText}
                   isSending={sendMessage.isPending}
-                  momentToggle={momentToggle}
-                  momentPreview={momentPreview}
+                  canSend={canSendMessages}
+                  readOnlyMessage={
+                    displayChat?.type === "channel" || displayChat?.type === "group" ? (
+                      <div className="flex justify-center">
+                        {blockedProject ? null : !channelRole ? (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              if (!displayChat?.id) return;
+                              if (displayChat?.isPublic) {
+                                messagesAPI
+                                  .subscribeChannel(displayChat.id)
+                                  .then(() => {
+                                    queryClient.invalidateQueries({ queryKey: messageQueryKeys.chatList() });
+                                    setChannelMeta((prev) => ({
+                                      ...prev,
+                                      role: "member",
+                                      membersCount: (prev?.membersCount ?? 0) + 1,
+                                    }));
+                                    if (displayChat?.id) {
+                                      messagesAPI
+                                        .getPublicChannel(displayChat.id)
+                                        .then((res) => {
+                                          setChannelMeta({ role: res.channel.role, membersCount: res.channel.membersCount });
+                                        })
+                                        .catch(() => null);
+                                    }
+                                  })
+                                  .catch(() => null);
+                              } else {
+                                messagesAPI
+                                  .requestJoin(displayChat.id)
+                                  .then((res) => {
+                                    setJoinStatus(res.status || "pending");
+                                    toast.success(t("messages.joinRequestSent"));
+                                  })
+                                  .catch(() => null);
+                              }
+                            }}
+                            disabled={channelLoading || joinStatus === "pending"}
+                          >
+                            {displayChat?.type === "group" ? t("messages.groupJoin") : t("messages.channelSubscribe")}
+                          </Button>
+                        ) : joinStatus === "pending" ? (
+                          <span>{t("messages.joinRequestSent")}</span>
+                        ) : channelRole !== "owner" ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              if (!displayChat?.id) return;
+                              messagesAPI
+                                .unsubscribeChannel(displayChat.id)
+                              .then(() => {
+                                queryClient.invalidateQueries({ queryKey: messageQueryKeys.chatList() });
+                                setChannelMeta((prev) => ({
+                                  ...prev,
+                                  role: null,
+                                  membersCount: Math.max(0, (prev?.membersCount ?? 1) - 1),
+                                }));
+                                if (displayChat?.id) {
+                                  messagesAPI
+                                    .getPublicChannel(displayChat.id)
+                                    .then((res) => {
+                                      setChannelMeta({ role: res.channel.role, membersCount: res.channel.membersCount });
+                                    })
+                                    .catch(() => null);
+                                }
+                                navigate("/messages");
+                              })
+                                .catch(() => null);
+                            }}
+                            disabled={channelLoading}
+                          >
+                            {t("messages.channelUnsubscribe")}
+                          </Button>
+                        ) : (
+                          <span>{t("messages.channelReadOnly") || "Только админы могут писать в канале."}</span>
+                        )}
+                      </div>
+                    ) : (
+                      t("messages.channelReadOnly") || "Только админы могут писать в канале."
+                    )
+                  }
                   attachments={attachments}
                   replyTo={replyTo ? { author: replyTo.author, text: replyTo.text, imageUrl: replyTo.imageUrl } : null}
                   stickersOpen={stickersOpen}
@@ -636,16 +1214,6 @@ const MessagesPage = () => {
                     setActiveImageSrc(src);
                   }}
                   onClearReply={() => setReplyTo(null)}
-                  onToggleMoment={() => {
-                    setMomentToggle((prev) => !prev);
-                    if (!momentToggle) {
-                      setAttachments([]);
-                      setMsgText("");
-                    } else {
-                      setMomentFile(null);
-                      setMomentPreview(null);
-                    }
-                  }}
                   onSetMsgText={setMsgText}
                   onSend={handleSendMessage}
                   onSendVoice={handleSendVoice}
@@ -707,7 +1275,7 @@ const MessagesPage = () => {
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
-                      className="fixed z-50 rounded-[22px] border border-white/10 bg-white/10 backdrop-blur-[24px]"
+                      className="fixed z-50 rounded-2xl border border-white/10 bg-white/10"
                       style={{ left: showDeleteMenu.x, top: showDeleteMenu.y - 10 }}
                     >
                       <button
@@ -735,7 +1303,7 @@ const MessagesPage = () => {
               exit={{ opacity: 0 }}
               className="flex-1 flex items-center justify-center"
             >
-              <div className="rounded-[24px] border border-white/10 bg-white/5 px-6 py-5 text-center backdrop-blur-[24px]">
+              <div className="rounded-3xl border border-white/10 bg-white/5 px-6 py-5 text-center">
                 <div className="h-14 w-14 rounded-full bg-white/8 flex items-center justify-center mx-auto mb-3">
                   <MessageCircle className="h-6 w-6 text-white/50" />
                 </div>

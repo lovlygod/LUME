@@ -120,4 +120,4 @@ English | [Русский](../../docs-ru/PROJECT_UI/STYLE_SYSTEM.ru.md) | [中�
 - [Overview](./OVERVIEW.md)
 - [Layout and Navigation](./LAYOUT_AND_NAV.md)
 - [Messages UI](./MESSAGES_UI.md)
-- [Servers UI](./SERVERS_UI.md)
+- [Groups UI](./GROUPS_UI.md)

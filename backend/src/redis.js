@@ -21,7 +21,8 @@ const CHANNELS = {
   NEW_MESSAGE: 'ws:new_message',
   POST_CREATED: 'ws:post_created',
   NOTIFICATION: 'ws:notification',
-  SERVER_MESSAGE: 'ws:server_message',
+  CHAT_MESSAGE: 'ws:chat_message',
+  CALL_SIGNAL: 'ws:call_signal',
 };
 
 // Singleton инстансы Redis
@@ -29,6 +30,10 @@ let pubClient = null;
 let subClient = null;
 let isConnected = false;
 let isConnecting = false;
+let redisDisabled = false;
+let warnedPublishSkip = false;
+let warnedSubscribeSkip = false;
+let warnedRedisUnavailable = false;
 
 /**
  * Создает Redis подключение с обработкой ошибок
@@ -36,18 +41,25 @@ let isConnecting = false;
  * @returns {Redis}
  */
 function createRedisClient(name) {
+  let retriesExhausted = false;
   const options = {
     host: REDIS_HOST,
     port: REDIS_PORT,
     db: REDIS_DB,
+    lazyConnect: true,
+    maxRetriesPerRequest: 1,
+    connectTimeout: 2000,
     retryStrategy: (times) => {
       if (times > 10) {
-        console.info(`[Redis] ${name}: Max retry attempts reached, stopping reconnect`);
+        if (!warnedRedisUnavailable) {
+          warnedRedisUnavailable = true;
+          console.warn('[Redis] Redis unavailable, switching to local mode');
+        }
+        retriesExhausted = true;
+        redisDisabled = true;
         return null;
       }
-      const delay = Math.min(times * 100, 3000);
-      console.info(`[Redis] ${name}: Reconnecting in ${delay}ms (attempt ${times})`);
-      return delay;
+      return Math.min(times * 100, 3000);
     },
   };
 
@@ -58,6 +70,7 @@ function createRedisClient(name) {
   const client = new Redis(options);
 
   client.on('connect', () => {
+    warnedRedisUnavailable = false;
     console.info(`[Redis] ${name}: Connected to ${REDIS_HOST}:${REDIS_PORT}`);
   });
 
@@ -69,21 +82,29 @@ function createRedisClient(name) {
   });
 
   client.on('error', (err) => {
-    console.error(`[Redis] ${name}: Error -`, err.message);
+    if (retriesExhausted) {
+      if (!redisDisabled) {
+        console.warn('[Redis] Disabled after max retry attempts, using local mode only');
+      }
+      redisDisabled = true;
+      return;
+    }
+    if (!warnedRedisUnavailable) {
+      warnedRedisUnavailable = true;
+      console.warn('[Redis] Redis unavailable, continuing in local mode');
+    }
     if (name === 'pub') {
       isConnected = false;
     }
   });
 
   client.on('close', () => {
-    console.info(`[Redis] ${name}: Connection closed`);
     if (name === 'pub') {
       isConnected = false;
     }
   });
 
-  client.on('reconnecting', (delay) => {
-    console.info(`[Redis] ${name}: Reconnecting in ${delay}ms`);
+  client.on('reconnecting', () => {
     if (name === 'pub') {
       isConnected = false;
     }
@@ -97,6 +118,10 @@ function createRedisClient(name) {
  * @returns {Promise<{pubClient: Redis, subClient: Redis}>}
  */
 async function initRedis() {
+  if (redisDisabled) {
+    return { pubClient: null, subClient: null };
+  }
+
   if (isConnecting || (pubClient && subClient)) {
     return { pubClient, subClient };
   }
@@ -104,8 +129,14 @@ async function initRedis() {
   isConnecting = true;
 
   try {
+    console.info(
+      `[Redis] Config: host=${REDIS_HOST} port=${REDIS_PORT} db=${REDIS_DB} passwordSet=${Boolean(REDIS_PASSWORD)}`
+    );
     pubClient = createRedisClient('pub');
     subClient = createRedisClient('sub');
+
+    await pubClient.connect();
+    await subClient.connect();
 
     // Ждем готовности pub клиента
     await new Promise((resolve, reject) => {
@@ -118,12 +149,18 @@ async function initRedis() {
         resolve();
       });
 
-      pubClient.on('error', (err) => {
+      pubClient.on('error', () => {
         clearTimeout(timeout);
-        console.warn('[Redis] Failed to connect, continuing in local mode');
         resolve(); // Продолжаем работу без Redis
       });
     });
+
+    if (!isConnected) {
+      try { await subClient.quit(); } catch (_) {}
+      try { await pubClient.quit(); } catch (_) {}
+      subClient = null;
+      pubClient = null;
+    }
 
     isConnecting = false;
     console.info('[Redis] Initialization complete');
@@ -142,10 +179,15 @@ async function initRedis() {
  * @returns {Promise<number>}
  */
 async function publish(channel, data) {
-  if (!pubClient || !isConnected) {
-    console.info('[Redis] Publish skipped - not connected');
+  if (redisDisabled || !pubClient || !isConnected) {
+    if (!warnedPublishSkip) {
+      warnedPublishSkip = true;
+      console.info('[Redis] Publish skipped - not connected (local mode)');
+    }
     return 0;
   }
+
+  warnedPublishSkip = false;
 
   try {
     const message = JSON.stringify({
@@ -169,18 +211,34 @@ async function publish(channel, data) {
  * @returns {Promise<void>}
  */
 async function subscribe(channel, handler) {
-  if (!subClient) {
-    console.info('[Redis] Subscribe skipped - no client');
+  if (redisDisabled || !subClient) {
+    if (!warnedSubscribeSkip) {
+      warnedSubscribeSkip = true;
+      console.info('[Redis] Subscribe skipped - no client (local mode)');
+    }
+    return;
+  }
+
+  warnedSubscribeSkip = false;
+
+  if (subClient.status !== 'ready' && subClient.status !== 'connect') {
+    console.info(`[Redis] Subscribe skipped - client status is ${subClient.status}`);
     return;
   }
 
   try {
+    const handlerKey = `${channel}:${handler.name || 'anon'}`;
+    if (subClient._lumeHandlers?.has(handlerKey)) {
+      return;
+    }
+    if (!subClient._lumeHandlers) subClient._lumeHandlers = new Set();
+    subClient._lumeHandlers.add(handlerKey);
+
     await subClient.subscribe(channel);
     subClient.on('message', (subscribedChannel, message) => {
       if (subscribedChannel === channel) {
         try {
           const parsed = JSON.parse(message);
-          // Игнорируем сообщения от этой же ноды
           if (parsed.nodeId === process.pid) {
             return;
           }
@@ -192,7 +250,9 @@ async function subscribe(channel, handler) {
     });
     console.info(`[Redis] Subscribed to ${channel}`);
   } catch (error) {
-    console.error('[Redis] Subscribe error:', error.message);
+    if (!String(error?.message || '').includes('Connection is closed')) {
+      console.error('[Redis] Subscribe error:', error.message);
+    }
   }
 }
 
@@ -251,4 +311,3 @@ module.exports = {
   getPubClient: () => pubClient,
   getSubClient: () => subClient,
 };
-

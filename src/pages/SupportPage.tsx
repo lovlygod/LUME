@@ -31,7 +31,7 @@ const SupportPage = () => {
     <HelpShell title={t("help.support.title")} subtitle={t("help.support.subtitle")}>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <aside className="lg:col-span-3">
-          <div className="sticky top-6 rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <div className="sticky top-6 rounded-3xl border border-white/10 bg-white/5 p-6">
             <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">
               {t("help.support.quick.title")}
             </div>
@@ -60,7 +60,7 @@ const SupportPage = () => {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl"
+            className="rounded-3xl border border-white/10 bg-white/5 p-6"
           >
             <div className="text-sm text-white/60">{t("help.support.form.title")}</div>
             <div className="mt-4 space-y-4">
@@ -151,7 +151,7 @@ const SupportPage = () => {
         </main>
 
         <aside className="lg:col-span-3 space-y-4">
-          <div className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
             <div className="text-sm font-semibold text-white">{t("help.support.side.title")}</div>
             <p className="mt-2 text-sm text-white/60">{t("help.support.side.description")}</p>
             <div className="mt-4 space-y-2">

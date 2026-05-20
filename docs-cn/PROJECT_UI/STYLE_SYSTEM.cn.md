@@ -120,4 +120,4 @@
 - [Overview](./OVERVIEW.cn.md)
 - [Layout and Navigation](./LAYOUT_AND_NAV.cn.md)
 - [Messages UI](./MESSAGES_UI.cn.md)
-- [Servers UI](./SERVERS_UI.cn.md)
+- [Groups UI](./GROUPS_UI.cn.md)

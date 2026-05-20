@@ -1,7 +1,7 @@
 import { MessageCircle, Image as ImageIcon, Smile, Share2, MoreHorizontal, Trash2, Flag, Pin } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { profileAPI, postsAPI, usersAPI } from "@/services/api";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Picker, { Theme } from "emoji-picker-react";
 import { useNavigate } from 'react-router-dom';
@@ -10,7 +10,7 @@ import { normalizeImageUrl } from "@/lib/utils";
 import { getProfileRoute } from "@/lib/profileRoute";
 import { toast } from 'sonner';
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ImageThumb, ImageViewer } from "@/components/media/ImageViewer";
+import FeedPost from "@/components/feed/FeedPost";
 import DOMPurify from "dompurify";
 import { RichText } from "@/components/common/RichText";
 
@@ -20,6 +20,7 @@ interface PostProps {
   userId: string;
   text?: string;
   imageUrl?: string;
+  imageUrls?: string[];
   timestamp: string;
   replies: number;
   resonance: number;
@@ -44,7 +45,7 @@ type ApiComment = {
   verified?: boolean | number;
 };
 
-const Post = ({ id, dataPostId, userId, text, imageUrl, timestamp, replies, resonance, name, username, avatar, verified, isPinned, showPinAction }: PostProps) => {
+const Post = ({ id, dataPostId, userId, text, imageUrl, imageUrls, timestamp, replies, resonance, name, username, avatar, verified, isPinned, showPinAction }: PostProps) => {
   const [user, setUser] = useState<{ id: string; name?: string; username?: string; avatar?: string; verified?: boolean } | null>(null);
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
@@ -70,8 +71,13 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, timestamp, replies, reso
   const isEmojiOpeningRef = useRef(false);
   const [isReporting, setIsReporting] = useState(false);
   const [isPinning, setIsPinning] = useState(false);
-  const [activeImageId, setActiveImageId] = useState<string | null>(null);
-  const [activeImageSrc, setActiveImageSrc] = useState<string | null>(null);
+  const postImages = useMemo(() => {
+    const rawImages = imageUrls && imageUrls.length > 0 ? imageUrls : imageUrl ? [imageUrl] : [];
+    return rawImages
+      .map((url) => normalizeImageUrl(url) || "")
+      .filter((url) => Boolean(url))
+      .slice(0, 5);
+  }, [imageUrl, imageUrls]);
 
   const isOwnPost = currentUser && String(currentUser.id) === String(userId);
 
@@ -344,7 +350,7 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, timestamp, replies, reso
     <LayoutGroup>
       <motion.article
         data-post-id={dataPostId || id}
-        className={`relative isolate rounded-[24px] border border-white/6 bg-white/5 px-5 py-5 backdrop-blur-[24px] shadow-[0_18px_50px_rgba(0,0,0,0.35)] transition-smooth hover:bg-white/6 ${
+        className={`relative isolate rounded-3xl border border-white/10 bg-white/5 px-5 py-5 shadow-[0_18px_50px_rgba(0,0,0,0.35)] transition-smooth hover:bg-white/6 ${
           showPostMenu ? "z-20" : "z-0"
         }`}
         initial={{ opacity: 0, y: 8 }}
@@ -406,21 +412,9 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, timestamp, replies, reso
             )}
 
             {/* Post Image */}
-            {imageUrl && (
-              <div className="mt-3 rounded-[20px] border border-white/10 bg-white/4 p-2">
-                <ImageThumb
-                  imageId={`post-${id}`}
-                  src={normalizeImageUrl(imageUrl) || ''}
-                  alt="Post"
-                  className="max-h-[360px] w-full rounded-[18px] object-cover"
-                  onOpen={(imageId, src) => {
-                    setActiveImageId(imageId);
-                    setActiveImageSrc(src);
-                  }}
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).style.display = 'none';
-                  }}
-                />
+            {postImages.length > 0 && (
+              <div className="mt-3">
+                <FeedPost images={postImages} galleryId={`post-${id}`} />
               </div>
             )}
 
@@ -610,7 +604,7 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, timestamp, replies, reso
                     <motion.button
                       type="submit"
                       disabled={!commentText.trim()}
-                      className="rounded-full px-4 py-2 text-sm text-white/80 bg-white/5 disabled:opacity-50 transition-smooth"
+                      className="btn-glass px-4 py-2 text-sm"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
@@ -683,14 +677,6 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, timestamp, replies, reso
           </div>
         </div>
       </motion.article>
-      <ImageViewer
-        activeImageId={activeImageId}
-        src={activeImageSrc}
-        onClose={() => {
-          setActiveImageId(null);
-          setActiveImageSrc(null);
-        }}
-      />
     </LayoutGroup>
   );
 };

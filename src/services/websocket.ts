@@ -22,6 +22,7 @@ class WebSocketService {
   private eventHandlers: Map<string, Set<WebSocketEventHandler>> = new Map();
   private userId: string | null = null;
   private typingTimers: Map<string, NodeJS.Timeout> = new Map();
+  private subscribedChats: Set<string> = new Set();
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
   private lastPongAt: number | null = null;
 
@@ -52,6 +53,11 @@ class WebSocketService {
         if (this.userId) {
           this.send({ type: 'register', userId: this.userId });
         }
+
+        // Re-subscribe to active chats after reconnect
+        this.subscribedChats.forEach((chatId) => {
+          this.send({ type: 'chat:subscribe', chatId });
+        });
       };
 
       this.ws.onmessage = (event) => {
@@ -128,6 +134,7 @@ class WebSocketService {
       this.ws = null;
     }
     this.userId = null;
+    this.subscribedChats.clear();
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval);
       this.heartbeatInterval = null;
@@ -152,6 +159,17 @@ class WebSocketService {
 
   sendTypingStop(chatId: string): void {
     this.send({ type: 'typing:stop', chatId });
+  }
+
+  // Chat subscriptions
+  subscribeChat(chatId: string): void {
+    this.subscribedChats.add(String(chatId));
+    this.send({ type: 'chat:subscribe', chatId });
+  }
+
+  unsubscribeChat(chatId: string): void {
+    this.subscribedChats.delete(String(chatId));
+    this.send({ type: 'chat:unsubscribe', chatId });
   }
 
   // Read receipts

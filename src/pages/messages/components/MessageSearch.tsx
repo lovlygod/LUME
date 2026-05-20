@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
 import { messagesAPI } from "@/services/api";
 import type { Chat } from "@/types/messages";
 import { normalizeImageUrl } from "@/lib/utils";
@@ -41,6 +42,11 @@ export const MessageSearch = ({ onResultClick, t, chats }: MessageSearchProps) =
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dropdownStyle, setDropdownStyle] = useState<{ top: number; left: number; width: number }>({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
 
   const navigate = useNavigate();
   const searchRef = useRef<HTMLDivElement>(null);
@@ -98,10 +104,36 @@ export const MessageSearch = ({ onResultClick, t, chats }: MessageSearchProps) =
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const updateDropdownPosition = () => {
+      const inputWrap = searchRef.current;
+      if (!inputWrap) return;
+      const rect = inputWrap.getBoundingClientRect();
+      setDropdownStyle({
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+      });
+    };
+
+    updateDropdownPosition();
+    window.addEventListener("resize", updateDropdownPosition);
+    window.addEventListener("scroll", updateDropdownPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updateDropdownPosition);
+      window.removeEventListener("scroll", updateDropdownPosition, true);
+    };
+  }, [isOpen]);
+
   const handleResultClick = (result: SearchResult, chatMatch?: Chat) => {
     // Переход к чату с сообщением
-    const contactId = chatMatch?.userId || result.contact?.id || result.user.id;
-    navigate(`/messages/${contactId}`);
+    const targetChatId = chatMatch?.id || result.chatId;
+    if (targetChatId) {
+      navigate(`/messages/${targetChatId}`);
+    }
     
     // Сохраняем ID сообщения для прокрутки к нему (можно реализовать через context)
     sessionStorage.setItem("highlightMessageId", result.id);
@@ -117,7 +149,11 @@ export const MessageSearch = ({ onResultClick, t, chats }: MessageSearchProps) =
     const diff = now.getTime() - date.getTime();
     const hours = Math.floor(diff / 3600000);
 
+    const timeFormat = (localStorage.getItem("timeFormat") as "12h" | "24h") || "12h";
     if (hours < 24) {
+      if (timeFormat === "24h") {
+        return date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+      }
       return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
     }
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -141,7 +177,7 @@ export const MessageSearch = ({ onResultClick, t, chats }: MessageSearchProps) =
   };
 
   return (
-    <div ref={searchRef} className="relative w-full max-w-md">
+    <div ref={searchRef} className="relative w-full max-w-md text-foreground message-search">
       <div className="relative">
         <input
           type="text"
@@ -170,15 +206,26 @@ export const MessageSearch = ({ onResultClick, t, chats }: MessageSearchProps) =
         )}
       </div>
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="absolute top-full left-0 right-0 mt-2 rounded-[20px] border border-white/10 bg-black/70 backdrop-blur-[24px] shadow-xl overflow-hidden z-50"
-          >
+      {typeof document !== "undefined" &&
+        createPortal(
+          <AnimatePresence>
+            {isOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="fixed rounded-[20px] border border-white/20 shadow-2xl ring-1 ring-white/10 overflow-hidden z-[120]"
+                style={{
+                  top: `${dropdownStyle.top}px`,
+                  left: `${dropdownStyle.left}px`,
+                  width: `${dropdownStyle.width}px`,
+                  backdropFilter: "blur(98px)",
+                  WebkitBackdropFilter: "blur(98px)",
+                  background: "var(--background)",
+                }}
+              >
+                <div className="relative bg-transparent">
             {error ? (
               <div className="px-4 py-3 text-sm text-red-200">
                 {error}
@@ -201,7 +248,7 @@ export const MessageSearch = ({ onResultClick, t, chats }: MessageSearchProps) =
                     <div className="flex items-start gap-3">
                       {/* Аватар контакта */}
                         <img
-                          src={normalizeImageUrl(result.user.avatar)}
+                          src={normalizeImageUrl(result.user.avatar || undefined) || undefined}
                           alt={result.user.name}
                           className="w-10 h-10 rounded-full object-cover flex-shrink-0"
                         />
@@ -233,7 +280,7 @@ export const MessageSearch = ({ onResultClick, t, chats }: MessageSearchProps) =
                         <div className="mt-1 text-xs text-white/40">
                           {t("messages.inChat") || "В чате"} с{" "}
                           <span className="text-white/60">
-                            {chatMatch?.name || result.contact?.name || result.user.name}
+                            {chatMatch?.title || result.contact?.name || result.user.name}
                           </span>
                         </div>
                       </div>
@@ -242,9 +289,12 @@ export const MessageSearch = ({ onResultClick, t, chats }: MessageSearchProps) =
                 )})}
               </div>
             )}
-          </motion.div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
         )}
-      </AnimatePresence>
     </div>
   );
 };

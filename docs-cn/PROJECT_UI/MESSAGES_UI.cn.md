@@ -2,7 +2,7 @@
 
 中文 | [Русский](../../docs-ru/PROJECT_UI/MESSAGES_UI.ru.md) | [English](../../docs/PROJECT_UI/MESSAGES_UI.md)
 
-**最后更新：** 2026-03-11
+**最后更新：** 2026-05-19
 
 ---
 
@@ -20,22 +20,22 @@ Messages 提供实时的一对一私聊。
 ## 页面结构
 
 ```
-Chat List（左）
-Chat Panel（右）
+聊天列表（左）
+聊天面板（右）
 ```
 
 ---
 
-## Chat list
+## 聊天列表
 
 **文件：** `src/pages/messages/components/ChatList.tsx`
 
-- 搜索输入
-- 聊天项 + 未读 badge
+- 搜索输入框
+- 聊天项 + 未读计数 badge
 
 ---
 
-## Chat panel
+## 聊天面板
 
 **文件：** `src/pages/messages/components/ChatPanel.tsx`
 
@@ -51,9 +51,33 @@ Chat Panel（右）
 
 - 支持回复与附件
 - 自己的消息显示已读回执
-- 输入状态
+- 输入状态指示器
 - 语音消息（录制 + 播放）
-- “瞬间”消息（TTL + 已读跟踪）
+- "瞬间"消息（TTL + 已读跟踪）
+- **NPM Package Preview** — 自动识别 `npm <package>` 命令
+
+---
+
+## NPM Package Preview（NPM 包预览）
+
+**检测：** `src/utils/npmDetector.ts`
+
+- 模式：`npm <package>`（例如 `npm react`、`npm express`、`npm @types/node`）
+- 正则表达式：`/^npm\s+([@a-z0-9-/]+)/i`
+
+**组件：** `src/components/npm/NpmPackageCard.tsx`
+
+- Glass panel UI（毛玻璃面板）
+- 显示：包名、版本、描述、npmjs.com 链接
+- 加载时显示骨架屏
+- 未找到包时显示 fallback
+
+**后端：** `backend/src/npm.js`
+
+- 接口：`GET /api/npm/:packageName`
+- 请求：`https://registry.npmjs.org/:packageName`
+- 返回：`{ name, version, description, url }`
+- 内存缓存（15 分钟 TTL）
 
 ---
 
@@ -74,12 +98,12 @@ Chat Panel（右）
 | 状态 | 行为 |
 |------|------|
 | Loading | Skeleton 列表 |
-| Empty | “No chats yet” 占位 |
+| Empty | "暂无聊天" 占位 |
 | Error | 重试按钮 |
 
 ---
 
-## Hooks
+## Hooks（钩子）
 
 - `useChats`
 - `useChatMessages`
@@ -124,4 +148,4 @@ Chat Panel（右）
 
 - [Overview](./OVERVIEW.cn.md)
 - [Style System](./STYLE_SYSTEM.cn.md)
-- [Servers UI](./SERVERS_UI.cn.md)
+- [Groups UI](./GROUPS_UI.cn.md)

@@ -10,7 +10,7 @@ const MainLayout = () => {
     pathname === "/privacy-policy" ||
     pathname === "/terms-of-service" ||
     pathname === "/cookie-policy";
-  const hideRightSidebar = pathname.startsWith("/messages");
+  const hideRightSidebar = pathname.startsWith("/messages") || pathname.startsWith("/invite");
 
   return (
     <AppLayout>
@@ -22,7 +22,7 @@ const MainLayout = () => {
         <main
           className={`flex-1 overflow-y-auto min-h-0 ${
             isPolicyPage ? "px-6" : "px-9"
-          } ${hideRightSidebar ? "max-w-none" : "max-w-[640px]"} ${
+          } ${hideRightSidebar ? "max-w-none" : "max-w-[720px]"} ${
             isPolicyPage ? "mx-auto w-full max-w-[720px]" : ""
           }`}
         >

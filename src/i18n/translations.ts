@@ -1,14 +1,22 @@
 import en from './locales/en.json';
 import ru from './locales/ru.json';
+import zh from './locales/zh.json';
+import es from './locales/es.json';
+import ptBR from './locales/pt-BR.json';
 
 export const translations = {
   en,
-  ru
+  ru,
+  zh,
+  es,
+  'pt-BR': ptBR
 };
 
-export type Language = 'ru' | 'en';
+export type Language = 'ru' | 'en' | 'zh' | 'es' | 'pt-BR';
 type TranslationParamValue = string | number | boolean;
-type TranslationNode = Record<string, TranslationNode | string>;
+interface TranslationNode {
+  [key: string]: TranslationNode | string;
+}
 
 // Flatten nested translation objects for easy access with dot notation
 function flattenObject(obj: TranslationNode, prefix = ''): Record<string, string> {
@@ -19,8 +27,8 @@ function flattenObject(obj: TranslationNode, prefix = ''): Record<string, string
     const value = obj[key];
     if (typeof value === 'object' && value !== null) {
       Object.assign(result, flattenObject(value, fullKey));
-    } else {
-      result[fullKey] = value;
+    } else if (typeof value === 'string') {
+      result[fullKey] = value as string;
     }
   }
   
@@ -30,7 +38,10 @@ function flattenObject(obj: TranslationNode, prefix = ''): Record<string, string
 // Create flat translations for backward compatibility
 const flatTranslations = {
   ru: flattenObject(ru),
-  en: flattenObject(en)
+  en: flattenObject(en),
+  zh: flattenObject(zh),
+  es: flattenObject(es),
+  'pt-BR': flattenObject(ptBR)
 };
 
 // Also keep original nested structure for namespaced access

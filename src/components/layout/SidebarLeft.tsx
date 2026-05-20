@@ -4,11 +4,12 @@ import {
   Home,
   Compass,
   MessageCircle,
+  Briefcase,
+  FolderKanban,
   User,
   LogOut,
   Settings,
   ChevronUp,
-  Users,
   Bell,
 } from "lucide-react";
 import { useAuth, isVerifiedUser, isDeveloper, isDeveloperCrown, VerifiedBadge, DeveloperBadge, DeveloperCrownBadge } from "@/contexts/AuthContext";
@@ -20,6 +21,7 @@ import NotificationsPanel from "@/components/NotificationsPanel";
 import { Loader } from "@/components/ui/Loader";
 import { wsService } from "@/services/websocket";
 import { apiRequest } from "@/services/api";
+import ProtectedLogo from "@/components/ui/ProtectedLogo";
 
 const SidebarLeft = () => {
   const location = useLocation();
@@ -34,7 +36,7 @@ const SidebarLeft = () => {
 
   const handleHomeClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
-    if (location.pathname === "/feed") {
+    if (location.pathname === "/home" || location.pathname === "/feed") {
       // Если уже на главной, скроллим main элемент и обновляем ленту
       const mainElement = document.querySelector('main.overflow-y-auto');
       if (mainElement) {
@@ -47,22 +49,24 @@ const SidebarLeft = () => {
       if (mainElement) {
         mainElement.scrollTo({ top: 0, behavior: "smooth" });
       }
-      navigate("/feed");
+      navigate("/home");
     }
   };
 
   const authNavItems = [
-    { to: "/feed", icon: Home, label: t("home") },
-    { to: "/messages", icon: MessageCircle, label: t("messages") },
-    { to: "/explore", icon: Compass, label: t("explore") },
-    { to: "/servers", icon: Users, label: t("servers.title") },
+    { to: "/home", icon: Home, label: t("navigation.home") },
+    { to: "/workspaces", icon: Briefcase, label: t("navigation.workspaces") },
+    { to: "/projects", icon: FolderKanban, label: t("navigation.projects") },
+    { to: "/messages", icon: MessageCircle, label: t("navigation.messages") },
+    { to: "/explore", icon: Compass, label: t("navigation.explore") },
+    { to: "/profile", icon: User, label: t("navigation.profile") },
   ];
 
   const unauthNavItems = [
-    { to: "/feed", icon: Home, label: t("home") },
-    { to: "/explore", icon: Compass, label: t("explore") },
-    { to: "/login", icon: User, label: t("login") },
-    { to: "/register", icon: User, label: t("register") },
+    { to: "/home", icon: Home, label: t("navigation.home") },
+    { to: "/explore", icon: Compass, label: t("navigation.explore") },
+    { to: "/login", icon: User, label: t("navigation.login") },
+    { to: "/register", icon: User, label: t("navigation.register") },
   ];
 
   const handleLogout = () => {
@@ -158,11 +162,9 @@ const SidebarLeft = () => {
       <aside className="hidden h-screen w-[260px] shrink-0 flex-col gap-2 py-6 pr-6 lg:flex">
         {/* Logo */}
         <div className="mb-6 px-2">
-          <Link to="/feed" className="inline-block">
+          <Link to="/home" className="inline-block">
             <div className="flex items-center gap-2">
-              <div className="relative">
-                <Loader size={40} />
-              </div>
+              <ProtectedLogo className="h-10 w-10 rounded-xl" />
               <div>
                 <h1 className="font-semibold text-lg tracking-[0.3em] text-white">
                   LUME
@@ -176,7 +178,7 @@ const SidebarLeft = () => {
         <nav className="flex flex-1 flex-col gap-1">
           {getNavigationItems().map((item) => {
             const isActive = location.pathname === item.to;
-            const isHome = item.to === "/feed";
+            const isHome = item.to === "/home";
 
             if (isHome) {
               return (
@@ -247,7 +249,7 @@ const SidebarLeft = () => {
               <Bell className="h-5 w-5 text-white/60" />
               <span>{t('notifications.title') || 'Уведомления'}</span>
               {unreadNotifications > 0 && (
-                <span className="absolute right-4 top-2 h-5 min-w-[1.25rem] px-1.5 flex items-center justify-center text-xs font-bold bg-red-500 text-white rounded-full">
+                <span className={`absolute right-3 top-1/2 -translate-y-1/2 h-5 flex items-center justify-center text-xs font-bold bg-red-500 text-white rounded-full ${unreadNotifications > 9 ? 'min-w-[1.25rem] px-1' : 'w-5 px-0'}`}>
                   {unreadNotifications > 99 ? '99+' : unreadNotifications}
                 </span>
               )}
@@ -362,10 +364,10 @@ const SidebarLeft = () => {
 
       {/* Mobile Bottom Navigation */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-safe pt-2">
-        <div className="flex items-center justify-between gap-2 rounded-[26px] border border-white/10 bg-white/5 px-4 py-2.5 backdrop-blur-[24px] shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
+        <div className="flex items-center justify-between gap-2 rounded-[26px] border border-white/10 bg-white/5 px-4 py-2.5 shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
           {getNavigationItems().map((item) => {
             const isActive = location.pathname === item.to;
-            const isHome = item.to === "/feed";
+            const isHome = item.to === "/home";
             const buttonClasses = `relative flex h-11 w-11 items-center justify-center rounded-full transition-smooth ${
               isActive ? "bg-white/12 text-white" : "text-white/60 hover:text-white"
             }`;
@@ -395,7 +397,7 @@ const SidebarLeft = () => {
               <Bell className="h-5 w-5" />
               <span className="sr-only">{t('notifications.title') || 'Уведомления'}</span>
               {unreadNotifications > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 flex items-center justify-center text-[10px] font-bold bg-red-500 text-white rounded-full">
+                <span className={`absolute -top-0.5 -right-0.5 h-4 flex items-center justify-center text-[10px] font-bold bg-red-500 text-white rounded-full leading-none ${unreadNotifications > 9 ? 'min-w-4 px-0.5' : 'w-4 px-0'}`}>
                   {unreadNotifications > 99 ? '99+' : unreadNotifications}
                 </span>
               )}

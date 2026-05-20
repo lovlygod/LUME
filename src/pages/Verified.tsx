@@ -1,29 +1,38 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { profileAPI, verificationAPI } from '@/services/api';
-import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
-import verificationBanner from '@/public/baner-verified.png';
+import { BadgeCheck, Github, Globe, CheckCircle, Clock, XCircle, Shield, Crown, Star, Code, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+
+type VerificationStatus = {
+  status?: 'pending' | 'approved' | 'rejected' | null;
+  reviewNotes?: string;
+};
+
+const badgeInfo = [
+  { id: 'founder', label: 'Founder', description: 'Started a project or company', icon: Crown },
+  { id: 'developer', label: 'Developer', description: 'Has published code on GitHub', icon: Code },
+  { id: 'designer', label: 'Designer', description: 'Has design portfolio', icon: Star },
+  { id: 'open_source', label: 'Open Source', description: 'Contributed to open source', icon: Users },
+  { id: 'maintainer', label: 'Maintainer', description: 'Maintains a project', icon: Shield },
+  { id: 'verified_builder', label: 'Verified Builder', description: 'Manually verified by LUME team', icon: BadgeCheck },
+];
 
 const Verified = () => {
-  const { toast } = useToast();
   const { t } = useLanguage();
-  type VerifiedUser = { id: string; username: string; verified: boolean };
-  type VerificationStatus = {
-    status?: 'pending' | 'approved' | 'rejected' | string;
-    createdAt?: string;
-    reviewNotes?: string;
-  };
-  const [user, setUser] = useState<VerifiedUser | null>(null);
+  const navigate = useNavigate();
+  const [user, setUser] = useState<{ id: string; username: string; name: string; verified: boolean } | null>(null);
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    platform: '',
-    reason: '',
-    videoUrl: ''
+    githubUrl: '',
+    websiteUrl: '',
+    projectName: '',
+    projectDescription: '',
   });
-  const [platformOpen, setPlatformOpen] = useState(false);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -31,399 +40,229 @@ const Verified = () => {
         const userResponse = await profileAPI.getCurrentUser();
         setUser(userResponse.user);
 
-        const statusResponse = await verificationAPI.getVerificationStatus(userResponse.user.id);
-        setVerificationStatus(statusResponse.verificationStatus);
+        if (!userResponse.user.verified) {
+          try {
+            const statusRes = await verificationAPI.getVerificationStatus(userResponse.user.id);
+            setVerificationStatus(statusRes.verificationStatus);
+          } catch (e) {
+            console.error('Failed to get verification status:', e);
+          }
+        }
       } catch (error) {
-        console.error('Failed to load user data:', error);
-        toast({
-          title: t("common.error"),
-          description: t("toast.loadVerificationError"),
-          variant: 'destructive'
-        });
+        console.error('Failed to load user:', error);
       } finally {
         setLoading(false);
       }
     };
 
     loadUserData();
-  }, [toast]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
+    if (!user) return;
 
+    setSubmitting(true);
     try {
       await verificationAPI.submitVerificationRequest({
-        ...formData,
-        tiktokVideoUrl: formData.videoUrl
+        reason: JSON.stringify(formData),
+        tiktokVideoUrl: formData.githubUrl,
       });
-      toast({
-        title: t("common.success"),
-        description: t("verified.submitSuccess")
-      });
-
-      const statusResponse = await verificationAPI.getVerificationStatus(user.id);
-      setVerificationStatus(statusResponse.verificationStatus);
-
-      setFormData({ platform: '', reason: '', videoUrl: '' });
+      toast.success(t('verified.requestSubmitted'));
+      const statusRes = await verificationAPI.getVerificationStatus(user.id);
+      setVerificationStatus(statusRes.verificationStatus);
     } catch (error: unknown) {
-      toast({
-        title: t("common.error"),
-        description: error instanceof Error ? error.message : t("verified.submitError"),
-        variant: 'destructive'
-      });
+      const err = error as { message?: string };
+      toast.error(err?.message || t('verified.requestError'));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const platforms = [
-    {
-      id: 'tiktok',
-      name: t("verified.platformTikTok"),
-      description: t("verified.platformTikTokDesc"),
-      icon: (
-        <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
-        </svg>
-      ),
-      color: 'from-pink-500 to-cyan-500'
-    },
-    {
-      id: 'instagram',
-      name: t("verified.platformInstagram"),
-      description: t("verified.platformInstagramDesc"),
-      icon: (
-        <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6m9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8 1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3z"/>
-        </svg>
-      ),
-      color: 'from-purple-500 to-orange-500'
-    },
-    {
-      id: 'youtube',
-      name: t("verified.platformYoutube"),
-      description: t("verified.platformYoutubeDesc"),
-      icon: (
-        <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-        </svg>
-      ),
-      color: 'from-red-600 to-red-500'
-    }
-  ];
-
-  const getPlaceholder = () => {
-    switch (formData.platform) {
-      case 'tiktok':
-        return t("verified.tiktokPlaceholder");
-      case 'instagram':
-        return t("verified.instagramPlaceholder");
-      case 'youtube':
-        return t("verified.youtubePlaceholder");
-      default:
-        return t("verified.videoUrlLabel");
-    }
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-white">{t("common.loading")}</div>
+      <div className="flex items-center justify-center py-20">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-white/30 border-t-transparent" />
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen">
-      <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
-        {/* Баннер */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="relative select-none pointer-events-auto"
-          onContextMenu={(e) => e.preventDefault()}
-        >
-          <img
-            src={verificationBanner}
-            alt={t("verified.bannerAlt")}
-            className="w-full h-auto rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.35)] pointer-events-none"
-            style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}
-            draggable={false}
-            onDragStart={(e) => e.preventDefault()}
-            onContextMenu={(e) => e.preventDefault()}
-          />
-          <div className="absolute inset-0 rounded-2xl bg-white/5 blur-xl -z-10 pointer-events-none" />
-        </motion.div>
+  if (!user) {
+    return null;
+  }
 
-        {/* Статус верификации */}
-        {user?.verified ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="bg-white/8 border border-white/10 rounded-[24px] p-5"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+  return (
+    <div className="space-y-8 py-6 text-white">
+      <div className="text-center">
+        <h1 className="text-3xl font-semibold">{t('verified.pageTitle')}</h1>
+        <p className="mt-2 text-white/60">{t('verified.pageSubtitle')}</p>
+      </div>
+
+      {user.verified ? (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="rounded-3xl border border-green-500/30 bg-green-500/10 p-8 text-center"
+        >
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-green-500/20">
+            <BadgeCheck className="h-10 w-10 text-green-400" />
+          </div>
+          <h2 className="text-xl font-semibold text-green-400">You are a Verified Builder</h2>
+          <p className="mt-2 text-white/60">Your profile shows the verified badge, helping you stand out in the community.</p>
+        </motion.div>
+      ) : verificationStatus?.status === 'pending' ? (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="rounded-3xl border border-yellow-500/30 bg-yellow-500/10 p-8 text-center"
+        >
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-yellow-500/20">
+            <Clock className="h-10 w-10 text-yellow-400" />
+          </div>
+          <h2 className="text-xl font-semibold text-yellow-400">{t('verified.statusPending')}</h2>
+          <p className="mt-2 text-white/60">Your verification request is being reviewed by our team.</p>
+          {verificationStatus?.reviewNotes && (
+            <p className="mt-4 text-sm text-white/80">Note: {verificationStatus.reviewNotes}</p>
+          )}
+        </motion.div>
+      ) : verificationStatus?.status === 'rejected' ? (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="rounded-3xl border border-red-500/30 bg-red-500/10 p-8 text-center"
+        >
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-red-500/20">
+            <XCircle className="h-10 w-10 text-red-400" />
+          </div>
+          <h2 className="text-xl font-semibold text-red-400">{t('verified.statusRejected')}</h2>
+          <p className="mt-2 text-white/60">Your verification request was not approved.</p>
+          {verificationStatus?.reviewNotes && (
+            <p className="mt-4 text-sm text-white/80">Reason: {verificationStatus.reviewNotes}</p>
+          )}
+        </motion.div>
+      ) : (
+        <>
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+            <h2 className="mb-4 text-xl font-semibold">{t('verified.benefitsTitle')}</h2>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <BadgeCheck className="mb-2 h-6 w-6 text-blue-400" />
+                <p className="font-medium">{t('verified.benefitBadge')}</p>
+                <p className="text-sm text-white/60">Blue badge on your profile</p>
               </div>
-              <div>
-                <h3 className="font-semibold text-white">{t("verified.verificationStatus")}</h3>
-                <p className="text-white/80 text-sm">
-                  {user.username === '@CEO'
-                    ? t("verified.verifiedAsCEO")
-                    : t("verified.verifiedAsUser")}
-                </p>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <Crown className="mb-2 h-6 w-6 text-yellow-400" />
+                <p className="font-medium">Priority visibility</p>
+                <p className="text-sm text-white/60">Appear higher in Explore</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <Shield className="mb-2 h-6 w-6 text-green-400" />
+                <p className="font-medium">Trust signals</p>
+                <p className="text-sm text-white/60">More trust from teammates</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <Star className="mb-2 h-6 w-6 text-purple-400" />
+                <p className="font-medium">{t('verified.benefitFeatures')}</p>
+                <p className="text-sm text-white/60">Early access to new features</p>
               </div>
             </div>
-          </motion.div>
-        ) : (
-          <>
-            {verificationStatus?.status === 'pending' && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="bg-white/6 border border-white/10 rounded-[24px] p-5"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+            <h2 className="mb-4 text-xl font-semibold">{t('verified.stepsTitle')}</h2>
+            <div className="space-y-4">
+              {badgeInfo.map((badge, index) => {
+                const Icon = badge.icon;
+                return (
+                  <div key={badge.id} className="flex items-start gap-4 rounded-xl border border-white/10 bg-white/5 p-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Step {index + 1}: {badge.label}</p>
+                      <p className="text-sm text-white/60">{badge.description}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-white font-medium">{t("verified.requestPending")}</p>
-                    <p className="text-white/60 text-sm mt-1">
-                      {t("verified.submittedOn")}: {new Date(verificationStatus.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+            <h2 className="mb-4 text-xl font-semibold">Apply for Verification</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm text-white/70">GitHub Profile URL</label>
+                <div className="flex items-center gap-2 glass-input px-3">
+                  <Github className="h-4 w-4 text-white/40" />
+                  <input
+                    type="text"
+                    placeholder="https://github.com/username"
+                    value={formData.githubUrl}
+                    onChange={(e) => setFormData({ ...formData, githubUrl: e.target.value })}
+                    className="w-full bg-transparent text-white placeholder-white/40 focus:outline-none"
+                  />
                 </div>
-              </motion.div>
-            )}
-
-            {verificationStatus?.status === 'rejected' && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="bg-white/6 border border-white/10 rounded-[24px] p-5"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                    <svg className="w-6 h-6 text-red-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-red-200 font-medium">{t("verified.requestRejected")}</p>
-                    <p className="text-red-200/80 text-sm mt-1">
-                      {t("verified.rejectionReason")}: {verificationStatus.reviewNotes || t("verified.noReason")}
-                    </p>
-                  </div>
+              </div>
+              <div>
+                <label className="mb-2 block text-sm text-white/70">Website (optional)</label>
+                <div className="flex items-center gap-2 glass-input px-3">
+                  <Globe className="h-4 w-4 text-white/40" />
+                  <input
+                    type="text"
+                    placeholder="https://your-project.com"
+                    value={formData.websiteUrl}
+                    onChange={(e) => setFormData({ ...formData, websiteUrl: e.target.value })}
+                    className="w-full bg-transparent text-white placeholder-white/40 focus:outline-none"
+                  />
                 </div>
-              </motion.div>
-            )}
+              </div>
+              <div>
+                <label className="mb-2 block text-sm text-white/70">Your Project (optional)</label>
+                <input
+                  type="text"
+                  placeholder="Project name"
+                  value={formData.projectName}
+                  onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
+                  className="glass-input w-full px-5 py-3 text-white"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm text-white/70">About your work</label>
+                <textarea
+                  placeholder="Tell us about your projects and experience..."
+                  value={formData.projectDescription}
+                  onChange={(e) => setFormData({ ...formData, projectDescription: e.target.value })}
+                  className="glass-input w-full px-5 py-3 text-white"
+                  rows={3}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={submitting || !formData.githubUrl}
+                className="btn-glass w-full py-3"
+              >
+                {submitting ? 'Submitting...' : 'Submit for Verification'}
+              </button>
+            </form>
+          </div>
+        </>
+      )}
 
-            {(!verificationStatus || verificationStatus.status !== 'pending') && (
-              <>
-                {/* Как получить верификацию */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                  className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-[24px]"
-                >
-                  <h2 className="text-xl font-semibold text-white mb-4">{t("verified.howToGet")}</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      { step: '1', title: t("verified.step1"), desc: t("verified.step1Desc") },
-                      { step: '2', title: t("verified.step2"), desc: t("verified.step2Desc") },
-                      { step: '3', title: t("verified.step3"), desc: t("verified.step3Desc") },
-                      { step: '4', title: t("verified.step4"), desc: t("verified.step4Desc") },
-                    ].map((item, index) => (
-                      <motion.div
-                        key={item.step}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: 0.1 * index }}
-                        className="flex gap-3 p-4 rounded-[22px] bg-white/6 border border-white/10"
-                      >
-                        <div className="w-8 h-8 rounded-full bg-white/12 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-                          {item.step}
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-white text-sm">{item.title}</h3>
-                          <p className="text-secondary text-xs mt-1">{item.desc}</p>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
-
-                {/* Поддерживаемые платформы */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                  className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-[24px]"
-                >
-                  <h2 className="text-xl font-semibold text-white mb-4">{t("verified.platforms")}</h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {platforms.map((platform) => (
-                      <motion.div
-                        key={platform.id}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className={`p-4 rounded-[22px] bg-white/6 border border-white/10 cursor-pointer transition-smooth ${
-                          formData.platform === platform.id ? 'bg-white/12' : ''
-                        }`}
-                        onClick={() => setFormData({ ...formData, platform: platform.id })}
-                      >
-                        <div className="text-white/80 mb-2">{platform.icon}</div>
-                        <h3 className="font-semibold text-white text-sm">{platform.name}</h3>
-                        <p className="text-secondary text-xs mt-1">{platform.description}</p>
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
-
-                {/* Требования */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.4 }}
-                  className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-[24px]"
-                >
-                  <h2 className="text-xl font-semibold text-white mb-4">{t("verified.requirements")}</h2>
-                  <ul className="space-y-3">
-                    {[
-                      t("verified.requirement1"),
-                      t("verified.requirement2"),
-                      t("verified.requirement3"),
-                      t("verified.requirement4"),
-                      t("verified.requirement5"),
-                    ].map((req, index) => (
-                      <motion.li
-                        key={index}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: 0.1 * index }}
-                        className="flex items-start gap-3"
-                      >
-                        <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        <span className="text-sm text-secondary">{req}</span>
-                      </motion.li>
-                    ))}
-                  </ul>
-                </motion.div>
-
-                {/* Форма заявки */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.5 }}
-                >
-                  <form onSubmit={handleSubmit} id="verification-form" className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-[24px] space-y-5">
-                    <div>
-                      <label htmlFor="platform" className="block text-sm font-medium text-white mb-2">
-                        {t("verified.platformLabel")}
-                      </label>
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() => setPlatformOpen((prev) => !prev)}
-                          className="w-full px-4 py-3 rounded-[22px] border border-white/10 bg-black/90 text-left text-white focus:outline-none focus:ring-1 focus:ring-white/20"
-                        >
-                          <span className={formData.platform ? "text-white" : "text-white/50"}>
-                            {formData.platform
-                              ? platforms.find((p) => p.id === formData.platform)?.name
-                              : t("verified.platformSelect")}
-                          </span>
-                          <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-white/60">▾</span>
-                        </button>
-                        {platformOpen && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -6, scale: 0.98 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            transition={{ duration: 0.18, ease: 'easeOut' }}
-                            className="absolute z-20 mt-2 w-full overflow-hidden rounded-[22px] border border-white/10 bg-black/95 backdrop-blur-[24px]"
-                          >
-                            {platforms.map((platform) => (
-                              <button
-                                key={platform.id}
-                                type="button"
-                                onClick={() => {
-                                  setFormData({ ...formData, platform: platform.id });
-                                  setPlatformOpen(false);
-                                }}
-                                className={`w-full px-4 py-3 text-left text-sm text-white transition-smooth hover:bg-white/5 ${
-                                  formData.platform === platform.id ? "bg-white/10" : ""
-                                }`}
-                              >
-                                {platform.name}
-                              </button>
-                            ))}
-                          </motion.div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label htmlFor="videoUrl" className="block text-sm font-medium text-white mb-2">
-                        {t("verified.videoUrlLabel")}
-                      </label>
-                      <input
-                        type="url"
-                        id="videoUrl"
-                        value={formData.videoUrl}
-                        onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
-                        placeholder={getPlaceholder()}
-                        className="w-full px-4 py-3 rounded-[22px] border border-white/10 bg-black/40 text-white placeholder:text-white/35 focus:outline-none focus:ring-1 focus:ring-white/20"
-                        required
-                      />
-                      <p className="text-xs text-secondary mt-1.5">{t("verified.videoUrlHint")}</p>
-                    </div>
-
-                    <div>
-                      <label htmlFor="reason" className="block text-sm font-medium text-white mb-2">
-                        {t("verified.reasonLabel")}
-                      </label>
-                      <textarea
-                        id="reason"
-                        value={formData.reason}
-                        onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                        placeholder={t("verified.reasonPlaceholder")}
-                        className="w-full px-4 py-3 rounded-[22px] border border-white/10 bg-black/40 text-white placeholder:text-white/35 focus:outline-none focus:ring-1 focus:ring-white/20 min-h-[110px] resize-none"
-                        required
-                        maxLength={500}
-                      />
-                      <p className="text-xs text-secondary mt-1.5">{formData.reason.length}/500 {t("feed.characterLimit")}</p>
-                    </div>
-
-                    <motion.button
-                      type="submit"
-                      disabled={submitting || !formData.platform || !formData.reason || !formData.videoUrl}
-                      className="w-full py-3.5 rounded-full bg-white/10 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                      whileHover={!submitting && formData.platform && formData.reason && formData.videoUrl ? { scale: 1.02 } : {}}
-                      whileTap={!submitting && formData.platform && formData.reason && formData.videoUrl ? { scale: 0.98 } : {}}
-                    >
-                      {submitting ? t("verified.submitting") : t("verified.submit")}
-                    </motion.button>
-                  </form>
-                </motion.div>
-              </>
-            )}
-          </>
-        )}
+      <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+        <h2 className="mb-4 text-lg font-semibold">{t('verified.verifiedUsersTitle')}</h2>
+        <p className="text-sm text-white/60">{t('verified.verifiedUsersHint')}</p>
+        <div className="mt-4 flex flex-wrap gap-4">
+          {badgeInfo.map((badge) => {
+            const Icon = badge.icon;
+            return (
+              <div key={badge.id} className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+                <Icon className="h-4 w-4 text-blue-400" />
+                <span className="text-sm">{badge.label}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

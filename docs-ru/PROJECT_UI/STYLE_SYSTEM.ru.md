@@ -33,4 +33,4 @@ Framer Motion + `transition-smooth`.
 - [Overview](./OVERVIEW.ru.md)
 - [Layout and Navigation](./LAYOUT_AND_NAV.ru.md)
 - [Messages UI](./MESSAGES_UI.ru.md)
-- [Servers UI](./SERVERS_UI.ru.md)
+- [Groups UI](./GROUPS_UI.ru.md)

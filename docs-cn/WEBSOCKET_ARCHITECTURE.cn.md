@@ -2,7 +2,7 @@
 
 中文 | [Русский](../docs-ru/WEBSOCKET_ARCHITECTURE.ru.md) | [English](../docs/WEBSOCKET_ARCHITECTURE.md)
 
-**最后更新：** 2026-03-11
+**最后更新：** 2026-03-19
 **状态：** 已实现并在使用
 
 ---
@@ -62,7 +62,7 @@ REDIS_DB=0
 | `ws:new_message` | `new_message` | 私信消息 |
 | `ws:post_created` | `post_created` | 新帖子 |
 | `ws:notification` | `notification` | 用户通知 |
-| `ws:server_message` | `server_message` | 服务器频道消息 |
+| `ws:chat_message` | `chat_message` | 聊天频道消息 |
 
 **消息格式：**
 
@@ -90,9 +90,9 @@ REDIS_DB=0
 | `typing:start` / `typing:stop` | 输入指示 |
 | `message:delivered` | 送达确认 |
 | `chat:read` | 标记已读 |
-| `server:subscribe` | 订阅服务器更新 |
-| `server:unsubscribe` | 取消订阅 |
-| `server:message_read` | 频道已读回执 |
+| `chat:subscribe` | 订阅聊天更新 |
+| `chat:unsubscribe` | 取消订阅 |
+| `chat:read` | 聊天已读回执 |
 
 **服务器 → 客户端**
 
@@ -120,12 +120,12 @@ REDIS_DB=0
 ```javascript
 sendToUser(userId, event);          // 本地
 broadcast(event);                   // 本地
-broadcastToServer(serverId, event); // 本地
+broadcastToChat(chatId, event); // 本地
 
 sendNewMessage(data);               // Redis 同步
 sendPostCreated(data);              // Redis 同步
 sendNotification(data);             // Redis 同步
-sendServerMessage(data);            // Redis 同步
+sendChatMessage(data);             // Redis 同步
 ```
 
 ---
@@ -198,6 +198,6 @@ GET http://localhost:5000/health
 
 ## 相关文档
 
-- [Servers Module](./SERVERS_MODULE.cn.md)
+- [Groups Module](./GROUPS_MODULE.cn.md)
 - [Error Handling](./ERROR_HANDLING.cn.md)
 - [Features Inventory](./FEATURES_INVENTORY.cn.md)

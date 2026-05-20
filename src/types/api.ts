@@ -14,6 +14,14 @@ export interface User {
   joinDate?: string;
   verified: boolean;
   verificationExpiry?: string;
+  onboardingCompleted?: boolean;
+  primaryRole?: string;
+  goals?: string[];
+  skills?: string[];
+  availability?: string;
+  githubUrl?: string;
+  telegramUsername?: string;
+  portfolioUrl?: string;
 }
 
 export interface VerificationRequest {
@@ -42,6 +50,7 @@ export interface Post {
   userId: string;
   text?: string;
   imageUrl?: string;
+  imageUrls?: string[];
   timestamp: string;
   replies: number;
   reposts: number;
@@ -63,5 +72,4 @@ export interface Comment {
   avatar?: string;
   verified: boolean;
 }
-
 

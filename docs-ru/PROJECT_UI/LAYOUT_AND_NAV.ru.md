@@ -1,8 +1,8 @@
-# Layout и навигация LUME
+# Layout and Navigation (LUME)
 
 [English](../../docs/PROJECT_UI/LAYOUT_AND_NAV.md) | Русский | [中文](../../docs-cn/PROJECT_UI/LAYOUT_AND_NAV.cn.md)
 
-**Последнее обновление:** 2026-03-11
+**Последнее обновление:** 2026-03-19
 
 ---
 
@@ -21,6 +21,9 @@
 **Файл:** `src/components/layout/SidebarRight.tsx`
 
 Скрывается на `/messages` и `/messages/:chatId`.
+
+Видимы на:
+- `/feed`, `/explore`, `/profile`
 
 ---
 

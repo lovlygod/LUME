@@ -72,6 +72,8 @@
   },
   "navigation": {
     "home": "Home",
+    "workspaces": "Workspaces",
+    "projects": "Projects",
     "explore": "Explore",
     "messages": "Messages",
     "profile": "Profile",
@@ -92,7 +94,7 @@
     "enterName": "Enter your name",
     "name": "Name",
     "username": "Username",
-    "chooseUsername": "Choose a username (min 5 chars)",
+    "chooseUsername": "Choose a username (min 3 chars, letters/numbers/_/.)",
     "createPassword": "Create a password",
     "confirmPasswordPlaceholder": "Confirm your password",
     "welcomeBack": "Welcome back",
@@ -104,10 +106,22 @@
     "hasAccount": "Already have an account?",
     "loginError": "Invalid email or password",
     "registerError": "Failed to register",
-    "usernameError": "Username must be at least 5 characters and contain only English letters and numbers",
+    "usernameError": "Username must be at least 3 characters and contain only English letters, numbers, underscore and dot",
     "passwordError": "Password must be at least 6 characters",
     "passwordMismatch": "Passwords do not match",
     "allFieldsRequired": "All fields are required"
+  },
+  "onboarding": {
+    "title": "Onboarding",
+    "step1Title": "Choose your primary role",
+    "step2Title": "Choose skills",
+    "step3Title": "Your goals in LUME",
+    "step4Title": "Finish onboarding",
+    "goalsListToggle": "Goals list",
+    "progressSaved": "Progress is saved automatically",
+    "saving": "Saving...",
+    "continue": "Continue",
+    "complete": "Complete"
   },
   "logout": {
     "title": "Logout",
@@ -118,6 +132,7 @@
   "settings": {
     "title": "Settings",
     "subtitle": "Manage your account preferences",
+    "backToSettings": "Back to settings",
     "appearance": "Appearance",
     "theme": "Theme",
     "themeDescription": "Choose your preferred theme",
@@ -132,6 +147,10 @@
     "snowVariantDots": "Dots",
     "snowVariantFlakes": "Snowflakes",
     "snowVariantHearts": "Hearts",
+    "timeFormat": "Time Format",
+    "timeFormatDescription": "Choose 12-hour or 24-hour format",
+    "timeFormat12": "12-hour",
+    "timeFormat24": "24-hour",
     "privacy": "Privacy",
     "postPrivacy": "Post Privacy",
     "postPrivacyDescription": "Who can see your posts",
@@ -183,12 +202,33 @@
     "chatBackgroundCustomApplied": "Custom background applied",
     "chatBackgroundCustomError": "Failed to upload custom background",
     "doubleClickHeart": "React with ❤️"
+    ,
+    "sections": {
+      "appearance": {
+        "description": "Theme, snow effects, and visual tweaks."
+      },
+      "privacy": {
+        "description": "Control who can see your content and message you."
+      },
+      "chat": {
+        "description": "Double click actions and chat backgrounds."
+      },
+      "language": {
+        "description": "Interface language and locale settings."
+      },
+      "danger": {
+        "description": "Account deletion and sensitive actions."
+      }
+    }
   },
   "stickers": {
     "myStickers": "My Stickers",
     "lumeStickers": "LUME Stickers",
+    "pack": "Pack",
     "empty": "No stickers yet",
     "browsePacks": "Browse sticker packs",
+    "loading": "Loading sticker pack...",
+    "upload": "Upload stickers",
     "packTitleFallback": "Sticker pack",
     "packDescriptionFallback": "Add this sticker pack to your collection.",
     "addPack": "Add Sticker Pack",
@@ -196,6 +236,154 @@
     "packAddError": "Failed to add sticker pack",
     "packRefreshError": "Failed to refresh sticker packs",
     "packLoadError": "Failed to load sticker pack"
+  },
+  "workspaces": {
+    "title": "Workspaces",
+    "common": {
+      "loading": "Loading...",
+      "creating": "Creating...",
+      "joining": "Joining...",
+      "close": "Close"
+    },
+    "errors": {
+      "load": "Failed to load workspaces",
+      "create": "Failed to create workspace",
+      "join": "Failed to join workspace"
+    },
+    "toast": {
+      "created": "Workspace created",
+      "joined": "Joined workspace"
+    },
+    "create": {
+      "title": "Create workspace",
+      "openButton": "New workspace",
+      "submit": "Create workspace"
+    },
+    "join": {
+      "title": "Join by invite",
+      "inviteCode": "Invite code",
+      "submit": "Join"
+    },
+    "list": {
+      "my": "My workspaces",
+      "public": "Public workspaces"
+    },
+    "empty": {
+      "my": "No workspaces yet",
+      "public": "No public workspaces",
+      "projects": "No projects yet",
+      "members": "No members yet",
+      "channels": "No channels yet"
+    },
+    "form": {
+      "name": "Name",
+      "slug": "slug",
+      "description": "Description",
+      "type": "Type",
+      "private": "Private",
+      "public": "Public",
+      "focusTags": "Focus tags (comma separated)"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "channels": "Channels",
+      "projects": "Projects",
+      "members": "Members"
+    },
+    "overview": {
+      "projects": "Projects",
+      "members": "Members"
+    },
+    "channels": {
+      "title": "Channels"
+    },
+    "projects": {
+      "title": "Projects",
+      "create": "Create Project"
+    },
+    "members": {
+      "title": "Members"
+    }
+  },
+  "projects": {
+    "title": "Projects",
+    "common": {
+      "loading": "Loading...",
+      "creating": "Creating...",
+      "close": "Close"
+    },
+    "errors": {
+      "load": "Failed to load projects",
+      "create": "Failed to create project",
+      "update": "Failed to update project"
+    },
+    "toast": {
+      "created": "Project created",
+      "updated": "Project updated"
+    },
+    "create": {
+      "title": "Create project",
+      "openButton": "New project",
+      "submit": "Create project"
+    },
+    "list": {
+      "my": "My projects",
+      "public": "Public projects"
+    },
+    "empty": {
+      "my": "No projects yet",
+      "public": "No public projects",
+      "tasks": "No tasks yet",
+      "members": "No members yet"
+    },
+    "status": {
+      "idea": "Idea",
+      "building": "Building",
+      "testing": "Testing",
+      "launched": "Launched",
+      "paused": "Paused",
+      "archived": "Archived"
+    },
+    "form": {
+      "name": "Name",
+      "slug": "slug",
+      "description": "Description",
+      "visibility": "Visibility",
+      "status": "Status",
+      "public": "Public",
+      "private": "Private",
+      "workspace": "Workspace",
+      "noWorkspace": "No workspace",
+      "stack": "Stack (comma separated)",
+      "tags": "Tags (comma separated)",
+      "github": "GitHub URL",
+      "demo": "Demo URL"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "tasks": "Tasks",
+      "members": "Members",
+      "chat": "Chat"
+    },
+    "tasks": {
+      "title": "Tasks",
+      "create": "Add Task",
+      "todo": "To Do",
+      "inProgress": "In Progress",
+      "review": "Review",
+      "done": "Done",
+      "priority": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
+      "form": {
+        "title": "Title",
+        "description": "Description",
+        "status": "Status",
+        "priority": "Priority"
+      }
+    }
   },
   "sessions": {
     "title": "Active Sessions",
@@ -258,13 +446,87 @@
     "profileNotFoundDesc": "The user you're looking for doesn't exist or you don't have permission to view this profile.",
     "userNotFound": "User not found",
     "noFollowers": "No followers yet",
-    "noFollowing": "Not following anyone yet"
+    "noFollowing": "Not following anyone yet",
+    "available": "Available",
+    "looking": "Looking",
+    "busy": "Busy",
+    "avatarUpdated": "Avatar updated",
+    "avatarError": "Failed to upload avatar"
   },
   "messages": {
     "title": "Messages",
     "selectChat": "Select a chat",
     "chooseConversation": "Choose a conversation from the list",
     "noConversations": "No conversations yet",
+    "createChatTitle": "Create chat",
+    "createChatDescription": "Create a group or channel. You can add members later.",
+    "chatSettingsButton": "Settings",
+    "chatLeaveButton": "Leave",
+    "chatDeleteButton": "Delete",
+    "chatDeleteTitle": "Delete chat?",
+    "chatDeleteDescription": "All messages and data will be deleted. This action cannot be undone.",
+    "chatDeleteConfirm": "Delete",
+    "publicJoinTitle": "Join chat",
+    "publicChannelJoinDescription": "Subscribe to this channel to see messages.",
+    "publicGroupJoinDescription": "Join this group to see messages.",
+    "chatSettingsTitle": "Chat settings",
+    "chatSettingsDescription": "Manage name, avatar, and members",
+    "chatSettingsEmpty": "No chat selected",
+    "chatAvatar": "Avatar",
+    "chatAvatarChoose": "Choose file",
+    "chatAvatarHint": "PNG/JPG up to 5MB",
+    "chatAvatarUploaded": "Avatar updated",
+    "chatAvatarUploadError": "Failed to upload avatar",
+    "chatTitle": "Name",
+    "chatTitleRequired": "Enter a name",
+    "chatUsername": "Username",
+    "chatPublic": "Public chat",
+    "chatPublicHint": "Available via username",
+    "chatSaved": "Changes saved",
+    "chatSaveError": "Failed to save chat",
+    "chatAddMember": "Add member",
+    "chatMemberIdPlaceholder": "User ID",
+    "chatMemberUsernamePlaceholder": "username",
+    "chatMemberIdRequired": "Enter a user ID or username",
+    "chatMemberAdded": "Member added",
+    "chatMemberAddError": "Failed to add member",
+    "chatAddMemberAction": "Add",
+    "chatManageOnlyAdmins": "Only admins can add members",
+    "chatMembersCount": "{count} members",
+    "channelSubscribe": "Subscribe",
+    "channelUnsubscribe": "Unsubscribe",
+    "channelMembers": "Subscribers: {count}",
+    "channelSubscribeToView": "Subscribe to view messages in this channel.",
+    "groupJoin": "Join",
+    "joinRequestSent": "Request sent",
+    "chatInviteLink": "Invite link",
+    "chatInviteRegenerate": "Regenerate",
+    "chatInviteRegenerateError": "Failed to regenerate invite link",
+    "chatUsernameTaken": "Username is already taken",
+    "chatUsernameInvalid": "Username can only contain English letters and numbers and must be at least 5 characters",
+    "chatPublicLink": "Public link",
+    "joinRequests": "Join requests",
+    "joinRequestsEmpty": "No requests",
+    "joinRequestApprove": "Approve",
+    "joinRequestReject": "Reject",
+    "joinRequestApproved": "Request approved",
+    "joinRequestRejected": "Request rejected",
+    "joinRequestReviewError": "Failed to update request",
+    "inviteCopied": "Invite link copied",
+    "createChatType": "Type",
+    "chatTypeGroup": "Group",
+    "chatTypeChannel": "Channel",
+    "createChatName": "Name",
+    "createChatNamePlaceholder": "For example, Team",
+    "createChatUsername": "Username (optional)",
+    "createChatUsernamePlaceholder": "e.g. lume_team",
+    "createChatUsernameRequired": "Username is required for public chats",
+    "createChatUsernamePrivateHint": "Username is disabled for private chats",
+    "createChatPublic": "Public chat",
+    "createChatPublicHint": "Public chats are discoverable by username",
+    "createChatSubmit": "Create",
+    "createChatTitleRequired": "Enter a group or channel name",
+    "createChatError": "Failed to create chat",
     "sendMessage": "Send a message...",
     "send": "Send",
     "sending": "Sending...",
@@ -299,7 +561,19 @@
     "copySuccess": "Message text copied",
     "copyError": "Failed to copy text",
     "copyEmpty": "No text to copy",
-    "replyAction": "Reply"
+    "replyAction": "Reply",
+    "momentSendError": "Failed to send moment",
+    "voiceNoChat": "No chat selected",
+    "voiceSent": "Voice message sent",
+    "voiceSendError": "Failed to send voice message",
+    "momentReplyLabel": "Expiring photo"
+  },
+  "voice": {
+    "record": "Record voice message",
+    "send": "Send",
+    "delete": "Delete",
+    "recordEmpty": "Recording failed, please try again",
+    "microphoneError": "Unable to access microphone"
   },
   "feed": {
     "title": "Home",
@@ -346,26 +620,59 @@
   },
   "explore": {
     "title": "Explore",
-    "subtitle": "Find users and servers",
-    "searchUsers": "Search users...",
-    "searchServers": "Search servers...",
+    "subtitle": "Find builders, projects, and teams",
+    "builders": "Builders",
+    "projects": "Projects",
+    "workspaces": "Workspaces",
+    "lookingForTeam": "Looking for Team",
+    "releases": "Releases",
     "search": "Search",
-    "trending": "Trending",
-    "trendingSignals": "Trending Signals",
-    "suggestedNodes": "Suggested Nodes",
-    "users": "Users",
-    "servers": "Servers",
-    "noUsersFound": "No users found",
-    "noServersFound": "No servers found",
+    "filters": "Filters",
+    "role": "Role",
+    "skill": "Skill",
+    "availability": "Availability",
+    "status": "Status",
+    "noBuildersFound": "No builders found",
+    "noProjectsFound": "No projects found",
+    "noWorkspacesFound": "No workspaces found",
+    "noResults": "No results found",
     "searching": "Searching...",
-    "noTrendingSignals": "No trending signals yet",
-    "noSuggestedNodes": "No suggested nodes available",
     "connect": "Connect",
-    "signals": "signals"
+    "viewProject": "View Project",
+    "joinWorkspace": "Join",
+    "lookingForWork": "Looking for work",
+    "notAvailable": "Not available"
   },
   "verified": {
     "title": "Get Verified",
     "subtitle": "Confirm your status and get an official badge",
+    "pageTitle": "Verification in LUME",
+    "pageSubtitle": "Stand out among other users",
+    "comparisonTitle": "What verification looks like",
+    "comparisonAlt": "Verified vs normal profile",
+    "benefitsTitle": "What verification gives you",
+    "benefitBadge": "Badge next to your name",
+    "benefitSearch": "Priority in search",
+    "benefitTrust": "More trust to your profile",
+    "benefitFeatures": "Access to new features",
+    "stepsTitle": "How to get verified",
+    "stepOne": "Create content about LUME",
+    "stepTwo": "Post it on social media",
+    "stepThree": "Reach 2000 views",
+    "stepFour": "Submit your request",
+    "verifiedUsersTitle": "Verified users",
+    "verifiedUsersHint": "Profiles are clickable",
+    "verifiedUsersEmpty": "No users to show yet",
+    "statusPending": "Request under review",
+    "statusRejected": "Request rejected",
+    "statusVerified": "You are verified",
+    "platformLabelShort": "Platform",
+    "videoUrlPlaceholder": "Video link",
+    "reasonLabelShort": "Why do you want verification",
+    "reasonPlaceholderShort": "Why do you want verification",
+    "submitButton": "Submit request",
+    "submitToast": "Request sent",
+    "minDaysError": "You must be on the platform for at least {days} days to get verified",
     "bannerAlt": "Verification",
     "alreadyVerified": "You are already verified!",
     "requestPending": "Your verification request is pending review.",

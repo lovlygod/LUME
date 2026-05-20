@@ -2,7 +2,7 @@
 
 English | [Русский](../../docs-ru/PROJECT_UI/MESSAGES_UI.ru.md) | [中文](../../docs-cn/PROJECT_UI/MESSAGES_UI.cn.md)
 
-**Last updated:** 2026-03-11
+**Last updated:** 2026-05-19
 
 ---
 
@@ -53,7 +53,31 @@ Chat Panel (right)
 - Shows read receipts for own messages
 - Typing indicator
 - Voice messages (record + playback)
-- Ephemeral “moment” messages with TTL and view tracking
+- Ephemeral "moment" messages with TTL and view tracking
+- **NPM Package Preview** — automatic detection of `npm <package>` commands
+
+---
+
+## NPM Package Preview
+
+**Detection:** `src/utils/npmDetector.ts`
+
+- Pattern: `npm <package>` (e.g., `npm react`, `npm express`, `npm @types/node`)
+- Regex: `/^npm\s+([@a-z0-9-/]+)/i`
+
+**Component:** `src/components/npm/NpmPackageCard.tsx`
+
+- Glass panel UI with hover effects
+- Displays: name, version, description, npmjs link
+- Loading skeleton while fetching
+- Fallback if package not found
+
+**Backend:** `backend/src/npm.js`
+
+- Endpoint: `GET /api/npm/:packageName`
+- Fetches from `https://registry.npmjs.org/:packageName`
+- Returns: `{ name, version, description, url }`
+- In-memory cache (15 min TTL)
 
 ---
 
@@ -124,4 +148,4 @@ Chat Panel (right)
 
 - [Overview](./OVERVIEW.md)
 - [Style System](./STYLE_SYSTEM.md)
-- [Servers UI](./SERVERS_UI.md)
+- [Groups UI](./GROUPS_UI.md)

@@ -33,7 +33,7 @@ const ContactsPage = () => {
     <HelpShell title={t("help.contacts.title")} subtitle={t("help.contacts.subtitle")}>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <aside className="lg:col-span-3">
-          <div className="sticky top-6 rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <div className="sticky top-6 rounded-3xl border border-white/10 bg-white/5 p-6">
             <div className="text-[11px] uppercase tracking-[0.18em] text-white/45">
               {t("help.contacts.nav")}
             </div>
@@ -47,7 +47,7 @@ const ContactsPage = () => {
               <motion.div
                 key={card.key}
                 whileHover={{ y: -2 }}
-                className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl"
+                className="rounded-3xl border border-white/10 bg-white/5 p-6"
               >
                 <div className="flex items-center justify-between">
                   <div>
@@ -61,14 +61,14 @@ const ContactsPage = () => {
                 <div className="mt-4 flex flex-wrap items-center gap-3">
                   <a
                     href={card.actionHref}
-                    className="inline-flex items-center rounded-full bg-white/90 px-4 py-2 text-xs font-semibold text-black"
+                    className="btn-glass px-4 py-2 text-xs"
                   >
                     {card.actionLabel}
                   </a>
                   {card.extraLabel && card.extraHref && (
                     <a
                       href={card.extraHref}
-                      className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/70"
+                      className="btn-glass-outline px-4 py-2 text-xs"
                     >
                       {card.extraLabel}
                     </a>
@@ -80,7 +80,7 @@ const ContactsPage = () => {
         </main>
 
         <aside className="lg:col-span-3 space-y-4">
-          <div className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
             <div className="text-sm font-semibold text-white">{t("help.contacts.side.title")}</div>
             <p className="mt-2 text-sm text-white/60">{t("help.contacts.side.description")}</p>
             <a

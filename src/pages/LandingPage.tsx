@@ -1,7 +1,8 @@
 import { useNavigate, Link } from "react-router-dom";
 import CookieSettingsButton from "@/components/ui/CookieSettingsButton";
 import { Loader } from "@/components/ui/Loader";
-import { ArrowRight, MessageCircle, Search, ShieldCheck, Users, User, Radio } from "lucide-react";
+import ProtectedLogo from "@/components/ui/ProtectedLogo";
+import { ArrowRight, MessageCircle, Search, ShieldCheck, User, Radio } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const LandingPage = () => {
@@ -23,14 +24,6 @@ const LandingPage = () => {
       description: t("landing.features.messages.description"),
       icon: MessageCircle,
       route: "/messages",
-      status: "active",
-    },
-    {
-      key: "servers",
-      title: t("landing.features.servers.title"),
-      description: t("landing.features.servers.description"),
-      icon: Users,
-      route: "/servers",
       status: "active",
     },
     {
@@ -69,14 +62,14 @@ const LandingPage = () => {
 
   return (
     <div className="py-12 lg:py-16">
-      <section className="rounded-[32px] border border-white/8 bg-white/5 backdrop-blur-[24px] px-6 py-12 md:px-12">
+      <section className="rounded-3xl border border-white/10 bg-white/5 p-6 md:p-12">
         <div className="max-w-[720px] space-y-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/70">
+          <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/70">
             <span>{t("landing.hero.pill")}</span>
           </div>
           <h1 className="text-4xl font-semibold leading-tight md:text-5xl">
             <span className="inline-flex items-center gap-1">
-              <Loader size={42} />
+              <ProtectedLogo className="h-11 w-11 rounded-xl" />
               <span>LUME</span>
             </span>
             <span className="text-white/80"> — место, где звучат ваши сигналы</span>
@@ -87,14 +80,14 @@ const LandingPage = () => {
           <div className="flex flex-wrap gap-3">
             <button
               onClick={() => navigate("/feed")}
-              className="inline-flex items-center gap-2 rounded-full bg-white/90 px-6 py-3 text-sm font-semibold text-black transition hover:bg-white"
+              className="btn-glass px-6 py-3"
             >
               {t("landing.cta.openFeed")}
               <ArrowRight className="h-4 w-4" />
             </button>
             <Link
               to="/login"
-              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+              className="btn-glass-outline px-6 py-3"
             >
               {t("landing.cta.login")}
             </Link>
@@ -124,10 +117,10 @@ const LandingPage = () => {
                   navigate(feature.route);
                 }
               }}
-              className={`text-left rounded-[28px] border border-white/8 px-6 py-6 backdrop-blur-[18px] transition-smooth ${
+              className={`text-left rounded-3xl border border-white/10 bg-white/5 p-6 transition-smooth ${
                 isDisabled
-                  ? "bg-white/3 text-white/30 cursor-not-allowed"
-                  : "bg-white/4 hover:bg-white/6"
+                  ? "text-white/30 cursor-not-allowed"
+                  : "hover:bg-white/10"
               }`}
             >
               <feature.icon className={`h-6 w-6 ${isDisabled ? "text-white/30" : "text-white/80"}`} />
@@ -143,14 +136,14 @@ const LandingPage = () => {
         })}
       </section>
 
-      <section className="mt-12 rounded-[28px] border border-white/8 bg-white/4 px-6 py-8 backdrop-blur-[18px]">
+      <section className="mt-12 rounded-3xl border border-white/10 bg-white/5 p-6">
         <h2 className="text-lg font-semibold text-white">{t("landing.links.title")}</h2>
         <div className="mt-4 flex flex-wrap gap-3">
           {links.map((item) => (
             <Link
               key={item.label}
               to={item.href}
-              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/70 transition hover:text-white"
+              className="btn-glass-outline px-4 py-2 text-xs"
             >
               {item.label}
             </Link>

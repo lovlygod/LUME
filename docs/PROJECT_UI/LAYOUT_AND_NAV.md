@@ -2,7 +2,7 @@
 
 English | [Русский](../../docs-ru/PROJECT_UI/LAYOUT_AND_NAV.ru.md) | [中文](../../docs-cn/PROJECT_UI/LAYOUT_AND_NAV.cn.md)
 
-**Last updated:** 2026-03-11
+**Last updated:** 2026-03-19
 
 ---
 
@@ -19,7 +19,7 @@ English | [Русский](../../docs-ru/PROJECT_UI/LAYOUT_AND_NAV.ru.md) | [中
 ### Navigation items
 
 **Authenticated:**
-- Home, Explore, Messages, Servers, Profile, Verified
+- Home, Explore, Messages, Profile, Verified
 
 **Guest:**
 - Home, Explore, Login, Register
@@ -41,7 +41,7 @@ Hidden on:
 - `/messages/:chatId`
 
 Visible on:
-- `/feed`, `/explore`, `/profile`, `/servers`
+- `/feed`, `/explore`, `/profile`
 
 ---
 

@@ -1,9 +1,9 @@
-# WebSocket Architecture (LUME)
+# LUME WebSocket Architecture
 
 English | [Русский](../docs-ru/WEBSOCKET_ARCHITECTURE.ru.md) | [中文](../docs-cn/WEBSOCKET_ARCHITECTURE.cn.md)
 
-**Last updated:** 2026-03-11
-**Status:** Implemented and in use
+**Last updated:** 2026-05-18
+**Status:** ✅ Implemented
 
 ---
 
@@ -62,7 +62,7 @@ REDIS_DB=0
 | `ws:new_message` | `new_message` | Private message |
 | `ws:post_created` | `post_created` | New post |
 | `ws:notification` | `notification` | User notification |
-| `ws:server_message` | `server_message` | Server channel message |
+| `ws:chat_message` | `chat_message` | Chat channel message |
 
 **Message format:**
 
@@ -90,9 +90,9 @@ REDIS_DB=0
 | `typing:start` / `typing:stop` | Typing indicator |
 | `message:delivered` | Delivery ack |
 | `chat:read` | Mark chat as read |
-| `server:subscribe` | Subscribe to server updates |
-| `server:unsubscribe` | Unsubscribe |
-| `server:message_read` | Read receipt in channel |
+| `chat:subscribe` | Subscribe to chat updates |
+| `chat:unsubscribe` | Unsubscribe |
+| `chat:read` | Read receipt in chat |
 
 **Server → Client**
 
@@ -120,12 +120,12 @@ REDIS_DB=0
 ```javascript
 sendToUser(userId, event);          // local
 broadcast(event);                   // local
-broadcastToServer(serverId, event); // local
+broadcastToChat(chatId, event); // local
 
 sendNewMessage(data);               // Redis-synced
 sendPostCreated(data);              // Redis-synced
 sendNotification(data);             // Redis-synced
-sendServerMessage(data);            // Redis-synced
+sendChatMessage(data);             // Redis-synced
 ```
 
 ---
@@ -198,6 +198,6 @@ GET http://localhost:5000/health
 
 ## Related documents
 
-- [Servers Module](./SERVERS_MODULE.md)
+- [Groups Module](./GROUPS_MODULE.md)
 - [Error Handling](./ERROR_HANDLING.md)
 - [Features Inventory](./FEATURES_INVENTORY.md)

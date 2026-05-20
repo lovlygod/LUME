@@ -108,12 +108,12 @@ try {
 ## Валидация (Zod)
 
 ```javascript
-const { createServerSchema } = require('./validation');
+const { createGroupSchema } = require('./validation');
 
-router.post('/servers', authenticateToken, asyncHandler(async (req, res) => {
-  const result = createServerSchema.safeParse(req.body);
+router.post('/groups', authenticateToken, asyncHandler(async (req, res) => {
+  const result = createGroupSchema.safeParse(req.body);
   if (!result.success) {
-    throw new ValidationError('Invalid server data', {
+    throw new ValidationError('Invalid group data', {
       fields: result.error.flatten().fieldErrors,
     });
   }
@@ -150,7 +150,7 @@ router.post('/servers', authenticateToken, asyncHandler(async (req, res) => {
 
 ## Связанные документы
 
-- [Servers Module](./SERVERS_MODULE.ru.md)
+- [Groups Module](./GROUPS_MODULE.ru.md)
 - [WebSocket Architecture](./WEBSOCKET_ARCHITECTURE.ru.md)
 - [Features Inventory](./FEATURES_INVENTORY.ru.md)
 - [Project UI](./PROJECT_UI/)

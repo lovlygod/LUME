@@ -166,6 +166,9 @@ class ErrorHandler {
     const details = maybeDetails ? JSON.stringify(maybeDetails, null, 2) : null;
     const suffix = details ? `\nDetails: ${details}` : '';
     console[logMethod](`[API Error] ${meta.code || 'UNKNOWN'} (${meta.statusCode || 500}):`, error, suffix);
+    if (maybeDetails && typeof maybeDetails === 'object') {
+      console[logMethod]('[API Error Details]:', maybeDetails);
+    }
   }
 
   /**

@@ -9,12 +9,13 @@ const {
   upload
 } = require('./profile');
 const { upload: fileUpload, uploadFile, voiceUpload, uploadVoiceMessage } = require('./uploads');
+const { upload: cloudImageUpload, uploadStickers, uploadMemoryImage } = require('./middleware/upload');
 const crypto = require('crypto');
 const { getPublicBaseUrl } = require('./utils/baseUrl');
-const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const db = require('./db');
+const { pool } = db;
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const os = require('os');
@@ -24,6 +25,16 @@ const { verifyCSRFToken } = require('./csrf');
 const { indexMessage } = require('./search/messagesSearch');
 const developerPlatformRoutes = require('./developerPlatform');
 const developerApiRoutes = require('./developerApi');
+const registerStickerRoutes = require('./routes/stickerRoutes');
+const registerMessengerRoutes = require('./routes/messengerRoutes');
+const registerE2EERoutes = require('./routes/e2eeRoutes');
+const createOnboardingRoutes = require('./routes/onboardingRoutes');
+const createWorkspaceRoutes = require('./routes/workspaceRoutes');
+const createProjectRoutes = require('./routes/projectRoutes');
+const createTaskRoutes = require('./routes/taskRoutes');
+const createExploreRoutes = require('./routes/exploreRoutes');
+const createDiagramRoutes = require('./routes/diagramRoutes');
+const { getNpmPackageInfo, isValidPackageName } = require('./npm');
 
 // Helper function to extract @mentions from text
 function extractMentions(text) {
@@ -45,8 +56,6 @@ async function createMentionNotifications(text, authorId, options, req) {
   const createNotification = req.app.get('createNotification');
   if (!createNotification) return;
   
-  // Find mentioned users
-  const db = require('./db');
   const placeholders = mentions.map((_, idx) => `$${idx + 1}`).join(',');
   
   await new Promise((resolve) => {
@@ -86,18 +95,117 @@ async function createMentionNotifications(text, authorId, options, req) {
 const router = express.Router();
 const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || '').trim().toLowerCase();
 
-const STICKERS_BASE_DIR = path.resolve(__dirname, '../../src/assets/stickers');
+const AUTH_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: true,
+  sameSite: 'none',
+  path: '/',
+};
+
+const STICKERS_BASE_DIR = path.resolve(__dirname, 'assets/stickers');
+
+const INVITE_TOKEN_LENGTH = 16;
+const INVITE_TOKEN_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+const PUBLIC_NUMBER_LENGTH = 7;
+const PUBLIC_NUMBER_MAX = Math.pow(10, PUBLIC_NUMBER_LENGTH) - 1;
+
+const generateInviteToken = () => {
+  let token = '';
+  while (token.length < INVITE_TOKEN_LENGTH) {
+    const bytes = crypto.randomBytes(INVITE_TOKEN_LENGTH);
+    for (let i = 0; i < bytes.length && token.length < INVITE_TOKEN_LENGTH; i += 1) {
+      token += INVITE_TOKEN_CHARS[bytes[i] % INVITE_TOKEN_CHARS.length];
+    }
+  }
+  return token;
+};
+
+const generatePublicNumber = () => {
+  const value = crypto.randomInt(0, PUBLIC_NUMBER_MAX + 1);
+  return String(value).padStart(PUBLIC_NUMBER_LENGTH, '0');
+};
+
+const normalizeUsername = (value) => String(value || '').trim().replace(/^@+/, '').toLowerCase();
+const isChatUsernameValid = (value) => /^[a-z0-9]{5,}$/i.test(String(value || ''));
 
 const stickerFileCache = new Map();
 const STICKER_CACHE_MAX = 200;
 
-const normalizeStickerFileName = (value) => String(value || '')
+const normalizeStickerSlug = (value) => String(value || '')
   .trim()
-  .replace(/\s+/g, '_')
-  .replace(/[^a-zA-Z0-9_-]/g, '_')
-  .toLowerCase();
+  .toLowerCase()
+  .replace(/[^a-z0-9\s-]/g, '')
+  .replace(/\s+/g, '-')
+  .replace(/-+/g, '-')
+  .replace(/^-+|-+$/g, '');
 
-const buildStickerKey = (packName, stickerName) => `${normalizeStickerFileName(packName)}_${normalizeStickerFileName(stickerName)}`;
+const isRemoteUrl = (value) => /^https?:\/\//i.test(String(value || ''));
+
+const ensurePostImagesSchema = async () => {
+  const runStatement = (sql) => new Promise((resolve, reject) => {
+    db.exec(sql, (err) => {
+      if (err) return reject(err);
+      resolve();
+    });
+  });
+
+  await runStatement(`
+    CREATE TABLE IF NOT EXISTS post_images (
+      id BIGSERIAL PRIMARY KEY,
+      post_id BIGINT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+      image_url TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
+  await runStatement('CREATE INDEX IF NOT EXISTS idx_post_images_post_id ON post_images(post_id)');
+};
+
+const fetchPostImagesMap = (postIds) => new Promise((resolve) => {
+  if (!Array.isArray(postIds) || postIds.length === 0) {
+    resolve(new Map());
+    return;
+  }
+
+  const placeholders = postIds.map((_, index) => `$${index + 1}`).join(', ');
+  db.all(
+    `SELECT post_id, image_url FROM post_images WHERE post_id IN (${placeholders}) ORDER BY id ASC`,
+    postIds,
+    (err, rows) => {
+      if (err || !rows) {
+        resolve(new Map());
+        return;
+      }
+      const map = new Map();
+      rows.forEach((row) => {
+        const key = String(row.post_id);
+        const list = map.get(key) || [];
+        list.push(row.image_url);
+        map.set(key, list);
+      });
+      resolve(map);
+    }
+  );
+});
+
+const ensureUniqueStickerSlug = async (baseSlug) => {
+  const safeBase = baseSlug || 'sticker-pack';
+  let candidate = safeBase;
+  let counter = 1;
+  while (true) {
+    // eslint-disable-next-line no-await-in-loop
+    const exists = await new Promise((resolve) => {
+      db.get('SELECT id FROM sticker_packs WHERE slug = $1', [candidate], (err, row) => {
+        if (err) return resolve(false);
+        resolve(!!row);
+      });
+    });
+    if (!exists) return candidate;
+    counter += 1;
+    candidate = `${safeBase}-${counter}`;
+  }
+};
+
 
 const resolveStickerAssetPath = (filePath) => {
   const safePath = path.normalize(filePath).replace(/^([/\\])+/, '');
@@ -151,10 +259,17 @@ const ensureStickerSchema = async () => {
     CREATE TABLE IF NOT EXISTS sticker_packs (
       id BIGSERIAL PRIMARY KEY,
       name TEXT NOT NULL,
+      slug TEXT,
       description TEXT,
       author TEXT,
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
+  `);
+
+  // Миграция для старых инсталляций, где таблица уже существует без slug
+  await runStatement(`
+    ALTER TABLE sticker_packs
+    ADD COLUMN IF NOT EXISTS slug TEXT
   `);
 
   await runStatement(`
@@ -183,11 +298,32 @@ const ensureStickerSchema = async () => {
   `);
 
   await runStatement('CREATE INDEX IF NOT EXISTS idx_stickers_pack_id ON stickers(pack_id)');
+  await runStatement('CREATE UNIQUE INDEX IF NOT EXISTS idx_sticker_packs_slug ON sticker_packs(slug)');
   await runStatement('CREATE INDEX IF NOT EXISTS idx_user_sticker_packs_user_id ON user_sticker_packs(user_id)');
 };
 
 const ensureStickerData = async () => {
   await ensureStickerSchema();
+
+  await new Promise((resolve) => {
+    db.all(
+      `SELECT column_name, data_type
+       FROM information_schema.columns
+       WHERE table_name = 'sticker_packs'
+       ORDER BY ordinal_position`,
+      (err, rows) => {
+        if (err) {
+          console.warn('[Startup][StickerSchema] Failed to inspect sticker_packs columns:', err.message);
+          return resolve();
+        }
+
+        const columns = (rows || []).map((r) => `${r.column_name}:${r.data_type}`).join(', ');
+        console.info(`[Startup][StickerSchema] sticker_packs columns => ${columns || 'none'}`);
+        resolve();
+      }
+    );
+  });
+
   const assets = scanStickerAssets();
   if (assets.length === 0) return;
 
@@ -204,9 +340,10 @@ const ensureStickerData = async () => {
     let packId = packsByName.get(packName);
     if (!packId) {
       packId = await new Promise((resolve, reject) => {
+        const slug = normalizeStickerSlug(packName);
         db.run(
-          'INSERT INTO sticker_packs (name, description, author) VALUES ($1, $2, $3)',
-          [packName, `Sticker pack ${packName}`, 'LUME'],
+          'INSERT INTO sticker_packs (name, slug, description, author) VALUES ($1, $2, $3, $4)',
+          [packName, slug || null, `Sticker pack ${packName}`, 'LUME'],
           function(err) {
             if (err) return reject(err);
             resolve(this.lastID);
@@ -234,31 +371,7 @@ const ensureStickerData = async () => {
   }
 };
 
-const momentStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path.join(__dirname, '../moment-uploads');
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-    cb(null, filename);
-  }
-});
-
-const momentUpload = multer({
-  storage: momentStorage,
-  limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype && file.mimetype.startsWith('image/')) {
-      return cb(null, true);
-    }
-    cb(new Error('Only image files are allowed'));
-  }
-});
+const momentUpload = uploadMemoryImage;
 
 // Test route - самый первый роут
 
@@ -282,8 +395,8 @@ router.post('/refresh', asyncHandler(async (req, res) => {
   const refreshToken = req.cookies?.refreshToken;
 
   if (!refreshToken) {
-    res.clearCookie('refreshToken', { path: '/', sameSite: 'none', secure: true });
-    res.clearCookie('token', { path: '/', sameSite: 'none', secure: true });
+    res.clearCookie('refreshToken', AUTH_COOKIE_OPTIONS);
+    res.clearCookie('token', AUTH_COOKIE_OPTIONS);
     return res.status(204).end();
   }
 
@@ -292,8 +405,8 @@ router.post('/refresh', asyncHandler(async (req, res) => {
 
   if (!tokenData) {
     logger.auth.tokenRefresh(null, false);
-    res.clearCookie('refreshToken', { path: '/', sameSite: 'none', secure: true });
-    res.clearCookie('token', { path: '/', sameSite: 'none', secure: true });
+    res.clearCookie('refreshToken', AUTH_COOKIE_OPTIONS);
+    res.clearCookie('token', AUTH_COOKIE_OPTIONS);
     throw new AuthError('Invalid or expired refresh token', 'INVALID_REFRESH_TOKEN');
   }
 
@@ -318,11 +431,8 @@ router.post('/refresh', asyncHandler(async (req, res) => {
 
   // Set new access token cookie
   res.cookie('token', accessToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'none',
+    ...AUTH_COOKIE_OPTIONS,
     maxAge: 24 * 60 * 60 * 1000,
-    path: '/'
   });
 
   // Log successful token refresh
@@ -330,7 +440,6 @@ router.post('/refresh', asyncHandler(async (req, res) => {
 
   res.json({
     message: 'Token refreshed successfully',
-    token: accessToken
   });
 }));
 
@@ -343,8 +452,8 @@ router.post('/logout', authenticateToken, asyncHandler(async (req, res) => {
   }
 
   // Clear cookies
-  res.clearCookie('refreshToken', { path: '/', sameSite: 'none', secure: true });
-  res.clearCookie('token', { path: '/', sameSite: 'none', secure: true });
+  res.clearCookie('refreshToken', AUTH_COOKIE_OPTIONS);
+  res.clearCookie('token', AUTH_COOKIE_OPTIONS);
 
   // Log logout
   logger.auth.logout(req.user.userId, req.ip);
@@ -358,29 +467,35 @@ router.get('/csrf-token', (req, res) => {
   refreshCSRFToken(req, res);
 });
 
+// NPM package preview endpoint
+router.get('/npm/:packageName', asyncHandler(async (req, res) => {
+  const { packageName } = req.params;
+  
+  if (!isValidPackageName(packageName)) {
+    return res.status(400).json({ error: 'Invalid package name' });
+  }
+  
+  const packageInfo = await getNpmPackageInfo(packageName);
+  
+  if (!packageInfo) {
+    return res.status(404).json({ error: 'Package not found' });
+  }
+  
+  res.json(packageInfo);
+}));
+
 // CSRF protection for state-changing requests
 router.post('*', (req, res, next) => {
   const csrfExclusions = new Set(['/login', '/register', '/refresh', '/logout', '/csrf-token']);
-  if (req.path.startsWith('/developer/')) {
-    return next();
-  }
   if (csrfExclusions.has(req.path)) {
     return next();
   }
   verifyCSRFToken(req, res, next);
 });
 router.put('*', (req, res, next) => {
-  // Пропускаем servers
-  if (req.path.includes('/servers')) {
-    return next();
-  }
   verifyCSRFToken(req, res, next);
 });
 router.delete('*', (req, res, next) => {
-  // Пропускаем servers
-  if (req.path.includes('/servers')) {
-    return next();
-  }
   verifyCSRFToken(req, res, next);
 });
 router.patch('*', verifyCSRFToken);
@@ -391,11 +506,142 @@ router.use('/developer', developerPlatformRoutes);
 // Developer public API routes
 router.use('/developer-api', developerApiRoutes);
 
+registerE2EERoutes(router, {
+  db,
+  authenticateToken,
+  asyncHandler,
+});
+
+registerStickerRoutes(router, {
+  authenticateToken,
+  asyncHandler,
+  db,
+  ensureStickerData,
+  ensureStickerSchema,
+  normalizeStickerSlug,
+  isRemoteUrl,
+  getPublicBaseUrl,
+  stickerFileCache,
+  resolveStickerAssetPath,
+  cacheStickerBuffer,
+  fs,
+});
+
+registerMessengerRoutes(router, {
+  authenticateToken,
+  asyncHandler,
+  db,
+  ValidationError,
+});
+
+router.use('/', createOnboardingRoutes({
+  authenticateToken,
+  asyncHandler,
+}));
+
+router.use('/', createWorkspaceRoutes({
+  authenticateToken,
+  asyncHandler,
+  db,
+}));
+
+router.use('/', createProjectRoutes({
+  authenticateToken,
+  asyncHandler,
+  db,
+  upload,
+}));
+
+router.use('/', createTaskRoutes({
+  authenticateToken,
+  asyncHandler,
+  db,
+}));
+
+router.use('/', createExploreRoutes({
+  authenticateToken,
+  asyncHandler,
+}));
+
+router.use('/', createDiagramRoutes({
+  authenticateToken,
+  asyncHandler,
+}));
+
 // Profile routes (protected)
 router.get('/profile/:userId', authenticateToken, getUserProfile);
 router.put('/profile', authenticateToken, updateUserProfile);
+router.put('/profile/privacy', authenticateToken, (req, res) => {
+  const userId = req.user.userId;
+  const { postPrivacy, messagePrivacy } = req.body;
+
+  const validPost = ['public', 'followers'];
+  const validMsg = ['everyone', 'followers'];
+
+  if (postPrivacy && !validPost.includes(postPrivacy)) {
+    return res.status(400).json({ error: 'Invalid postPrivacy value' });
+  }
+  if (messagePrivacy && !validMsg.includes(messagePrivacy)) {
+    return res.status(400).json({ error: 'Invalid messagePrivacy value' });
+  }
+
+  db.run(
+    `INSERT INTO user_privacy_settings (user_id, post_privacy, message_privacy)
+     VALUES ($1, $2, $3)
+     ON CONFLICT(user_id)
+     DO UPDATE SET post_privacy = $4, message_privacy = $5, updated_at = NOW()`,
+    [userId, postPrivacy || 'public', messagePrivacy || 'everyone', postPrivacy || 'public', messagePrivacy || 'everyone'],
+    (err) => {
+      if (err) {
+        console.error('Error saving privacy settings:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json({ message: 'Privacy settings saved', postPrivacy, messagePrivacy });
+    }
+  );
+});
 router.post('/profile/avatar', authenticateToken, upload.single('avatar'), uploadAvatar);
 router.post('/profile/banner', authenticateToken, upload.single('banner'), uploadBanner);
+router.post('/uploads', authenticateToken, fileUpload.single('file'), uploadFile);
+
+router.put('/profile/settings', authenticateToken, (req, res) => {
+  const userId = req.user.userId;
+  const { theme, snowEffect, snowVariant } = req.body;
+
+  const validThemes = ['dark', 'light'];
+  const validVariants = ['dots', 'flakes', 'hearts'];
+
+  const themeVal = validThemes.includes(theme) ? theme : 'dark';
+  const snowVal = typeof snowEffect === 'boolean' ? (snowEffect ? 1 : 0) : (snowEffect ? 1 : 0);
+  const variantVal = validVariants.includes(snowVariant) ? snowVariant : 'dots';
+
+  db.run(
+    `INSERT INTO user_settings (user_id, theme, snow_effect, snow_variant)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT(user_id)
+     DO UPDATE SET theme = $5, snow_effect = $6, snow_variant = $7, updated_at = NOW()`,
+    [userId, themeVal, snowVal, variantVal, themeVal, snowVal, variantVal],
+    (err) => {
+      if (err) {
+        console.error('Error saving user settings:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json({ message: 'Settings saved' });
+    }
+  );
+});
+
+router.get('/profile/settings', authenticateToken, (req, res) => {
+  const userId = req.user.userId;
+  db.get('SELECT theme, snow_effect, snow_variant FROM user_settings WHERE user_id = $1', [userId], (err, row) => {
+    if (err) return res.status(500).json({ error: 'Database error' });
+    res.json(row ? {
+      theme: row.theme,
+      snowEffect: row.snow_effect === 1,
+      snowVariant: row.snow_variant,
+    } : { theme: 'dark', snowEffect: false, snowVariant: 'dots' });
+  });
+});
 
 // Sessions: list active sessions
 router.get('/sessions', authenticateToken, asyncHandler(async (req, res) => {
@@ -587,46 +833,61 @@ router.delete('/profile', authenticateToken, (req, res) => {
       'DELETE FROM likes WHERE user_id = $1',
       'DELETE FROM posts WHERE user_id = $1',
       'DELETE FROM followers WHERE follower_id = $1 OR following_id = $2',
-      'DELETE FROM chats WHERE user1_id = $1 OR user2_id = $2',
-      'DELETE FROM messages WHERE sender_id = $1 OR receiver_id = $2',
+      'DELETE FROM chat_members WHERE user_id = $1',
+      'DELETE FROM chats WHERE owner_id = $1',
+      'DELETE FROM messages WHERE sender_id = $1',
       'DELETE FROM verification_requests WHERE user_id = $1',
       'DELETE FROM post_reports WHERE reporter_id = $1',
       'DELETE FROM refresh_tokens WHERE user_id = $1',
       'DELETE FROM users WHERE id = $1'
     ];
 
-    const runDelete = (index) => {
-      if (index >= deleteQueries.length) {
-        // All deletions complete
-        const broadcast = req.app.get('broadcast');
-        if (broadcast) {
-          // Notify all clients that this user was deleted
-          broadcast({
-            type: 'user_deleted',
-            data: { userId: userId.toString() }
+    pool.connect().then((client) => {
+      client.query('BEGIN').then(() => {
+        const runDelete = (index) => {
+          if (index >= deleteQueries.length) {
+            client.query('COMMIT').then(() => {
+              client.release();
+              const broadcast = req.app.get('broadcast');
+              if (broadcast) {
+                broadcast({
+                  type: 'user_deleted',
+                  data: { userId: userId.toString() }
+                });
+              }
+              return res.json({ message: 'Account deleted permanently' });
+            }).catch((err) => {
+              client.query('ROLLBACK').then(() => client.release());
+              console.error('Commit error:', err);
+              return res.status(500).json({ error: 'Failed to delete account' });
+            });
+            return;
+          }
+
+          const query = deleteQueries[index];
+          const params = query.includes('follower_id = $1 OR following_id')
+            ? [userId, userId]
+            : [userId];
+
+          client.query(query, params).then(() => {
+            runDelete(index + 1);
+          }).catch((err) => {
+            console.error('Delete error at step', index, ':', err);
+            client.query('ROLLBACK').then(() => client.release());
+            return res.status(500).json({ error: 'Failed to delete account' });
           });
-        }
+        };
 
-        return res.json({ message: 'Account deleted permanently' });
-      }
-
-      const query = deleteQueries[index];
-      const params = query.includes('follower_id = $1 OR following_id') || 
-                     query.includes('user1_id = $1 OR user2_id') ||
-                     query.includes('sender_id = $1 OR receiver_id')
-        ? [userId, userId]
-        : [userId];
-
-      db.run(query, params, (err) => {
-        if (err) {
-          console.error('Delete error at step', index, ':', err);
-          return res.status(500).json({ error: 'Failed to delete account' });
-        }
-        runDelete(index + 1);
+        runDelete(0);
+      }).catch((err) => {
+        client.release();
+        console.error('Begin error:', err);
+        return res.status(500).json({ error: 'Failed to delete account' });
       });
-    };
-
-    runDelete(0);
+    }).catch((err) => {
+      console.error('Pool connect error:', err);
+      return res.status(500).json({ error: 'Failed to delete account' });
+    });
   });
 });
 
@@ -636,24 +897,31 @@ router.get('/profile', authenticateToken, (req, res) => {
 
   const query = `
     SELECT id, email, name, username, bio, city, website, pinned_post_id,
-           avatar, banner, verified, followers_count, join_date, created_at
+           avatar, banner, verified, followers_count, join_date, created_at, role,
+           onboarding_completed, primary_role, goals, skills, availability, github_url, telegram_username, portfolio_url
     FROM users
     WHERE id = $1
   `;
 
-  db.get(query, [userId], (err, user) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
+  const pool = require('./db').pool;
+  
+  pool.query(query, [userId])
+    .then((result) => {
+      const user = result.rows[0];
 
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
 
-    // Get following count
-    const followingQuery = 'SELECT COUNT(*) as count FROM followers WHERE follower_id = $1';
-    db.get(followingQuery, [userId], (err, followingResult) => {
-      const followingCount = followingResult ? followingResult.count : 0;
+      // Get following count
+      const followingQuery = 'SELECT COUNT(*) as count FROM followers WHERE follower_id = $1';
+      return pool.query(followingQuery, [userId]).then((followingResult) => {
+        return { user, followingCount: followingResult.rows[0] ? followingResult.rows[0].count : 0 };
+      });
+    })
+    .then((data) => {
+      const user = data.user;
+      const followingCount = data.followingCount;
 
       res.json({
         user: {
@@ -665,20 +933,33 @@ router.get('/profile', authenticateToken, (req, res) => {
           city: user.city,
           website: user.website,
           pinned_post_id: user.pinned_post_id ? user.pinned_post_id.toString() : null,
+          pinnedPostId: user.pinned_post_id ? user.pinned_post_id.toString() : null,
           avatar: user.avatar,
           banner: user.banner,
           verified: user.verified === 1,
+          onboardingCompleted: !!user.onboarding_completed,
+          primaryRole: user.primary_role || null,
+          goals: user.goals || [],
+          skills: user.skills || [],
+          availability: user.availability || null,
+          githubUrl: user.github_url || null,
+          telegramUsername: user.telegram_username || null,
+          portfolioUrl: user.portfolio_url || null,
           followers_count: user.followers_count || 0,
           following_count: followingCount,
-          joinDate: user.join_date
+          joinDate: user.join_date,
+          role: user.role || 'user'
         }
       });
+    })
+    .catch((err) => {
+      console.log('GET /profile error:', err);
+      res.status(500).json({ error: 'Database error' });
     });
-  });
 });
 
 // Get user's posts
-router.get('/users/:userId/posts', authenticateToken, (req, res) => {
+router.get('/users/:userId/posts', authenticateToken, async (req, res) => {
   const userId = req.params.userId;
 
   const query = `
@@ -689,15 +970,19 @@ router.get('/users/:userId/posts', authenticateToken, (req, res) => {
     ORDER BY p.timestamp DESC
   `;
 
-  db.all(query, [parseInt(userId)], (err, posts) => {
+  db.all(query, [parseInt(userId)], async (err, posts) => {
     if (err) {
       return res.status(500).json({ error: 'Database error' });
     }
 
+    const postIds = (posts || []).map((post) => post.id);
+    const imagesMap = await fetchPostImagesMap(postIds);
+
     // Преобразуем user_id в строку для корректной работы на frontend
-    const formattedPosts = posts.map(post => ({
+    const formattedPosts = (posts || []).map(post => ({
       ...post,
-      user_id: post.user_id.toString()
+      user_id: post.user_id.toString(),
+      imageUrls: imagesMap.get(String(post.id)) || undefined,
     }));
 
     res.json({ posts: formattedPosts });
@@ -705,7 +990,7 @@ router.get('/users/:userId/posts', authenticateToken, (req, res) => {
 });
 
 // Get all users (for search/follow suggestions)
-router.get('/users', authenticateToken, (req, res) => {
+router.get('/users', authenticateToken, asyncHandler(async (req, res) => {
   const { q } = req.query;
 
   let query = '';
@@ -719,7 +1004,8 @@ router.get('/users', authenticateToken, (req, res) => {
       ORDER BY verified DESC, name ASC
       LIMIT 20
     `;
-    params = [`%${q}%`, `%${q}%`];
+    const escaped = q.replace(/[%_\\]/g, '\\$&');
+    params = [`%${escaped}%`, `%${escaped}%`];
   } else {
     query = `
       SELECT id, name, username, bio, avatar, verified
@@ -742,262 +1028,937 @@ router.get('/users', authenticateToken, (req, res) => {
 
     res.json({ users: formattedUsers });
   });
-});
+}));
 
-// Get messages for a user (chat list)
-router.get('/messages', authenticateToken, (req, res) => {
-  const userId = req.user.userId;
+// Follow/unfollow + followers/following
+router.post('/follow/batch', authenticateToken, asyncHandler(async (req, res) => {
+  const followerId = req.user.userId;
+  const userIds = Array.isArray(req.body?.userIds) ? req.body.userIds : [];
+  if (!userIds.length) return res.status(400).json({ error: 'userIds is required' });
 
-  const query = `
-     SELECT c.id, c.last_message, c.last_message_time, c.unread_count,
-            CASE WHEN c.user1_id = $1 THEN c.user2_id ELSE c.user1_id END AS contact_id,
-            u.name, u.username, u.avatar, u.verified
-     FROM chats c
-     JOIN users u ON u.id = (CASE WHEN c.user1_id = $2 THEN c.user2_id ELSE c.user1_id END)
-     WHERE c.user1_id = $3 OR c.user2_id = $4
-    ORDER BY c.last_message_time DESC
+  const sanitized = [...new Set(userIds.map((v) => String(v)).filter((id) => id !== String(followerId)))];
+  for (const followingId of sanitized) {
+    // eslint-disable-next-line no-await-in-loop
+    await db.query(
+      `INSERT INTO followers (follower_id, following_id)
+       VALUES ($1, $2)
+       ON CONFLICT (follower_id, following_id) DO NOTHING`,
+      [followerId, followingId]
+    );
+  }
+
+  res.json({ message: 'Followed', count: sanitized.length });
+}));
+
+router.delete('/follow/:userId', authenticateToken, asyncHandler(async (req, res) => {
+  const followerId = req.user.userId;
+  const followingId = req.params.userId;
+  await db.query('DELETE FROM followers WHERE follower_id = $1 AND following_id = $2', [followerId, followingId]);
+  res.json({ message: 'Unfollowed' });
+}));
+
+router.get('/follow/status/:userId', authenticateToken, asyncHandler(async (req, res) => {
+  const followerId = req.user.userId;
+  const followingId = req.params.userId;
+  const { rows } = await db.query(
+    'SELECT 1 FROM followers WHERE follower_id = $1 AND following_id = $2 LIMIT 1',
+    [followerId, followingId]
+  );
+  res.json({ following: rows.length > 0 });
+}));
+
+router.get('/users/:userId/followers', authenticateToken, asyncHandler(async (req, res) => {
+  const userId = req.params.userId;
+  const { rows } = await db.query(
+    `SELECT u.id, u.name, u.username, u.bio, u.avatar, u.verified
+     FROM followers f
+     JOIN users u ON u.id = f.follower_id
+     WHERE f.following_id = $1
+       AND f.follower_id <> f.following_id
+     ORDER BY f.created_at DESC`,
+    [userId]
+  );
+
+  res.json({
+    followers: rows.map((u) => ({ ...u, id: String(u.id) })),
+    total: rows.length,
+  });
+}));
+
+router.get('/users/:userId/following', authenticateToken, asyncHandler(async (req, res) => {
+  const userId = req.params.userId;
+  const { rows } = await db.query(
+    `SELECT u.id, u.name, u.username, u.bio, u.avatar, u.verified
+     FROM followers f
+     JOIN users u ON u.id = f.following_id
+     WHERE f.follower_id = $1
+       AND f.follower_id <> f.following_id
+     ORDER BY f.created_at DESC`,
+    [userId]
+  );
+
+  res.json({
+    following: rows.map((u) => ({ ...u, id: String(u.id) })),
+    total: rows.length,
+  });
+}));
+
+// List public channels (search)
+router.get('/chats/public', authenticateToken, asyncHandler(async (req, res) => {
+  const query = String(req.query.q || '').trim();
+  const term = query ? `%${query}%` : '%';
+  const limit = Math.min(Number(req.query.limit) || 20, 50);
+
+  const sql = `
+    SELECT c.id, c.title, c.username, c.avatar, c.created_at,
+           COUNT(cm.user_id) as members_count
+    FROM chats c
+    LEFT JOIN chat_members cm ON cm.chat_id = c.id
+    WHERE c.type = 'channel'
+      AND c.is_public = true
+      AND (c.title ILIKE $1 OR c.username ILIKE $1)
+    GROUP BY c.id
+    ORDER BY c.created_at DESC
+    LIMIT $2
   `;
 
-  db.all(query, [userId, userId, userId, userId], (err, chats) => {
+  db.all(sql, [term, limit], (err, rows) => {
     if (err) {
-      console.error('Database error getting chats:', err);
       return res.status(500).json({ error: 'Database error' });
     }
-
-    const chatList = chats.map(chat => ({
-      id: chat.id.toString(),
-      userId: String(chat.contact_id),
-      name: chat.name,
-      username: chat.username,
-      avatar: chat.avatar,
-      verified: chat.verified === 1,
-      lastMessage: chat.last_message || '',
-      timestamp: chat.last_message_time,
-      unread: chat.unread_count || 0
+    const channels = (rows || []).map((row) => ({
+      id: row.id.toString(),
+      type: 'channel',
+      title: row.title,
+      username: row.username,
+      avatar: row.avatar,
+      membersCount: Number(row.members_count || 0),
     }));
-
-  res.json({ chats: chatList });
+    res.json({ channels });
   });
-});
+}));
 
-// ==================== Stickers ====================
+// Public channel details
+router.get('/chats/:id/public', authenticateToken, asyncHandler(async (req, res) => {
+  const chatId = req.params.id;
+  const userId = req.user.userId;
 
-router.get('/stickers/packs', authenticateToken, asyncHandler(async (_req, res) => {
-  await ensureStickerData();
-
-  db.all(
-    `SELECT sp.id, sp.name, sp.description, sp.author, sp.created_at,
-            COUNT(s.id) as sticker_count
-     FROM sticker_packs sp
-     LEFT JOIN stickers s ON s.pack_id = sp.id
-     GROUP BY sp.id, sp.name, sp.description, sp.author, sp.created_at
-     ORDER BY sp.created_at DESC`,
-    (err, packs) => {
+  db.get(
+    `SELECT c.id, c.title, c.username, c.avatar, c.is_public,
+            COUNT(cm.user_id) as members_count
+     FROM chats c
+     LEFT JOIN chat_members cm ON cm.chat_id = c.id
+     WHERE c.id = $1 AND c.type = 'channel' AND c.is_public = true
+     GROUP BY c.id`,
+    [chatId],
+    (err, row) => {
       if (err) {
         return res.status(500).json({ error: 'Database error' });
       }
-      const formatted = (packs || []).map((pack) => ({
-        id: pack.id.toString(),
-        name: pack.name,
-        description: pack.description,
-        author: pack.author,
-        createdAt: pack.created_at,
-        stickerCount: Number(pack.sticker_count || 0),
-      }));
-      res.json({ packs: formatted });
+      if (!row) {
+        return res.status(404).json({ error: 'Channel not found' });
+      }
+      db.get(
+        'SELECT role FROM chat_members WHERE chat_id = $1 AND user_id = $2',
+        [chatId, userId],
+        (memErr, memRow) => {
+          if (memErr) {
+            return res.status(500).json({ error: 'Database error' });
+          }
+          res.json({
+            channel: {
+              id: row.id.toString(),
+              type: 'channel',
+              title: row.title,
+              username: row.username,
+              avatar: row.avatar,
+              isPublic: !!row.is_public,
+              membersCount: Number(row.members_count || 0),
+              role: memRow?.role || null,
+            },
+          });
+        }
+      );
     }
   );
 }));
 
-router.get('/stickers/packs/:id', authenticateToken, asyncHandler(async (req, res) => {
-  await ensureStickerData();
-  const packId = req.params.id;
+// Subscribe to public channel
+router.post('/chats/:id/subscribe', authenticateToken, asyncHandler(async (req, res) => {
+  const chatId = req.params.id;
+  const userId = req.user.userId;
 
-  db.get('SELECT id, name, description, author, created_at FROM sticker_packs WHERE id = $1', [packId], (err, pack) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-    if (!pack) {
-      return res.status(404).json({ error: 'Pack not found' });
-    }
-
-    db.all('SELECT id, name, file_path FROM stickers WHERE pack_id = $1 ORDER BY id ASC', [packId], (err2, stickers) => {
-      if (err2) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-      const formatted = (stickers || []).map((sticker) => ({
-        id: sticker.id.toString(),
-        name: sticker.name,
-        filePath: sticker.file_path,
-        url: `${getPublicBaseUrl(req)}/api/stickers/${sticker.id}`,
-      }));
-
-      res.json({
-        pack: {
-          id: pack.id.toString(),
-          name: pack.name,
-          description: pack.description,
-          author: pack.author,
-          createdAt: pack.created_at,
-        },
-        stickers: formatted,
-      });
+  const chat = await new Promise((resolve) => {
+    db.get('SELECT id, type, is_public FROM chats WHERE id = $1', [chatId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
     });
   });
-}));
 
-router.get('/stickers/mine', authenticateToken, asyncHandler(async (req, res) => {
-  await ensureStickerData();
-  const userId = req.user.userId;
-  console.info('[Stickers] mine request', { userId });
-
-  db.all(
-    `SELECT sp.id, sp.name, sp.description, sp.author, sp.created_at,
-            COUNT(s.id) as sticker_count,
-            MAX(usp.added_at) as added_at
-     FROM user_sticker_packs usp
-     JOIN sticker_packs sp ON sp.id = usp.pack_id
-     LEFT JOIN stickers s ON s.pack_id = sp.id
-     WHERE usp.user_id = $1
-     GROUP BY sp.id, sp.name, sp.description, sp.author, sp.created_at
-     ORDER BY added_at DESC`,
-    [userId],
-    (err, packs) => {
-      if (err) {
-        console.error('[Stickers] mine failed', err);
-        return res.status(500).json({ error: 'Database error' });
-      }
-      const formatted = (packs || []).map((pack) => ({
-        id: pack.id.toString(),
-        name: pack.name,
-        description: pack.description,
-        author: pack.author,
-        createdAt: pack.created_at,
-        stickerCount: Number(pack.sticker_count || 0),
-      }));
-      res.json({ packs: formatted });
-    }
-  );
-}));
-
-router.post('/stickers/add-pack', authenticateToken, asyncHandler(async (req, res) => {
-  await ensureStickerSchema();
-  const userId = req.user.userId;
-  const { packId } = req.body;
-  console.info('[Stickers] add-pack request', { userId, packId });
-  if (!packId) {
-    return res.status(400).json({ error: 'packId is required' });
+  if (!chat || chat.type !== 'channel' || !chat.is_public) {
+    return res.status(404).json({ error: 'Channel not found' });
   }
 
   db.run(
-    'INSERT INTO user_sticker_packs (user_id, pack_id) VALUES ($1, $2) ON CONFLICT(user_id, pack_id) DO NOTHING',
-    [userId, packId],
+    `INSERT INTO chat_members (chat_id, user_id, role)
+     VALUES ($1, $2, 'member')
+     ON CONFLICT DO NOTHING`,
+    [chatId, userId],
     (err) => {
       if (err) {
-        console.error('[Stickers] add-pack failed', err);
         return res.status(500).json({ error: 'Database error' });
       }
-      console.info('[Stickers] add-pack success', { userId, packId });
-      res.json({ message: 'Sticker pack added' });
+      res.json({ message: 'Subscribed', chatId: chatId.toString() });
     }
   );
 }));
 
-router.get('/stickers/:id', asyncHandler(async (req, res) => {
-  const stickerId = req.params.id;
-  if (!stickerId || !Number.isInteger(Number(stickerId))) {
-    return res.status(400).json({ error: 'Invalid sticker id' });
+// Unsubscribe from public channel
+router.delete('/chats/:id/subscribe', authenticateToken, asyncHandler(async (req, res) => {
+  const chatId = req.params.id;
+  const userId = req.user.userId;
+
+  const roleRow = await new Promise((resolve) => {
+    db.get('SELECT role FROM chat_members WHERE chat_id = $1 AND user_id = $2', [chatId, userId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (!roleRow) {
+    return res.json({ message: 'Unsubscribed' });
+  }
+  if (roleRow.role === 'owner') {
+    return res.status(403).json({ error: 'Owner cannot unsubscribe' });
   }
 
-  const cached = stickerFileCache.get(stickerId);
-  if (cached?.buffer) {
-    res.setHeader('Content-Type', 'image/png');
-    res.setHeader('Cache-Control', 'private, max-age=3600');
-    res.setHeader('Content-Disposition', 'inline');
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self' data:");
-    return res.end(cached.buffer);
+  db.run(
+    'DELETE FROM chat_members WHERE chat_id = $1 AND user_id = $2',
+    [chatId, userId],
+    (err) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json({ message: 'Unsubscribed' });
+    }
+  );
+}));
+
+// Add chat member
+router.post('/chats/:id/members', authenticateToken, asyncHandler(async (req, res) => {
+  const requesterId = req.user.userId;
+  const chatId = req.params.id;
+  const { userId, username, role = 'member' } = req.body || {};
+
+  if (!userId && !username) {
+    return res.status(400).json({ error: 'userId or username is required' });
+  }
+  if (!['owner', 'admin', 'member'].includes(role)) {
+    return res.status(400).json({ error: 'Invalid role' });
   }
 
-  db.get('SELECT file_path FROM stickers WHERE id = $1', [stickerId], (err, sticker) => {
+  let resolvedUserId = userId;
+  if (!resolvedUserId && username) {
+    const cleanUsername = String(username || '').replace(/^@+/, '');
+    const userRow = await new Promise((resolve) => {
+      db.get('SELECT id FROM users WHERE username = $1', [cleanUsername], (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      });
+    });
+    if (!userRow?.id) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    resolvedUserId = userRow.id;
+  }
+
+  if (!resolvedUserId) {
+    return res.status(400).json({ error: 'Invalid user reference' });
+  }
+
+  const requester = await new Promise((resolve) => {
+    db.get('SELECT role FROM chat_members WHERE chat_id = $1 AND user_id = $2', [chatId, requesterId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (!requester || (requester.role !== 'owner' && requester.role !== 'admin')) {
+    return res.status(403).json({ error: 'Insufficient permissions' });
+  }
+
+  db.run(
+    `INSERT INTO chat_members (chat_id, user_id, role) VALUES ($1, $2, $3)
+     ON CONFLICT (chat_id, user_id) DO UPDATE SET role = $3`,
+    [chatId, resolvedUserId, role],
+    (err) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json({ message: 'Member added', chatId: chatId.toString(), userId: resolvedUserId.toString(), role });
+    }
+  );
+}));
+
+// Remove chat member
+router.delete('/chats/:id/members/:userId', authenticateToken, asyncHandler(async (req, res) => {
+  const requesterId = req.user.userId;
+  const chatId = req.params.id;
+  const targetUserId = req.params.userId;
+
+  const requester = await new Promise((resolve) => {
+    db.get('SELECT role FROM chat_members WHERE chat_id = $1 AND user_id = $2', [chatId, requesterId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (!requester || (requester.role !== 'owner' && requester.role !== 'admin' && String(requesterId) !== String(targetUserId))) {
+    return res.status(403).json({ error: 'Insufficient permissions' });
+  }
+
+  if (String(requesterId) === String(targetUserId) && requester.role === 'owner') {
+    return res.status(400).json({ error: 'Owner cannot leave the chat' });
+  }
+
+  db.run(
+    'DELETE FROM chat_members WHERE chat_id = $1 AND user_id = $2',
+    [chatId, targetUserId],
+    (err) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json({ message: 'Member removed' });
+    }
+  );
+}));
+
+// Delete chat (group/channel)
+router.delete('/chats/:id', authenticateToken, asyncHandler(async (req, res) => {
+  const requesterId = req.user.userId;
+  const chatId = req.params.id;
+
+  const chat = await new Promise((resolve) => {
+    db.get(
+      'SELECT id, type, owner_id FROM chats WHERE id = $1',
+      [chatId],
+      (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      }
+    );
+  });
+
+  if (!chat) {
+    return res.status(404).json({ error: 'Chat not found' });
+  }
+
+  if (chat.type === 'private') {
+    return res.status(400).json({ error: 'Private chats cannot be deleted' });
+  }
+
+  if (String(chat.owner_id) !== String(requesterId)) {
+    return res.status(403).json({ error: 'Only the owner can delete the chat' });
+  }
+
+  db.run('DELETE FROM chats WHERE id = $1', [chatId], (err) => {
     if (err) {
+      console.error('[chats] delete error', { chatId, err });
       return res.status(500).json({ error: 'Database error' });
     }
-    if (!sticker) {
-      return res.status(404).json({ error: 'Sticker not found' });
-    }
-
-    let absolutePath;
-    try {
-      absolutePath = resolveStickerAssetPath(sticker.file_path);
-    } catch (_error) {
-      return res.status(400).json({ error: 'Invalid sticker path' });
-    }
-
-    fs.readFile(absolutePath, (readErr, buffer) => {
-      if (readErr) {
-        return res.status(404).json({ error: 'Sticker file missing' });
-      }
-      cacheStickerBuffer(stickerId, buffer);
-      res.setHeader('Content-Type', 'image/png');
-      res.setHeader('Cache-Control', 'private, max-age=3600');
-      res.setHeader('Content-Disposition', 'inline');
-      res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self' data:");
-      return res.end(buffer);
-    });
+    res.json({ message: 'Chat deleted' });
   });
 }));
 
-
-// Get messages with a specific user
-router.get('/messages/:userId(\\d+)', authenticateToken, (req, res) => {
-  const currentUserId = req.user.userId;
-  const otherUserId = req.params.userId;
-
-  const chatQuery = `
-    SELECT id FROM chats
-    WHERE (user1_id = $1 AND user2_id = $2) OR (user1_id = $3 AND user2_id = $4)
-  `;
-
-  db.get(chatQuery, [currentUserId, otherUserId, otherUserId, currentUserId], (err, chat) => {
-    if (err) {
-      console.error('[messages] chatQuery error:', err);
-      return res.status(500).json({ error: 'Database error' });
+// Update chat details (group/channel)
+router.patch('/chats/:id', authenticateToken, asyncHandler(async (req, res) => {
+  const requesterId = req.user.userId;
+  const chatIdParam = req.params.id;
+  console.log('[chats] update request', {
+    requesterId,
+    chatIdParam,
+    bodyKeys: req.body && typeof req.body === 'object' ? Object.keys(req.body) : [],
+  });
+  const chatId = await new Promise((resolve) => {
+    if (String(chatIdParam || '').startsWith('-100') || String(chatIdParam || '').startsWith('-200')) {
+      db.get('SELECT id FROM chats WHERE public_number = $1', [chatIdParam], (err, row) => {
+        if (err) return resolve(null);
+        return resolve(row?.id || null);
+      });
+      return;
     }
-
-    getMessageHistory(currentUserId, otherUserId, res);
+    resolve(chatIdParam);
   });
 
-  function getMessageHistory(userId1, userId2, res) {
+  console.log('[chats] update resolved', { chatIdParam, chatId });
+
+  if (!chatId) {
+    return res.status(404).json({ error: 'Chat not found' });
+  }
+  const { title, avatar, username, isPublic, isPrivate, regenerateInvite } = req.body || {};
+
+  const chatAccess = await new Promise((resolve) => {
+    db.get(
+      `SELECT c.type, cm.role, c.username, c.is_public
+       FROM chats c
+       JOIN chat_members cm ON cm.chat_id = c.id AND cm.user_id = $2
+       WHERE c.id = $1`,
+      [chatId, requesterId],
+      (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      }
+    );
+  });
+
+  if (!chatAccess) {
+    return res.status(403).json({ error: 'Insufficient permissions' });
+  }
+  if (chatAccess.type === 'private') {
+    return res.status(400).json({ error: 'Private chats cannot be updated' });
+  }
+  if (chatAccess.role !== 'owner' && chatAccess.role !== 'admin') {
+    return res.status(403).json({ error: 'Insufficient permissions' });
+  }
+
+  const updates = [];
+  const values = [];
+  let index = 1;
+
+  if (title !== undefined) {
+    updates.push(`title = $${index}`);
+    values.push(title);
+    index += 1;
+  }
+  if (avatar !== undefined) {
+    updates.push(`avatar = $${index}`);
+    values.push(avatar || null);
+    index += 1;
+  }
+  const normalizedUsername = username !== undefined ? (username ? normalizeUsername(username) : null) : undefined;
+  if (normalizedUsername && !isChatUsernameValid(normalizedUsername)) {
+    return res.status(400).json({ error: { message: 'Username can only contain English letters and numbers', code: 'CHAT_USERNAME_INVALID' } });
+  }
+  if (isPublic === true) {
+    const existingUsername = chatAccess?.username ? String(chatAccess.username) : null;
+    if (normalizedUsername === undefined && !existingUsername) {
+      return res.status(400).json({ error: 'Username is required for public chats' });
+    }
+    if (normalizedUsername === null) {
+      return res.status(400).json({ error: 'Username is required for public chats' });
+    }
+  }
+  if (typeof isPrivate === 'boolean') {
+    updates.push(`is_private = $${index}`);
+    values.push(isPrivate);
+    index += 1;
+    if (isPrivate) {
+      updates.push(`is_public = $${index}`);
+      values.push(false);
+      index += 1;
+      updates.push(`username = $${index}`);
+      values.push(null);
+      index += 1;
+    } else if (typeof isPublic === 'boolean') {
+      updates.push(`is_public = $${index}`);
+      values.push(isPublic);
+      index += 1;
+    }
+  } else if (typeof isPublic === 'boolean') {
+    updates.push(`is_public = $${index}`);
+    values.push(isPublic);
+    index += 1;
+    if (isPublic) {
+      updates.push(`is_private = $${index}`);
+      values.push(false);
+      index += 1;
+    }
+  }
+
+  if (normalizedUsername !== undefined && !isPrivate) {
+    updates.push(`username = $${index}`);
+    values.push(normalizedUsername || null);
+    index += 1;
+  }
+  if (regenerateInvite) {
+    updates.push(`invite_token = $${index}`);
+    values.push(generateInviteToken());
+    index += 1;
+  }
+
+  if (updates.length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
+  }
+
+  values.push(chatId);
+
+  db.run(
+    `UPDATE chats SET ${updates.join(', ')} WHERE id = $${index}`,
+    values,
+    (err) => {
+      if (err) {
+        console.error('[chats] update error', { chatId, err });
+        if (err.code === '23505') {
+          return res.status(409).json({ error: { message: 'Username already taken', code: 'USERNAME_TAKEN' } });
+        }
+        return res.status(500).json({ error: { message: 'Database error', code: 'DB_ERROR' } });
+      }
+      db.get(
+        'SELECT id, type, title, avatar, owner_id, is_public, is_private, username, invite_token, public_number FROM chats WHERE id = $1',
+        [chatId],
+        (getErr, row) => {
+          if (getErr) {
+            console.error('[chats] update get error', { chatId, err: getErr });
+            return res.status(500).json({ error: 'Database error' });
+          }
+          res.json({ chat: row || null });
+        }
+      );
+    }
+  );
+}));
+
+// Resolve public chat by username (preview)
+router.get('/chats/username/:username', authenticateToken, asyncHandler(async (req, res) => {
+  const currentUserId = req.user.userId;
+  const username = normalizeUsername(req.params.username);
+  if (!username) {
+    return res.status(400).json({ error: 'Invalid username' });
+  }
+
+  const chat = await new Promise((resolve) => {
+    db.get(
+      `SELECT c.id, c.type, c.title, c.avatar, c.owner_id, c.is_public, c.is_private, c.username, c.project_id,
+              c.invite_token, c.public_number,
+              COUNT(cm.user_id) as members_count
+       FROM chats c
+       LEFT JOIN chat_members cm ON cm.chat_id = c.id
+       WHERE c.username = $1 AND c.is_public = true
+       GROUP BY c.id`,
+      [username],
+      (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      }
+    );
+  });
+
+  if (!chat) {
+    return res.status(404).json({ error: 'Chat not found' });
+  }
+
+  let project = null;
+  if (chat.project_id) {
+    const projectData = await new Promise((resolve) => {
+      db.get(
+        `SELECT p.*, pm.role as member_role
+         FROM projects p
+         LEFT JOIN project_members pm ON pm.project_id = p.id AND pm.user_id = $2
+         WHERE p.id = $1`,
+        [chat.project_id, currentUserId],
+        (err, row) => {
+          if (err) return resolve(null);
+          resolve(row || null);
+        }
+      );
+    });
+    if (projectData) {
+      project = {
+        id: projectData.id,
+        name: projectData.name,
+        slug: projectData.slug,
+        description: projectData.description,
+        status: projectData.status,
+        member_role: projectData.member_role,
+      };
+    }
+  }
+
+  const member = await new Promise((resolve) => {
+    db.get(
+      'SELECT role FROM chat_members WHERE chat_id = $1 AND user_id = $2',
+      [chat.id, currentUserId],
+      (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      }
+    );
+  });
+
+  res.json({
+    chat: {
+      id: chat.id.toString(),
+      routeId: chat.public_number ? String(chat.public_number) : chat.id.toString(),
+      type: chat.type,
+      title: chat.title,
+      avatar: chat.avatar,
+      ownerId: chat.owner_id ? chat.owner_id.toString() : null,
+      isPublic: !!chat.is_public,
+      isPrivate: !!chat.is_private,
+      username: chat.username,
+      inviteToken: chat.invite_token || null,
+      publicNumber: chat.public_number ? String(chat.public_number) : null,
+      membersCount: Number(chat.members_count || 0),
+      role: member?.role || null,
+      project_id: chat.project_id,
+    },
+    project,
+  });
+}));
+
+// Resolve chat by public number (-100/-200)
+router.get('/chats/public-number/:publicNumber', authenticateToken, asyncHandler(async (req, res) => {
+  const currentUserId = req.user.userId;
+  const publicNumber = String(req.params.publicNumber || '').trim();
+
+  const chat = await new Promise((resolve) => {
+    db.get(
+      `SELECT c.id, c.type, c.title, c.avatar, c.owner_id, c.is_public, c.is_private, c.username,
+              c.invite_token, c.public_number,
+              COUNT(cm.user_id) as members_count
+       FROM chats c
+       LEFT JOIN chat_members cm ON cm.chat_id = c.id
+       WHERE c.public_number = $1
+       GROUP BY c.id`,
+      [publicNumber],
+      (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      }
+    );
+  });
+
+  if (!chat) {
+    return res.status(404).json({ error: 'Chat not found' });
+  }
+
+  const member = await new Promise((resolve) => {
+    db.get(
+      'SELECT role FROM chat_members WHERE chat_id = $1 AND user_id = $2',
+      [chat.id, currentUserId],
+      (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      }
+    );
+  });
+
+  if (chat.is_public) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+
+  if (!member) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  res.json({
+    chat: {
+      id: chat.id.toString(),
+      routeId: chat.public_number ? String(chat.public_number) : chat.id.toString(),
+      type: chat.type,
+      title: chat.title,
+      avatar: chat.avatar,
+      ownerId: chat.owner_id ? chat.owner_id.toString() : null,
+      isPublic: !!chat.is_public,
+      isPrivate: !!chat.is_private,
+      username: chat.username,
+      inviteToken: chat.invite_token || null,
+      publicNumber: chat.public_number ? String(chat.public_number) : null,
+      membersCount: Number(chat.members_count || 0),
+      role: member?.role || null,
+    },
+  });
+}));
+
+// Resolve invite token (private preview)
+router.get('/chats/invite/:token', authenticateToken, asyncHandler(async (req, res) => {
+  const currentUserId = req.user.userId;
+  const token = String(req.params.token || '').trim();
+  if (!token) {
+    return res.status(400).json({ error: 'Invalid invite token' });
+  }
+
+  const chat = await new Promise((resolve) => {
+    db.get(
+      `SELECT c.id, c.type, c.title, c.avatar, c.owner_id, c.is_public, c.is_private, c.username,
+              c.invite_token, c.public_number,
+              COUNT(cm.user_id) as members_count
+       FROM chats c
+       LEFT JOIN chat_members cm ON cm.chat_id = c.id
+       WHERE c.invite_token = $1
+       GROUP BY c.id`,
+      [token],
+      (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      }
+    );
+  });
+
+  if (!chat) {
+    return res.status(404).json({ error: 'Invite not found' });
+  }
+
+  const member = await new Promise((resolve) => {
+    db.get(
+      'SELECT role FROM chat_members WHERE chat_id = $1 AND user_id = $2',
+      [chat.id, currentUserId],
+      (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      }
+    );
+  });
+
+  const pendingRequest = await new Promise((resolve) => {
+    db.get(
+      'SELECT status FROM chat_join_requests WHERE chat_id = $1 AND user_id = $2',
+      [chat.id, currentUserId],
+      (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      }
+    );
+  });
+
+  res.json({
+    chat: {
+      id: chat.id.toString(),
+      routeId: chat.public_number ? String(chat.public_number) : chat.id.toString(),
+      type: chat.type,
+      title: chat.title,
+      avatar: chat.avatar,
+      ownerId: chat.owner_id ? chat.owner_id.toString() : null,
+      isPublic: !!chat.is_public,
+      isPrivate: !!chat.is_private,
+      username: chat.username,
+      inviteToken: chat.invite_token || null,
+      publicNumber: chat.public_number ? String(chat.public_number) : null,
+      membersCount: Number(chat.members_count || 0),
+      role: member?.role || null,
+      joinStatus: pendingRequest?.status || null,
+    },
+  });
+}));
+
+// Request to join via invite
+router.post('/chats/:id/join-requests', authenticateToken, asyncHandler(async (req, res) => {
+  const userId = req.user.userId;
+  const chatId = req.params.id;
+
+  const chat = await new Promise((resolve) => {
+    db.get('SELECT id, type, is_private, is_public FROM chats WHERE id = $1', [chatId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (!chat) {
+    return res.status(404).json({ error: 'Chat not found' });
+  }
+
+  if (!chat.is_private && chat.type === 'group' && chat.is_public) {
+    db.run(
+      `INSERT INTO chat_members (chat_id, user_id, role)
+       VALUES ($1, $2, 'member')
+       ON CONFLICT DO NOTHING`,
+      [chatId, userId],
+      (err) => {
+        if (err) {
+          return res.status(500).json({ error: 'Database error' });
+        }
+        return res.json({ status: 'approved' });
+      }
+    );
+    return;
+  }
+
+  if (!chat.is_private) {
+    return res.status(404).json({ error: 'Chat not found' });
+  }
+
+  const member = await new Promise((resolve) => {
+    db.get('SELECT role FROM chat_members WHERE chat_id = $1 AND user_id = $2', [chatId, userId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (member) {
+    return res.json({ status: 'approved' });
+  }
+
+  db.run(
+    `INSERT INTO chat_join_requests (chat_id, user_id, status)
+     VALUES ($1, $2, 'pending')
+     ON CONFLICT (chat_id, user_id) DO UPDATE SET status = 'pending', created_at = NOW()`
+    ,
+    [chatId, userId],
+    (err) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json({ status: 'pending' });
+    }
+  );
+}));
+
+// List join requests for chat (owner/admin)
+router.get('/chats/:id/join-requests', authenticateToken, asyncHandler(async (req, res) => {
+  const requesterId = req.user.userId;
+  const chatId = req.params.id;
+
+  const requester = await new Promise((resolve) => {
+    db.get('SELECT role FROM chat_members WHERE chat_id = $1 AND user_id = $2', [chatId, requesterId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (!requester || (requester.role !== 'owner' && requester.role !== 'admin')) {
+    return res.status(403).json({ error: 'Insufficient permissions' });
+  }
+
+  db.all(
+    `SELECT r.id, r.user_id, r.status, r.created_at, u.name, u.username, u.avatar, u.verified
+     FROM chat_join_requests r
+     JOIN users u ON u.id = r.user_id
+     WHERE r.chat_id = $1 AND r.status = 'pending'
+     ORDER BY r.created_at ASC`,
+    [chatId],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      const requests = (rows || []).map((row) => ({
+        id: row.id.toString(),
+        userId: row.user_id.toString(),
+        status: row.status,
+        createdAt: row.created_at,
+        user: {
+          id: row.user_id.toString(),
+          name: row.name,
+          username: row.username,
+          avatar: row.avatar,
+          verified: row.verified === 1,
+        },
+      }));
+      res.json({ requests });
+    }
+  );
+}));
+
+// Approve/reject join request
+router.post('/chats/:id/join-requests/:requestId', authenticateToken, asyncHandler(async (req, res) => {
+  const requesterId = req.user.userId;
+  const chatId = req.params.id;
+  const requestId = req.params.requestId;
+  const { action } = req.body || {};
+
+  if (!['approve', 'reject'].includes(action)) {
+    return res.status(400).json({ error: 'Invalid action' });
+  }
+
+  const requester = await new Promise((resolve) => {
+    db.get('SELECT role FROM chat_members WHERE chat_id = $1 AND user_id = $2', [chatId, requesterId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (!requester || (requester.role !== 'owner' && requester.role !== 'admin')) {
+    return res.status(403).json({ error: 'Insufficient permissions' });
+  }
+
+  const requestRow = await new Promise((resolve) => {
+    db.get('SELECT user_id FROM chat_join_requests WHERE id = $1 AND chat_id = $2', [requestId, chatId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (!requestRow?.user_id) {
+    return res.status(404).json({ error: 'Request not found' });
+  }
+
+  db.run(
+    `UPDATE chat_join_requests
+     SET status = $1, reviewed_at = NOW(), reviewed_by = $2
+     WHERE id = $3`,
+    [action === 'approve' ? 'approved' : 'rejected', requesterId, requestId],
+    (err) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+      if (action === 'approve') {
+        db.run(
+          `INSERT INTO chat_members (chat_id, user_id, role)
+           VALUES ($1, $2, 'member')
+           ON CONFLICT DO NOTHING`,
+          [chatId, requestRow.user_id],
+          () => {
+            res.json({ status: 'approved' });
+          }
+        );
+      } else {
+        res.json({ status: 'rejected' });
+      }
+    }
+  );
+}));
+
+// Get messages for a chat
+router.get('/chats/:chatId/messages', authenticateToken, (req, res) => {
+  const currentUserId = req.user.userId;
+  const chatId = req.params.chatId;
+
+  const memberQuery = `
+    SELECT cm.role, c.type
+    FROM chat_members cm
+    JOIN chats c ON c.id = cm.chat_id
+    WHERE cm.chat_id = $1 AND cm.user_id = $2
+  `;
+
+  db.get(memberQuery, [chatId, currentUserId], (memberErr, membership) => {
+    if (memberErr) {
+      console.error('[messages] memberQuery error:', memberErr);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (!membership) {
+      console.warn('[messages] access denied', { currentUserId, chatId });
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 10000, 1), 10000);
+    const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+
     const messageQuery = `
       SELECT m.*, u.name, u.username, u.avatar, u.verified,
-             (SELECT COUNT(*) FROM message_deletions WHERE message_id = m.id) as deleted_count,
              md.deleted_at as deleted_for_me,
-              mo.thumb_data_url, mo.ttl_seconds, mo.expires_at,
-              mv.viewed_at as moment_viewed_at,
-              s.id as sticker_id,
-              s.pack_id as sticker_pack_id,
-              s.name as sticker_name,
-              s.file_path as sticker_file_path
-       FROM messages m
-       JOIN users u ON m.sender_id = u.id
-       LEFT JOIN stickers s ON s.id = m.sticker_id
-       LEFT JOIN message_deletions md ON md.message_id = m.id AND md.user_id = $1
-       LEFT JOIN moments mo ON mo.id = m.moment_id
-       LEFT JOIN moment_views mv ON mv.moment_id = mo.id AND mv.user_id = $2
-       WHERE (m.sender_id = $3 AND m.receiver_id = $4) OR (m.sender_id = $5 AND m.receiver_id = $6)
-        AND m.deleted_for_all_at IS NULL
-      ORDER BY m.created_at ASC
-    `;
+             mo.thumb_data_url, mo.ttl_seconds, mo.expires_at,
+             mv.viewed_at as moment_viewed_at,
+             s.id as sticker_id,
+             s.pack_id as sticker_pack_id,
+             s.name as sticker_name,
+             s.file_path as sticker_file_path
+        FROM messages m
+        JOIN users u ON m.sender_id = u.id
+        LEFT JOIN stickers s ON s.id = m.sticker_id
+        LEFT JOIN message_deletions md ON md.message_id = m.id AND md.user_id = $1
+        LEFT JOIN moments mo ON mo.id = m.moment_id
+        LEFT JOIN moment_views mv ON mv.moment_id = mo.id AND mv.user_id = $2
+        WHERE m.chat_id = $3
+          AND m.deleted_for_all_at IS NULL
+        ORDER BY m.created_at ASC
+        LIMIT $4 OFFSET $5
+     `;
 
-    db.all(messageQuery, [currentUserId, currentUserId, userId1, userId2, userId2, userId1], (err, messages) => {
+    db.all(messageQuery, [currentUserId, currentUserId, chatId, limit, offset], (err, messages) => {
       if (err) {
         console.error('[messages] messageQuery error:', err);
         return res.status(500).json({ error: 'Database error' });
       }
 
-      // Get attachments for all messages
       const messageIds = messages.map(m => m.id);
       let attachmentsByMessage = {};
 
@@ -1006,9 +1967,9 @@ router.get('/messages/:userId(\\d+)', authenticateToken, (req, res) => {
         db.all(
           `SELECT * FROM attachments WHERE message_id IN (${placeholders})`,
           messageIds,
-          (err, attachments) => {
-            if (err) console.error('Error getting attachments:', err);
-            
+          (attErr, attachments) => {
+            if (attErr) console.error('Error getting attachments:', attErr);
+
             attachmentsByMessage = {};
             (attachments || []).forEach(att => {
               if (!attachmentsByMessage[att.message_id]) {
@@ -1034,64 +1995,102 @@ router.get('/messages/:userId(\\d+)', authenticateToken, (req, res) => {
       }
 
       function formatAndSendMessages(msgs, attsByMsg) {
-            const formattedMessages = msgs.map(msg => ({
-              id: msg.id.toString(),
-              senderId: msg.sender_id === userId1 ? 'self' : msg.sender_id.toString(),
-              text: msg.text,
-              type: msg.type || 'text',
-              sticker: msg.sticker_id ? {
-                id: msg.sticker_id.toString(),
-                packId: msg.sticker_pack_id ? msg.sticker_pack_id.toString() : null,
-                name: msg.sticker_name || null,
-                filePath: msg.sticker_file_path || null,
-                url: msg.sticker_file_path ? `${getPublicBaseUrl(req)}/api/stickers/${msg.sticker_id}` : null,
-              } : null,
-              moment: msg.moment_id ? {
-                id: msg.moment_id.toString(),
-                thumbDataUrl: msg.thumb_data_url || null,
-                ttlSeconds: msg.ttl_seconds || 86400,
-                expiresAt: msg.expires_at || null,
-                viewedAt: msg.moment_viewed_at || null
-              } : null,
-              timestamp: msg.created_at || msg.timestamp,
-              own: msg.sender_id === userId1,
-              attachments: attsByMsg[msg.id] || [],
-              deletedForMe: !!msg.deleted_for_me,
-              deletedForAll: !!msg.deleted_for_all_at,
-              replyToMessageId: msg.reply_to_message_id ? msg.reply_to_message_id.toString() : null,
-              linkPreview: msg.link_preview ? (() => {
-                try {
-                  return JSON.parse(msg.link_preview);
-                } catch (error) {
-                  return null;
-                }
-              })() : null
-            }));
-res.json({ messages: formattedMessages });
+        const formattedMessages = msgs.map(msg => ({
+          id: msg.id.toString(),
+          senderId: msg.sender_id === currentUserId ? 'self' : msg.sender_id.toString(),
+          sender: {
+            id: msg.sender_id?.toString(),
+            name: msg.name,
+            username: msg.username,
+            avatar: msg.avatar,
+            verified: msg.verified === 1,
+          },
+          text: msg.text,
+          type: msg.type || 'text',
+          sticker: msg.sticker_id ? {
+            id: msg.sticker_id.toString(),
+            packId: msg.sticker_pack_id ? msg.sticker_pack_id.toString() : null,
+            name: msg.sticker_name || null,
+            filePath: msg.sticker_file_path || null,
+            url: msg.sticker_file_path
+              ? (isRemoteUrl(msg.sticker_file_path)
+                ? msg.sticker_file_path
+                : `${getPublicBaseUrl(req)}/api/stickers/${msg.sticker_id}`)
+              : null,
+          } : null,
+          moment: msg.moment_id ? {
+            id: msg.moment_id.toString(),
+            thumbDataUrl: msg.thumb_data_url || null,
+            ttlSeconds: msg.ttl_seconds || 86400,
+            expiresAt: msg.expires_at || null,
+            viewedAt: msg.moment_viewed_at || null
+          } : null,
+          timestamp: msg.created_at || msg.timestamp,
+          own: msg.sender_id === currentUserId,
+          attachments: attsByMsg[msg.id] || [],
+          deletedForMe: !!msg.deleted_for_me,
+          deletedForAll: !!msg.deleted_for_all_at,
+          replyToMessageId: msg.reply_to_message_id ? msg.reply_to_message_id.toString() : null,
+          linkPreview: msg.link_preview ? (() => {
+            try {
+              return JSON.parse(msg.link_preview);
+            } catch (error) {
+              return null;
+            }
+          })() : null
+        }));
+        res.json({ messages: formattedMessages, hasMore: msgs.length === limit });
       }
     });
-  }
+  });
 });
 
-// Send a message with WebSocket notification
+// Send a message in a chat
 router.post('/messages', authenticateToken, asyncHandler(async (req, res) => {
   const senderId = req.user.userId;
-  const { receiverId, text, attachmentIds, replyToMessageId, stickerId } = req.body;
+  const { chatId, text, attachmentIds, replyToMessageId, stickerId } = req.body;
 
-  if (!receiverId) {
-    return res.status(400).json({ error: 'Receiver ID is required' });
+  if (process.env.E2EE_ENFORCE === 'true' && typeof text === 'string' && text.length > 0) {
+    return res.status(400).json({ error: 'Plaintext message body is disabled when E2EE_ENFORCE=true' });
   }
 
+  if (!chatId) {
+    return res.status(400).json({ error: 'chatId is required' });
+  }
+
+  const member = await new Promise((resolve) => {
+    db.get(
+      'SELECT cm.role, c.type FROM chat_members cm JOIN chats c ON c.id = cm.chat_id WHERE cm.chat_id = $1 AND cm.user_id = $2',
+      [chatId, senderId],
+      (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      }
+    );
+  });
+
+  if (!member) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  if (member.type === 'channel' && !['owner', 'admin'].includes(member.role)) {
+    return res.status(403).json({ error: 'Only admins can write to channel' });
+  }
+
+
   const messageText = text || '';
-  
-  // Validate attachmentIds if provided
   const attachments = Array.isArray(attachmentIds) ? attachmentIds : [];
 
   const { getLinkPreview } = require('./linkPreview');
   const extractFirstUrl = (value) => {
     if (!value) return null;
-    const match = String(value).match(/https?:\/\/[^\s]+/i);
-    return match ? match[0] : null;
+    const match = String(value).match(/(?:https?:\/\/)?[^\s]+(?:\/[^\s]*)?/i);
+    if (!match) return null;
+    let url = match[0];
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
+    return url;
   };
 
   const previewUrl = extractFirstUrl(messageText);
@@ -1109,8 +2108,8 @@ router.post('/messages', authenticateToken, asyncHandler(async (req, res) => {
   }
 
   let sticker = null;
-  let stickerType = 'text';
-  let stickerText = messageText;
+  let messageType = 'text';
+  let messageBody = messageText;
 
   if (stickerId) {
     const stickerRow = await new Promise((resolve) => {
@@ -1135,14 +2134,16 @@ router.post('/messages', authenticateToken, asyncHandler(async (req, res) => {
       filePath: stickerRow.file_path,
       packId: stickerRow.pack_id.toString(),
       packName: stickerRow.pack_name,
-      url: `${getPublicBaseUrl(req)}/api/stickers/${stickerRow.id}`,
+      url: isRemoteUrl(stickerRow.file_path)
+        ? stickerRow.file_path
+        : `${getPublicBaseUrl(req)}/api/stickers/${stickerRow.id}`,
     };
-    stickerType = 'sticker';
-    stickerText = messageText || '[sticker]';
+    messageType = 'sticker';
+    messageBody = messageText || '[sticker]';
   }
 
   const insertMessageQuery = `
-    INSERT INTO messages (sender_id, receiver_id, text, type, reply_to_message_id, link_preview, sticker_id)
+    INSERT INTO messages (chat_id, sender_id, text, type, reply_to_message_id, link_preview, sticker_id)
     VALUES ($1, $2, $3, $4, $5, $6, $7)
   `;
 
@@ -1154,7 +2155,7 @@ router.post('/messages', authenticateToken, asyncHandler(async (req, res) => {
 
       db.run(
         insertMessageQuery,
-        [senderId, receiverId, stickerText, stickerType, replyToMessageId || null, linkPreview ? JSON.stringify(linkPreview) : null, sticker ? sticker.id : null],
+        [chatId, senderId, messageBody, messageType, replyToMessageId || null, linkPreview ? JSON.stringify(linkPreview) : null, sticker ? sticker.id : null],
         function(err) {
           if (err) {
             return db.run('ROLLBACK', () => res.status(500).json({ error: 'Database error' }));
@@ -1188,146 +2189,114 @@ router.post('/messages', authenticateToken, asyncHandler(async (req, res) => {
               }
 
               const senderQuery = 'SELECT name, username, avatar, verified FROM users WHERE id = $1';
-               db.get(senderQuery, [senderId], (err, sender) => {
-                if (err) console.error('Error getting sender:', err);
+              db.get(senderQuery, [senderId], (senderErr, sender) => {
+                if (senderErr) console.error('Error getting sender:', senderErr);
 
                 let attachmentsData = [];
                 if (attachments.length > 0) {
                   db.all(
                     'SELECT * FROM attachments WHERE message_id = $1',
                     [messageId],
-                    (err, atts) => {
-                      if (err) console.error('Error getting attachments:', err);
+                    (attErr, atts) => {
+                      if (attErr) console.error('Error getting attachments:', attErr);
                       attachmentsData = atts || [];
-                      continueWithMessage(messageId, messageText, sender, attachmentsData);
+                      continueWithMessage(messageId, sender, attachmentsData);
                     }
                   );
                 } else {
-                  continueWithMessage(messageId, messageText, sender, []);
+                  continueWithMessage(messageId, sender, []);
                 }
 
-                function continueWithMessage(msgId, msgText, senderData, atts) {
-                  const getChatQuery = `
-                    SELECT id FROM chats
-                    WHERE (user1_id = $1 AND user2_id = $2) OR (user1_id = $3 AND user2_id = $4)
-                  `;
+                async function continueWithMessage(msgId, senderData, atts) {
+                  const formattedAttachments = atts.map(att => ({
+                    id: att.id.toString(),
+                    type: att.type,
+                    url: att.url,
+                    mime: att.mime,
+                    size: att.size,
+                    width: att.width,
+                    height: att.height
+                  }));
 
-                  db.get(getChatQuery, [senderId, receiverId, receiverId, senderId], (err, existingChat) => {
-                    if (err) {
-                      console.error('Error getting chat:', err);
-                      return res.json({ message: 'Message sent successfully', messageId });
-                    }
+                  const sendChatMessage = req.app.get('sendChatMessage');
+                  const createNotification = req.app.get('createNotification');
 
-                    let chatId = existingChat ? existingChat.id : null;
-
-                  const chatMessage = stickerType === 'sticker'
-                    ? `Стикер ${sticker?.name || ''}`.trim()
-                    : atts.length > 0
-                      ? `[${atts.length} вложение(ий)] ${msgText.substring(0, 50)}`
-                      : msgText;
-
-                    const updateOrCreateQuery = chatId
-                      ? `UPDATE chats SET last_message = $1, last_message_time = NOW(), unread_count = unread_count + 1 WHERE id = $2`
-                      : `INSERT INTO chats (user1_id, user2_id, last_message, last_message_time, unread_count) VALUES ($1, $2, $3, NOW(), 1)`;
-
-                    const params = chatId ? [chatMessage, chatId] : [senderId, receiverId, chatMessage];
-
-                    db.run(updateOrCreateQuery, params, function(err) {
-                      if (err) {
-                        console.error('Error updating chat:', err);
-                      }
-
-                      if (!chatId && this?.lastID) {
-                        chatId = this.lastID;
-                      }
-
-                      const formattedAttachments = atts.map(att => ({
-                        id: att.id.toString(),
-                        type: att.type,
-                        url: att.url,
-                        mime: att.mime,
-                        size: att.size,
-                        width: att.width,
-                        height: att.height
-                      }));
-
-                       const sendToUser = req.app.get('sendToUser');
-                       const createNotification = req.app.get('createNotification');
-                       const receiverQuery = 'SELECT name, username, avatar FROM users WHERE id = $1';
-
-                      if (sendToUser) {
-                        sendToUser(receiverId, {
-                          type: 'new_message',
-                          data: {
-                            id: msgId,
-                            senderId: senderId.toString(),
-                            receiverId: receiverId.toString(),
-                            text: msgText,
-                            type: stickerType,
-                            sticker,
-                            timestamp: new Date().toISOString(),
-                            attachments: formattedAttachments,
-                            replyToMessageId: replyToMessageId ? replyToMessageId.toString() : null,
-                            linkPreview,
-                            sender: senderData ? {
-                              name: senderData.name,
-                              username: senderData.username,
-                              avatar: senderData.avatar,
-                              verified: senderData.verified === 1
-                            } : null
-                          }
-                        });
-                      }
-
-                      if (createNotification) {
-                        const actorName = senderData?.name || senderData?.username || 'Someone';
-                        createNotification({
-                          userId: receiverId,
-                          type: 'message',
-                          actorId: senderId,
-                          actorUsername: senderData?.username || null,
-                          actorAvatar: senderData?.avatar || null,
-                          targetId: senderId,
-                          targetType: 'user',
-                          message: `${actorName} отправил вам сообщение`,
-                          url: `/messages/${senderId}`,
-                        }).catch(err => {
-                          console.error('[API] Error creating notification:', err);
-                        });
-                      }
-
-                      res.json({
-                        message: 'Message sent successfully',
-                        messageId: msgId,
-                        attachments: formattedAttachments,
-                        replyToMessageId: replyToMessageId ? replyToMessageId.toString() : null,
-                        linkPreview,
-                        sticker,
-                        type: stickerType,
-                      });
-
-                      indexMessage({
-                        id: msgId,
-                        chatId: chatId,
-                        serverId: null,
-                        userId: senderId,
-                        text: msgText,
-                        timestamp: new Date().toISOString(),
-                      }).catch(err => {
-                        console.error('[Meilisearch] Indexation error:', err);
-                      });
-
-                      createMentionNotifications(msgText, senderId, {
-                        actorId: senderId,
-                        actorUsername: senderData?.username || null,
-                        actorAvatar: senderData?.avatar || null,
-                        targetId: msgId,
-                        targetType: 'message',
-                        message: null,
-                        url: `/messages/${senderId}?message=${msgId}`,
-                      }, req);
+                  if (sendChatMessage) {
+                    sendChatMessage({
+                      id: msgId,
+                      chatId: String(chatId),
+                      senderId: senderId.toString(),
+                      text: messageBody,
+                      type: messageType,
+                      sticker,
+                      timestamp: new Date().toISOString(),
+                      attachments: formattedAttachments,
+                      replyToMessageId: replyToMessageId ? replyToMessageId.toString() : null,
+                      linkPreview,
+                      sender: senderData ? {
+                        name: senderData.name,
+                        username: senderData.username,
+                        avatar: senderData.avatar,
+                        verified: senderData.verified === 1
+                      } : null
                     });
+                  }
+
+                  if (createNotification) {
+                    db.all(
+                      'SELECT user_id FROM chat_members WHERE chat_id = $1 AND user_id <> $2',
+                      [chatId, senderId],
+                      (memberErr, members) => {
+                        if (memberErr) return;
+                        const actorName = senderData?.name || senderData?.username || 'Someone';
+                        (members || []).forEach((memberRow) => {
+                          createNotification({
+                            userId: memberRow.user_id,
+                            type: 'message',
+                            actorId: senderId,
+                            actorUsername: senderData?.username || null,
+                            actorAvatar: senderData?.avatar || null,
+                            targetId: chatId,
+                            targetType: 'chat',
+                            message: `${actorName} отправил сообщение`,
+                            url: `/messages/${chatId}`,
+                          }).catch(err => {
+                            console.error('[API] Error creating notification:', err);
+                          });
+                        });
+                      }
+                    );
+                  }
+
+                  res.json({
+                    message: 'Message sent successfully',
+                    messageId: msgId,
+                    attachments: formattedAttachments,
+                    replyToMessageId: replyToMessageId ? replyToMessageId.toString() : null,
+                    linkPreview,
+                    sticker,
+                    type: messageType,
                   });
+
+                  indexMessage({
+                    id: msgId,
+                    chatId: chatId,
+                    userId: senderId,
+                    text: messageBody,
+                    timestamp: new Date().toISOString(),
+                  }).catch(err => {
+                    console.error('[Meilisearch] Indexation error:', err);
+                  });
+
+                  createMentionNotifications(messageBody, senderId, {
+                    actorId: senderId,
+                    actorUsername: senderData?.username || null,
+                    actorAvatar: senderData?.avatar || null,
+                    targetId: msgId,
+                    targetType: 'message',
+                    message: null,
+                    url: `/messages/${chatId}?message=${msgId}`,
+                  }, req);
                 }
               });
             });
@@ -1343,14 +2312,33 @@ router.post('/messages', authenticateToken, asyncHandler(async (req, res) => {
 // Отправка голосового сообщения
 router.post('/messages/voice', authenticateToken, voiceUpload.single('audio'), asyncHandler(async (req, res) => {
   const senderId = req.user.userId;
-  const { receiverId, duration, replyToMessageId } = req.body;
+  const { chatId, duration, replyToMessageId } = req.body;
+
+  if (process.env.E2EE_ENFORCE === 'true') {
+    return res.status(400).json({ error: 'Voice plaintext flow is disabled when E2EE_ENFORCE=true' });
+  }
 
   if (!req.file) {
     return res.status(400).json({ error: 'Audio file is required' });
   }
 
-  if (!receiverId) {
-    return res.status(400).json({ error: 'Receiver ID is required' });
+  if (!chatId) {
+    return res.status(400).json({ error: 'chatId is required' });
+  }
+
+  const member = await new Promise((resolve) => {
+    db.get('SELECT role, c.type FROM chat_members cm JOIN chats c ON c.id = cm.chat_id WHERE cm.chat_id = $1 AND cm.user_id = $2', [chatId, senderId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (!member) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  if (member.type === 'channel' && !['owner', 'admin'].includes(member.role)) {
+    return res.status(403).json({ error: 'Only admins can write to channel' });
   }
 
   const audioDuration = parseFloat(duration) || 0;
@@ -1361,7 +2349,7 @@ router.post('/messages/voice', authenticateToken, voiceUpload.single('audio'), a
   const messageText = `\u0413\u043e\u043b\u043e\u0441\u043e\u0432\u043e\u0435 \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0435 (${Math.floor(audioDuration)}\u0441)`;
   
   const insertMessageQuery = `
-    INSERT INTO messages (sender_id, receiver_id, text, type, reply_to_message_id)
+    INSERT INTO messages (chat_id, sender_id, text, type, reply_to_message_id)
     VALUES ($1, $2, $3, 'voice', $4)
   `;
 
@@ -1371,14 +2359,14 @@ router.post('/messages/voice', authenticateToken, voiceUpload.single('audio'), a
         if (beginErr) return reject(beginErr);
         db.run(
           insertMessageQuery,
-          [senderId, receiverId, messageText, replyToMessageId || null],
+          [chatId, senderId, messageText, replyToMessageId || null],
           function(err) {
             if (err) {
               return db.run('ROLLBACK', () => reject(err));
             }
 
             const createdMessageId = this.lastID;
-            const attachmentUrl = `${getPublicBaseUrl(req)}/uploads/voice/${req.file.filename}`;
+            const attachmentUrl = req.file.path || req.file.secure_url || req.file.url;
 
             db.run(
               `INSERT INTO attachments (message_id, type, url, mime, size, duration)
@@ -1429,86 +2417,57 @@ router.post('/messages/voice', authenticateToken, voiceUpload.single('audio'), a
   });
 
   // Обновляем или создаем чат
-  const chatId = await new Promise((resolve, reject) => {
-    db.get(
-      'SELECT id FROM chats WHERE (user1_id = $1 AND user2_id = $2) OR (user1_id = $3 AND user2_id = $4)',
-      [senderId, receiverId, receiverId, senderId],
-      (err, row) => {
-        if (err) reject(err);
-        else resolve(row ? row.id : null);
-      }
-    );
-  });
-
-  if (chatId) {
-    await new Promise((resolve, reject) => {
-      db.run(
-        'UPDATE chats SET last_message = $1, last_message_time = NOW(), unread_count = unread_count + 1 WHERE id = $2',
-        [messageText, chatId],
-        (err) => (err ? reject(err) : resolve())
-      );
-    });
-  } else {
-    await new Promise((resolve, reject) => {
-      db.run(
-        'INSERT INTO chats (user1_id, user2_id, last_message, last_message_time, unread_count) VALUES ($1, $2, $3, NOW(), 1)',
-        [senderId, receiverId, messageText],
-        (err) => (err ? reject(err) : resolve())
-      );
-    });
-  }
+  const chatIdValue = chatId;
 
   // Отправляем WebSocket уведомление
   const sendToUser = req.app.get('sendToUser');
   const createNotification = req.app.get('createNotification');
 
-  if (sendToUser) {
-    sendToUser(receiverId, {
-      type: 'new_message',
-      data: {
-        id: messageId.toString(),
-        senderId: senderId.toString(),
-        receiverId: receiverId.toString(),
-        text: messageText,
-        type: 'voice',
-        timestamp: new Date().toISOString(),
-        attachments: [attachment],
-        replyToMessageId: replyToMessageId ? replyToMessageId.toString() : null,
-        sender: sender ? {
-          name: sender.name,
-          username: sender.username,
-          avatar: sender.avatar,
-          verified: sender.verified === 1
-        } : null
-      }
+  const sendChatMessage = req.app.get('sendChatMessage');
+  if (sendChatMessage) {
+    sendChatMessage({
+      id: messageId.toString(),
+      chatId: String(chatIdValue),
+      senderId: senderId.toString(),
+      text: messageText,
+      type: 'voice',
+      timestamp: new Date().toISOString(),
+      attachments: [attachment],
+      replyToMessageId: replyToMessageId ? replyToMessageId.toString() : null,
+      sender: sender ? {
+        name: sender.name,
+        username: sender.username,
+        avatar: sender.avatar,
+        verified: sender.verified === 1
+      } : null
     });
   }
 
   // Создаем уведомление для получателя
   if (createNotification) {
-    const actorName = sender?.name || sender?.username || 'Someone';
-    const chatQuery = `
-      SELECT id FROM chats
-      WHERE (user1_id = $1 AND user2_id = $2) OR (user1_id = $3 AND user2_id = $4)
-      ORDER BY id DESC
-      LIMIT 1
-    `;
-    db.get(chatQuery, [senderId, receiverId, receiverId, senderId], (err, chat) => {
-      const chatId = chat?.id;
-      createNotification({
-        userId: receiverId,
-        type: 'message',
-        actorId: senderId,
-        actorUsername: sender?.username || null,
-        actorAvatar: sender?.avatar || null,
-        targetId: chatId || null,
-        targetType: 'chat',
-        message: `${actorName} отправил вам сообщение`,
-        url: chatId ? `/messages/${chatId}` : '/messages',
-      }).catch(err => {
-        console.error('[API] Error creating notification:', err);
-      });
-    });
+    db.all(
+      'SELECT user_id FROM chat_members WHERE chat_id = $1 AND user_id <> $2',
+      [chatIdValue, senderId],
+      (memberErr, members) => {
+        if (memberErr) return;
+        const actorName = sender?.name || sender?.username || 'Someone';
+        (members || []).forEach((memberRow) => {
+          createNotification({
+            userId: memberRow.user_id,
+            type: 'message',
+            actorId: senderId,
+            actorUsername: sender?.username || null,
+            actorAvatar: sender?.avatar || null,
+            targetId: chatIdValue || null,
+            targetType: 'chat',
+            message: `${actorName} отправил сообщение`,
+            url: `/messages/${chatIdValue}`,
+          }).catch(err => {
+            console.error('[API] Error creating notification:', err);
+          });
+        });
+      }
+    );
   }
 
   res.json({
@@ -1529,13 +2488,14 @@ router.get('/messages/search', authenticateToken, asyncHandler(async (req, res) 
 
   // Получаем все чаты, где пользователь является участником
   const getChatsQuery = `
-    SELECT c.id, c.user1_id, c.user2_id
+    SELECT c.id
     FROM chats c
-    WHERE c.user1_id = $1 OR c.user2_id = $2
+    JOIN chat_members cm ON cm.chat_id = c.id
+    WHERE cm.user_id = $1
   `;
 
   const chats = await new Promise((resolve, reject) => {
-    db.all(getChatsQuery, [userId, userId], (err, rows) => {
+    db.all(getChatsQuery, [userId], (err, rows) => {
       if (err) reject(err);
       else resolve(rows);
     });
@@ -1576,20 +2536,10 @@ router.get('/messages/search', authenticateToken, asyncHandler(async (req, res) 
               u.username as sender_username,
               u.avatar as sender_avatar,
               u.verified as sender_verified,
-              c.id as chat_id,
-              uc.id as contact_id,
-              uc.name as contact_name,
-              uc.username as contact_username,
-              uc.avatar as contact_avatar,
-              uc.verified as contact_verified
+              c.id as chat_id
        FROM messages m
        JOIN users u ON m.sender_id = u.id
-       JOIN chats c ON (m.sender_id = c.user1_id AND m.receiver_id = c.user2_id)
-                  OR (m.sender_id = c.user2_id AND m.receiver_id = c.user1_id)
-       JOIN users uc ON uc.id = CASE
-         WHEN c.user1_id = m.sender_id THEN c.user2_id
-         ELSE c.user1_id
-       END
+       JOIN chats c ON c.id = m.chat_id
        WHERE c.id = ANY($1)
          AND m.deleted_for_all_at IS NULL
          AND m.text ILIKE $2
@@ -1615,13 +2565,7 @@ router.get('/messages/search', authenticateToken, asyncHandler(async (req, res) 
       avatar: row.sender_avatar,
       verified: row.sender_verified === 1,
     },
-    contact: row.contact_id ? {
-      id: String(row.contact_id),
-      name: row.contact_name,
-      username: row.contact_username,
-      avatar: row.contact_avatar,
-      verified: row.contact_verified === 1,
-    } : null,
+    contact: null,
   }));
 
   res.json({
@@ -1633,7 +2577,7 @@ router.get('/messages/search', authenticateToken, asyncHandler(async (req, res) 
 }));
 
 // Get posts for feed
-router.get('/posts', authenticateToken, (req, res) => {
+router.get('/posts', authenticateToken, async (req, res) => {
   const query = `
     SELECT p.id, p.user_id, p.text, p.image_url, p.timestamp, p.replies_count AS replies, p.reposts_count AS reposts, p.resonance_count AS resonance, u.name, u.username, u.avatar, u.verified
     FROM posts p
@@ -1642,15 +2586,19 @@ router.get('/posts', authenticateToken, (req, res) => {
     LIMIT 50
   `;
 
-  db.all(query, [], (err, posts) => {
+  db.all(query, [], async (err, posts) => {
     if (err) {
       return res.status(500).json({ error: 'Database error' });
     }
 
+    const postIds = (posts || []).map((post) => post.id);
+    const imagesMap = await fetchPostImagesMap(postIds);
+
     // Преобразуем user_id в строку для корректной работы на frontend
-    const formattedPosts = posts.map(post => ({
+    const formattedPosts = (posts || []).map(post => ({
       ...post,
-      user_id: post.user_id.toString()
+      user_id: post.user_id.toString(),
+      imageUrls: imagesMap.get(String(post.id)) || undefined,
     }));
 
     res.json({ posts: formattedPosts });
@@ -1682,7 +2630,7 @@ router.get('/posts/recommended', authenticateToken, asyncHandler(async (req, res
     });
   });
   
-  const engagedUserIds = engagedUsers.map(u => u.engaged_user_id).join(',');
+  const engagedUserIds = engagedUsers.map(u => u.engaged_user_id);
   
   // Smart algorithm: posts from engaged users + trending posts
   let query = `
@@ -1695,8 +2643,11 @@ router.get('/posts/recommended', authenticateToken, asyncHandler(async (req, res
     WHERE p.timestamp >= NOW() - INTERVAL '14 days'
   `;
   
-  if (engagedUserIds) {
-    query += ` AND p.user_id IN (${engagedUserIds})`;
+  let queryParams = [];
+  
+  if (engagedUserIds.length > 0) {
+    query += ` AND p.user_id = ANY($1::int[])`;
+    queryParams.push(engagedUserIds);
   }
   
   // Order by engagement score (resonance*2 + comments*3 + reposts)
@@ -1707,23 +2658,27 @@ router.get('/posts/recommended', authenticateToken, asyncHandler(async (req, res
   `;
   
   const posts = await new Promise((resolve, reject) => {
-    db.all(query, (err, rows) => {
+    db.all(query, queryParams, (err, rows) => {
       if (err) reject(err);
       else resolve(rows);
     });
   });
   
-  const formattedPosts = posts.map(post => ({
+  const postIds = (posts || []).map((post) => post.id);
+  const imagesMap = await fetchPostImagesMap(postIds);
+
+  const formattedPosts = (posts || []).map(post => ({
     ...post,
     user_id: post.user_id.toString(),
     id: post.id.toString(),
+    imageUrls: imagesMap.get(String(post.id)) || undefined,
   }));
   
   res.json({ posts: formattedPosts });
 }));
 
 // Get following feed (posts from users you follow)
-router.get('/posts/following', authenticateToken, (req, res) => {
+router.get('/posts/following', authenticateToken, async (req, res) => {
   const userId = req.user.userId;
 
   const query = `
@@ -1736,14 +2691,18 @@ router.get('/posts/following', authenticateToken, (req, res) => {
     LIMIT 50
   `;
 
-  db.all(query, [userId], (err, posts) => {
+  db.all(query, [userId], async (err, posts) => {
     if (err) {
       return res.status(500).json({ error: 'Database error' });
     }
 
-    const formattedPosts = posts.map(post => ({
+    const postIds = (posts || []).map((post) => post.id);
+    const imagesMap = await fetchPostImagesMap(postIds);
+
+    const formattedPosts = (posts || []).map(post => ({
       ...post,
-      user_id: post.user_id.toString()
+      user_id: post.user_id.toString(),
+      imageUrls: imagesMap.get(String(post.id)) || undefined,
     }));
 
     res.json({ posts: formattedPosts });
@@ -1751,11 +2710,12 @@ router.get('/posts/following', authenticateToken, (req, res) => {
 });
 
 // Create a new post with WebSocket broadcast
-router.post('/posts', authenticateToken, upload.single('image'), (req, res) => {
+router.post('/posts', authenticateToken, upload.array('images', 5), (req, res) => {
   const userId = req.user.userId;
   const { text } = req.body;
+  const files = Array.isArray(req.files) ? req.files : [];
 
-  if (!text && !req.file) {
+  if (!text && files.length === 0) {
     return res.status(400).json({ error: 'Either text or image is required' });
   }
 
@@ -1763,8 +2723,10 @@ router.post('/posts', authenticateToken, upload.single('image'), (req, res) => {
     return res.status(400).json({ error: 'Post text exceeds 420 characters' });
   }
 
-  // Сохраняем полный URL для корректного отображения
-  const imageUrl = req.file ? `${getPublicBaseUrl(req)}/uploads/${req.file.filename}` : null;
+  const imageUrls = files
+    .map((file) => file.path || file.secure_url || file.url)
+    .filter(Boolean);
+  const imageUrl = imageUrls.length > 0 ? imageUrls[0] : null;
 
   let query;
   let params;
@@ -1791,41 +2753,60 @@ router.post('/posts', authenticateToken, upload.single('image'), (req, res) => {
 
     const postId = this.lastID;
 
-    // Get user info for the post
-    const userQuery = 'SELECT name, username, avatar, verified FROM users WHERE id = $1';
-    db.get(userQuery, [userId], (err, user) => {
-      if (err) console.error('Error getting user:', err);
+    ensurePostImagesSchema()
+      .then(() => new Promise((resolve) => {
+        if (imageUrls.length === 0) {
+          resolve();
+          return;
+        }
+        const placeholders = imageUrls.map((_, index) => `($1, $${index + 2})`).join(', ');
+        db.run(
+          `INSERT INTO post_images (post_id, image_url) VALUES ${placeholders}`,
+          [postId, ...imageUrls],
+          () => resolve()
+        );
+      }))
+      .catch((error) => {
+        console.error('Failed to store post images:', error);
+      })
+      .finally(() => {
+        // Get user info for the post
+        const userQuery = 'SELECT name, username, avatar, verified FROM users WHERE id = $1';
+        db.get(userQuery, [userId], (err, user) => {
+          if (err) console.error('Error getting user:', err);
 
-      const newPost = {
-        id: postId,
-        userId: userId.toString(),
-        text: text || '',
-        imageUrl,
-        timestamp: new Date().toISOString(),
-        replies: 0,
-        reposts: 0,
-        resonance: 0,
-        name: user?.name,
-        username: user?.username,
-        avatar: user?.avatar,
-        verified: user?.verified === 1
-      };
+          const newPost = {
+            id: postId,
+            userId: userId.toString(),
+            text: text || '',
+            imageUrl,
+            imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
+            timestamp: new Date().toISOString(),
+            replies: 0,
+            reposts: 0,
+            resonance: 0,
+            name: user?.name,
+            username: user?.username,
+            avatar: user?.avatar,
+            verified: user?.verified === 1
+          };
 
-      // Broadcast new post to all connected clients
-      const broadcast = req.app.get('broadcast');
-      if (broadcast) {
-        broadcast({
-          type: 'new_post',
-          data: newPost
+          // Broadcast new post to all connected clients
+          const broadcast = req.app.get('broadcast');
+          if (broadcast) {
+            broadcast({
+              type: 'new_post',
+              data: newPost
+            });
+          }
+
+          res.json({
+            message: 'Post created successfully',
+            postId,
+            post: newPost
+          });
         });
-      }
-
-      res.json({
-        message: 'Post created successfully',
-        postId,
-        post: newPost
       });
-    });
   });
 });
 
@@ -1936,14 +2917,12 @@ router.get('/posts/:postId/resonance', authenticateToken, (req, res) => {
   const userId = req.user.userId;
   const postId = req.params.postId;
 
-  // Check if user has liked the post
   const checkQuery = 'SELECT id FROM likes WHERE user_id = $1 AND post_id = $2';
   db.get(checkQuery, [userId, postId], (err, like) => {
     if (err) {
       return res.status(500).json({ error: 'Database error' });
     }
 
-    // Get resonance count
     db.get('SELECT resonance_count FROM posts WHERE id = $1', [postId], (err, post) => {
       if (err) {
         return res.status(500).json({ error: 'Database error' });
@@ -1955,6 +2934,53 @@ router.get('/posts/:postId/resonance', authenticateToken, (req, res) => {
       });
     });
   });
+});
+
+// Batch resonance status for multiple posts
+router.post('/posts/resonance/batch', authenticateToken, (req, res) => {
+  const userId = req.user.userId;
+  const { postIds } = req.body;
+
+  if (!Array.isArray(postIds) || postIds.length === 0 || postIds.length > 50) {
+    return res.status(400).json({ error: 'postIds must be a non-empty array (max 50)' });
+  }
+
+  const numericIds = postIds.map(Number).filter(Number.isFinite);
+  if (numericIds.length === 0) {
+    return res.status(400).json({ error: 'Invalid post IDs' });
+  }
+
+  const placeholders = numericIds.map((_, i) => `$${i + 2}`).join(',');
+  db.all(
+    `SELECT post_id FROM likes WHERE user_id = $1 AND post_id IN (${placeholders})`,
+    [userId, ...numericIds],
+    (err, likes) => {
+      if (err) {
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      const likedSet = new Set((likes || []).map(l => l.post_id.toString()));
+      const postPlaceholders = numericIds.map((_, i) => `$${i + 1}`).join(',');
+      db.all(
+        `SELECT id, resonance_count FROM posts WHERE id IN (${postPlaceholders})`,
+        numericIds,
+        (err2, posts) => {
+          if (err2) {
+            return res.status(500).json({ error: 'Database error' });
+          }
+
+          const resultMap = {};
+          (posts || []).forEach(p => {
+            resultMap[p.id.toString()] = {
+              resonance: p.resonance_count || 0,
+              liked: likedSet.has(p.id.toString()),
+            };
+          });
+          res.json({ statuses: resultMap });
+        }
+      );
+    }
+  );
 });
 
 // Get comments for a post
@@ -2199,6 +3225,16 @@ router.post('/profile/verification-request', authenticateToken, (req, res) => {
     return res.status(400).json({ error: 'Reason and TikTok video URL are required' });
   }
 
+  let videoHostname = '';
+  try {
+    videoHostname = new URL(tiktokVideoUrl).hostname;
+  } catch {
+    return res.status(400).json({ error: 'Invalid video URL format' });
+  }
+  if (!['tiktok.com', 'www.tiktok.com'].includes(videoHostname) && !videoHostname.endsWith('.tiktok.com')) {
+    return res.status(400).json({ error: 'Must be a valid TikTok video URL' });
+  }
+
   const checkUserQuery = 'SELECT created_at FROM users WHERE id = $1';
 
   db.get(checkUserQuery, [userId], (err, user) => {
@@ -2214,10 +3250,10 @@ router.post('/profile/verification-request', authenticateToken, (req, res) => {
     const registrationDate = new Date(user.created_at);
     const currentDate = new Date();
     const timeDiff = currentDate.getTime() - registrationDate.getTime();
-    const hoursDiff = Math.floor(timeDiff / (1000 * 3600));
+    const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
 
-    if (hoursDiff < 2) {
-      return res.status(400).json({ error: 'You must be registered for at least 2 hours to request verification' });
+    if (daysDiff < 5) {
+      return res.status(400).json({ error: { message: 'You must be on the platform for at least 5 days to get verified', code: 'MIN_DAYS' } });
     }
 
     // Check if user already has an active verification
@@ -2269,23 +3305,25 @@ router.post('/profile/verification-request', authenticateToken, (req, res) => {
   });
 });
 
-const isAdminUser = (username) => {
-  if (!username || !ADMIN_USERNAME) return false;
-  return String(username).toLowerCase() === ADMIN_USERNAME;
+const isAdminUser = (user) => {
+  if (!user) return false;
+  return user.role === 'admin';
 };
+
+const ADMIN_CHECK_QUERY = 'SELECT username, role FROM users WHERE id = $1';
 
 // Admin: Get all verification requests
 router.get('/admin/verification-requests', authenticateToken, (req, res) => {
   const userId = req.user.userId;
 
-  const checkUserQuery = 'SELECT username FROM users WHERE id = $1';
+  const checkUserQuery = ADMIN_CHECK_QUERY;
 
   db.get(checkUserQuery, [userId], (err, user) => {
     if (err) {
       return res.status(500).json({ error: 'Database error' });
     }
 
-    if (!user || !isAdminUser(user.username)) {
+    if (!user || !isAdminUser(user)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -2314,14 +3352,14 @@ router.post('/admin/review-verification-request/:requestId', authenticateToken, 
     return res.status(400).json({ error: 'Invalid status. Must be approved or rejected.' });
   }
 
-  const checkUserQuery = 'SELECT username FROM users WHERE id = $1';
+  const checkUserQuery = ADMIN_CHECK_QUERY;
 
   db.get(checkUserQuery, [userId], (err, user) => {
     if (err) {
       return res.status(500).json({ error: 'Database error' });
     }
 
-    if (!user || !isAdminUser(user.username)) {
+    if (!user || !isAdminUser(user)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -2392,14 +3430,14 @@ router.post('/admin/review-verification-request/:requestId', authenticateToken, 
 router.get('/admin/users', authenticateToken, (req, res) => {
   const userId = req.user.userId;
 
-  const checkUserQuery = 'SELECT username FROM users WHERE id = $1';
+  const checkUserQuery = ADMIN_CHECK_QUERY;
 
   db.get(checkUserQuery, [userId], (err, user) => {
     if (err) {
       return res.status(500).json({ error: 'Database error' });
     }
 
-    if (!user || !isAdminUser(user.username)) {
+    if (!user || !isAdminUser(user)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -2501,14 +3539,14 @@ router.post('/posts/:postId/report', authenticateToken, (req, res) => {
 router.get('/admin/post-reports', authenticateToken, (req, res) => {
   const userId = req.user.userId;
 
-  const checkUserQuery = 'SELECT username FROM users WHERE id = $1';
+  const checkUserQuery = ADMIN_CHECK_QUERY;
 
   db.get(checkUserQuery, [userId], (err, user) => {
     if (err) {
       return res.status(500).json({ error: 'Database error' });
     }
 
-    if (!user || !isAdminUser(user.username)) {
+    if (!user || !isAdminUser(user)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -2537,7 +3575,7 @@ router.post('/admin/post-reports/:reportId', authenticateToken, (req, res) => {
   const reportId = req.params.reportId;
   const { action, reviewNotes } = req.body; // action: 'delete_post' or 'dismiss'
 
-  const checkUserQuery = 'SELECT username FROM users WHERE id = $1';
+  const checkUserQuery = ADMIN_CHECK_QUERY;
 
   db.get(checkUserQuery, [userId], (err, user) => {
     if (err) {
@@ -2545,7 +3583,7 @@ router.post('/admin/post-reports/:reportId', authenticateToken, (req, res) => {
       return res.status(500).json({ error: 'Database error' });
     }
 
-    if (!user || !isAdminUser(user.username)) {
+    if (!user || !isAdminUser(user)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -2632,242 +3670,6 @@ router.post('/admin/post-reports/:reportId', authenticateToken, (req, res) => {
   });
 });
 
-// ==================== ONBOARDING ====================
-
-// Get onboarding suggestions (verified users to follow)
-router.get('/onboarding/suggestions', authenticateToken, (req, res) => {
-  const currentUserId = req.user.userId;
-
-  const query = `
-    SELECT u.id, u.name, u.username, u.bio, u.avatar, u.verified, u.followers_count
-    FROM users u
-    WHERE u.is_verified = 1 OR u.verified = 1
-      AND u.id != $1
-      AND u.id NOT IN (
-        SELECT following_id FROM followers WHERE follower_id = $2
-      )
-    ORDER BY u.followers_count DESC, u.created_at DESC
-    LIMIT 30
-  `;
-
-  db.all(query, [currentUserId, currentUserId], (err, users) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    const formattedUsers = users.map(user => ({
-      ...user,
-      id: user.id.toString()
-    }));
-
-    res.json({ users: formattedUsers });
-  });
-});
-
-// Batch follow users
-router.post('/follow/batch', authenticateToken, (req, res) => {
-  const currentUserId = req.user.userId;
-  const { userIds } = req.body;
-  const createNotification = req.app.get('createNotification');
-
-  if (!Array.isArray(userIds) || userIds.length === 0) {
-    return res.status(400).json({ error: 'userIds array is required' });
-  }
-
-  if (userIds.length > 50) {
-    return res.status(400).json({ error: 'Cannot follow more than 50 users at once' });
-  }
-
-  // Filter out self and duplicates
-  const uniqueUserIds = [...new Set(userIds)].filter(id => String(id) !== String(currentUserId));
-
-  if (uniqueUserIds.length === 0) {
-    return res.json({ message: 'No users to follow', followed: [] });
-  }
-
-  const placeholders = uniqueUserIds.map((_, index) => `$${index + 2}`).join(',');
-
-  // Get users that are already being followed
-  const checkQuery = `
-    SELECT following_id FROM followers
-    WHERE follower_id = $1 AND following_id IN (${placeholders})
-  `;
-
-  db.all(checkQuery, [currentUserId, ...uniqueUserIds], (err, existing) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    const existingIds = existing.map(row => row.following_id);
-    const toFollow = uniqueUserIds.filter(id => !existingIds.includes(id));
-
-    if (toFollow.length === 0) {
-      return res.json({ message: 'Already following all selected users', followed: [] });
-    }
-
-    // Insert new follows in a transaction
-    const dbInstance = require('./db');
-    dbInstance.get('SELECT name, username, avatar FROM users WHERE id = $1', [currentUserId], (err, actor) => {
-      const actorName = actor?.name || actor?.username || 'Someone';
-
-      dbInstance.serialize(() => {
-        dbInstance.run('BEGIN TRANSACTION');
-
-        const insertQuery = 'INSERT INTO followers (follower_id, following_id) VALUES ($1, $2)';
-        const followed = [];
-        let completed = 0;
-
-        toFollow.forEach((targetUserId) => {
-          dbInstance.run(insertQuery, [currentUserId, targetUserId], function(err) {
-            if (err) {
-              console.error('Error following user:', err);
-            } else {
-              followed.push({ id: targetUserId.toString() });
-              // Increment followers_count
-              dbInstance.run(
-                'UPDATE users SET followers_count = followers_count + 1 WHERE id = $1',
-                [targetUserId],
-                (err) => { if (err) console.error('Error updating followers_count:', err); }
-              );
-
-              if (createNotification) {
-                createNotification({
-                  userId: targetUserId,
-                  type: 'follow',
-                  actorId: currentUserId,
-                  actorUsername: actor?.username || null,
-                  actorAvatar: actor?.avatar || null,
-                  targetId: targetUserId,
-                  targetType: 'user',
-                  message: `${actorName} подписался на вас`,
-                  url: `/profile/${currentUserId}`,
-                }).catch(err => {
-                  console.error('[API] Error creating notification:', err);
-                });
-              }
-            }
-            completed++;
-            if (completed === toFollow.length) {
-              dbInstance.run('COMMIT', (err) => {
-                if (err) {
-                  console.error('Error committing transaction:', err);
-                  return res.status(500).json({ error: 'Transaction failed' });
-                }
-                res.json({
-                  message: `Successfully followed ${followed.length} users`,
-                  followed
-                });
-              });
-            }
-          });
-        });
-      });
-    });
-  });
-});
-
-// Unfollow user
-router.delete('/follow/:userId', authenticateToken, (req, res) => {
-  const currentUserId = req.user.userId;
-  const targetUserId = req.params.userId;
-
-  const deleteQuery = 'DELETE FROM followers WHERE follower_id = $1 AND following_id = $2';
-
-  db.run(deleteQuery, [currentUserId, targetUserId], function(err) {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    // Decrement followers_count
-    db.run(
-      'UPDATE users SET followers_count = followers_count - 1 WHERE id = $1 AND followers_count > 0',
-      [targetUserId],
-      (err) => { if (err) console.error('Error updating followers_count:', err); }
-    );
-
-    res.json({ message: 'Unfollowed successfully' });
-  });
-});
-
-// Check if following user
-router.get('/follow/status/:userId', authenticateToken, (req, res) => {
-  const currentUserId = req.user.userId;
-  const targetUserId = req.params.userId;
-
-  const checkQuery = 'SELECT id FROM followers WHERE follower_id = $1 AND following_id = $2';
-
-  db.get(checkQuery, [currentUserId, targetUserId], (err, follow) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    res.json({ following: !!follow });
-  });
-});
-
-// Get user's followers
-router.get('/users/:userId/followers', authenticateToken, (req, res) => {
-  const userId = req.params.userId;
-
-  const query = `
-    SELECT u.id, u.name, u.username, u.avatar, u.verified, u.followers_count, f.created_at
-    FROM followers f
-    JOIN users u ON f.follower_id = u.id
-    WHERE f.following_id = $1
-    ORDER BY f.created_at DESC
-    LIMIT 50
-  `;
-
-  db.all(query, [userId], (err, followers) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    const formatted = followers.map(f => ({
-      id: f.id.toString(),
-      name: f.name,
-      username: f.username,
-      avatar: f.avatar,
-      verified: f.verified === 1,
-      followers_count: f.followers_count,
-      followedAt: f.created_at
-    }));
-
-    res.json({ followers: formatted, total: formatted.length });
-  });
-});
-
-// Get user's following (who they follow)
-router.get('/users/:userId/following', authenticateToken, (req, res) => {
-  const userId = req.params.userId;
-
-  const query = `
-    SELECT u.id, u.name, u.username, u.avatar, u.verified, u.followers_count, f.created_at
-    FROM followers f
-    JOIN users u ON f.following_id = u.id
-    WHERE f.follower_id = $1
-    ORDER BY f.created_at DESC
-    LIMIT 50
-  `;
-
-  db.all(query, [userId], (err, following) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    const formatted = following.map(f => ({
-      id: f.id.toString(),
-      name: f.name,
-      username: f.username,
-      avatar: f.avatar,
-      verified: f.verified === 1,
-      followers_count: f.followers_count,
-      followedAt: f.created_at
-    }));
-
-    res.json({ following: formatted, total: formatted.length });
-  });
-});
 
 // ==================== USER PROFILE ====================
 
@@ -2905,6 +3707,7 @@ router.get('/users/:userId', authenticateToken, (req, res) => {
           city: user.city,
           website: user.website,
           pinned_post_id: user.pinned_post_id ? user.pinned_post_id.toString() : null,
+          pinnedPostId: user.pinned_post_id ? user.pinned_post_id.toString() : null,
           avatar: user.avatar,
           banner: user.banner,
           verified: user.verified === 1,
@@ -2917,10 +3720,20 @@ router.get('/users/:userId', authenticateToken, (req, res) => {
   });
 });
 
-// Update current user profile (PATCH with bio, city, website)
+// Update current user profile (PATCH with name, username, bio, city, website, dev profile fields)
 router.patch('/users/me', authenticateToken, (req, res) => {
   const userId = req.user.userId;
-  const { bio, city, website } = req.body;
+  const { name, username, bio, city, website, primaryRole, skills, availability, githubUrl, telegramUsername } = req.body;
+
+  // Validate name
+  if (name !== undefined && (!name || name.trim().length === 0)) {
+    return res.status(400).json({ error: 'Name is required' });
+  }
+
+  // Validate username
+  if (username !== undefined && (!username || username.trim().length === 0)) {
+    return res.status(400).json({ error: 'Username is required' });
+  }
 
   // Validate city
   if (city !== undefined) {
@@ -2950,9 +3763,28 @@ router.patch('/users/me', authenticateToken, (req, res) => {
     }
   }
 
+  // Validate and normalize GitHub URL
+  let normalizedGithubUrl = githubUrl;
+  if (githubUrl !== undefined) {
+    if (githubUrl) {
+      const trimmed = githubUrl.trim();
+      if (!trimmed.match(/^https?:\/\/github\.com\/.+/i)) {
+        normalizedGithubUrl = `https://github.com/${trimmed.replace(/^@/, '')}`;
+      }
+    }
+  }
+
   const updates = [];
   const values = [];
 
+  if (name !== undefined) {
+    updates.push(`name = $${updates.length + 1}`);
+    values.push(name.trim());
+  }
+  if (username !== undefined) {
+    updates.push(`username = $${updates.length + 1}`);
+    values.push(username.trim().toLowerCase());
+  }
   if (bio !== undefined) {
     updates.push(`bio = $${updates.length + 1}`);
     values.push(bio);
@@ -2965,6 +3797,30 @@ router.patch('/users/me', authenticateToken, (req, res) => {
     updates.push(`website = $${updates.length + 1}`);
     values.push(normalizedWebsite);
   }
+  if (primaryRole !== undefined) {
+    updates.push(`primary_role = $${updates.length + 1}`);
+    values.push(primaryRole || null);
+  }
+  if (skills !== undefined) {
+    updates.push(`skills = $${updates.length + 1}`);
+    if (skills && Array.isArray(skills)) {
+      values.push(`{${skills.map(s => s.replace(/[",\\]/g, '\\$&')).join(',')}}`);
+    } else {
+      values.push(null);
+    }
+  }
+  if (availability !== undefined) {
+    updates.push(`availability = $${updates.length + 1}`);
+    values.push(availability || 'open');
+  }
+  if (normalizedGithubUrl !== undefined) {
+    updates.push(`github_url = $${updates.length + 1}`);
+    values.push(normalizedGithubUrl || null);
+  }
+  if (telegramUsername !== undefined) {
+    updates.push(`telegram_username = $${updates.length + 1}`);
+    values.push(telegramUsername ? telegramUsername.replace(/^@/, '') : null);
+  }
 
   if (updates.length === 0) {
     return res.status(400).json({ error: 'No fields to update' });
@@ -2974,13 +3830,15 @@ router.patch('/users/me', authenticateToken, (req, res) => {
 
   const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${updates.length + 1}`;
 
-  db.run(query, values, function(err) {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    res.json({ message: 'Profile updated successfully' });
-  });
+  const pool = require('./db').pool;
+  pool.query(query, values)
+    .then(() => {
+      res.json({ message: 'Profile updated successfully' });
+    })
+    .catch((err) => {
+      console.error('Profile update error:', err);
+      res.status(500).json({ error: 'Database error' });
+    });
 });
 
 // ==================== PINNED POST ====================
@@ -3032,19 +3890,37 @@ router.delete('/users/me/pin', authenticateToken, (req, res) => {
   });
 });
 
-// ==================== UPLOADS ====================
-
-// Upload file (image or document)
-router.post('/uploads', authenticateToken, fileUpload.single('file'), uploadFile);
-
 // ==================== MOMENTS (ONE-TIME PHOTO) ====================
 
 router.post('/moments', authenticateToken, momentUpload.single('file'), asyncHandler(async (req, res) => {
   const senderId = req.user.userId;
-  const { receiverId, ttlSeconds = 86400 } = req.body;
+  const { chatId, ttlSeconds = 86400 } = req.body;
 
-  if (!receiverId) {
-    throw new ValidationError('Receiver ID is required');
+  if (process.env.E2EE_ENFORCE === 'true') {
+    return res.status(400).json({ error: 'Moment plaintext flow is disabled when E2EE_ENFORCE=true' });
+  }
+
+  if (!chatId) {
+    throw new ValidationError('chatId is required');
+  }
+
+  const membership = await new Promise((resolve) => {
+    db.get(
+      'SELECT role, c.type FROM chat_members cm JOIN chats c ON c.id = cm.chat_id WHERE cm.chat_id = $1 AND cm.user_id = $2',
+      [chatId, senderId],
+      (err, row) => {
+        if (err) return resolve(null);
+        resolve(row || null);
+      }
+    );
+  });
+
+  if (!membership) {
+    throw new ValidationError('Access denied');
+  }
+
+  if (membership.type === 'channel' && !['owner', 'admin'].includes(membership.role)) {
+    throw new ValidationError('Only admins can write to channel');
   }
 
   if (!req.file) {
@@ -3056,31 +3932,50 @@ router.post('/moments', authenticateToken, momentUpload.single('file'), asyncHan
     throw new ValidationError('Only image files are allowed for moments');
   }
 
-  const filename = req.file.filename;
-  const filePath = req.file.path;
+  const cloudinary = require('./config/cloudinary');
+  const uploadToCloudinary = () => new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'lume/moments',
+        resource_type: 'image',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+        transformation: [{ quality: 'auto', fetch_format: 'auto' }],
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+    stream.end(req.file.buffer);
+  });
+
+  const cloudResult = await uploadToCloudinary();
+  const filePath = cloudResult?.secure_url || cloudResult?.url;
   const size = req.file.size;
 
   let width = null;
   let height = null;
-  try {
-    const sizeOf = require('image-size');
-    const dimensions = sizeOf(filePath);
-    width = dimensions.width || null;
-    height = dimensions.height || null;
-  } catch (e) {
-    // ignore
-  }
-
   let thumbDataUrl = null;
-  try {
-    const sharp = require('sharp');
-    const thumbBuffer = await sharp(filePath)
-      .resize(32, 32, { fit: 'inside' })
-      .blur(12)
-      .toBuffer();
-    thumbDataUrl = `data:image/jpeg;base64,${thumbBuffer.toString('base64')}`;
-  } catch (e) {
-    // ignore
+  if (req.file.buffer) {
+    try {
+      const sizeOf = require('image-size');
+      const dimensions = sizeOf(req.file.buffer);
+      width = dimensions.width || null;
+      height = dimensions.height || null;
+    } catch (e) {
+      // ignore
+    }
+
+    try {
+      const sharp = require('sharp');
+      const thumbBuffer = await sharp(req.file.buffer)
+        .resize(32, 32, { fit: 'inside' })
+        .blur(12)
+        .toBuffer();
+      thumbDataUrl = `data:image/jpeg;base64,${thumbBuffer.toString('base64')}`;
+    } catch (e) {
+      // ignore
+    }
   }
 
   const ttlValue = Number.isFinite(Number(ttlSeconds)) ? Math.max(60, Math.min(7 * 24 * 3600, Number(ttlSeconds))) : 86400;
@@ -3092,7 +3987,7 @@ router.post('/moments', authenticateToken, momentUpload.single('file'), asyncHan
       `INSERT INTO moments (sender_id, receiver_id, file_path, mime, size, width, height, thumb_data_url, ttl_seconds, expires_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
       ,
-      [senderId, receiverId, filePath, mime, size, width, height, thumbDataUrl, ttlValue, expiresAt],
+      [senderId, chatId, filePath, mime, size, width, height, thumbDataUrl, ttlValue, expiresAt],
       function(err) {
         if (err) reject(err);
         else resolve(this.lastID);
@@ -3103,10 +3998,10 @@ router.post('/moments', authenticateToken, momentUpload.single('file'), asyncHan
   // Insert message referencing moment
   const messageId = await new Promise((resolve, reject) => {
     db.run(
-      `INSERT INTO messages (sender_id, receiver_id, text, type, moment_id)
+      `INSERT INTO messages (chat_id, sender_id, text, type, moment_id)
        VALUES ($1, $2, $3, $4, $5)`
       ,
-      [senderId, receiverId, 'Исчезающее фото', 'moment_image', momentId],
+      [chatId, senderId, 'Исчезающее фото', 'moment_image', momentId],
       function(err) {
         if (err) reject(err);
         else resolve(this.lastID);
@@ -3114,108 +4009,32 @@ router.post('/moments', authenticateToken, momentUpload.single('file'), asyncHan
     );
   });
 
-  // Update chats last message
-  const getChatQuery = `
-    SELECT id FROM chats
-    WHERE (user1_id = $1 AND user2_id = $2) OR (user1_id = $3 AND user2_id = $4)
-  `;
-  db.get(getChatQuery, [senderId, receiverId, receiverId, senderId], (err, existingChat) => {
-    if (err) {
-      return res.json({ messageId, momentId });
-    }
-
-    const chatMessage = 'Исчезающее фото';
-    const updateOrCreateQuery = existingChat
-      ? `UPDATE chats SET last_message = $1, last_message_time = NOW(), unread_count = unread_count + 1 WHERE id = $2`
-      : `INSERT INTO chats (user1_id, user2_id, last_message, last_message_time, unread_count) VALUES ($1, $2, $3, NOW(), 1)`;
-    const params = existingChat ? [chatMessage, existingChat.id] : [senderId, receiverId, chatMessage];
-    db.run(updateOrCreateQuery, params, () => {
-      const sendToUser = req.app.get('sendToUser');
-      if (sendToUser) {
-        sendToUser(receiverId, {
-          type: 'new_message',
-          data: {
-            id: messageId,
-            senderId: senderId.toString(),
-            receiverId: receiverId.toString(),
-            text: 'Исчезающее фото',
-            timestamp: new Date().toISOString(),
-            type: 'moment_image',
-            moment: {
-              id: momentId.toString(),
-              thumbDataUrl: thumbDataUrl,
-              ttlSeconds: ttlValue,
-              expiresAt,
-              viewedBy: []
-            }
-          }
-        });
+  const sendChatMessage = req.app.get('sendChatMessage');
+  if (sendChatMessage) {
+    sendChatMessage({
+      id: messageId,
+      chatId: String(chatId),
+      senderId: senderId.toString(),
+      text: 'Исчезающее фото',
+      timestamp: new Date().toISOString(),
+      type: 'moment_image',
+      moment: {
+        id: momentId.toString(),
+        thumbDataUrl: thumbDataUrl,
+        ttlSeconds: ttlValue,
+        expiresAt,
+        viewedBy: []
       }
-
-      res.json({ messageId, momentId, thumbDataUrl, ttlSeconds: ttlValue, expiresAt });
     });
-  });
-}));
-
-router.post('/moments/:id/open', authenticateToken, asyncHandler(async (req, res) => {
-  const userId = req.user.userId;
-  const momentId = parseInt(req.params.id);
-
-  const moment = await new Promise((resolve, reject) => {
-    db.get('SELECT * FROM moments WHERE id = $1', [momentId], (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
-
-  if (!moment) {
-    throw new ValidationError('Moment not found');
   }
 
-  if (moment.revoked_at) {
-    return res.status(410).json({ error: 'Moment revoked' });
-  }
-
-  if (moment.expires_at && new Date(moment.expires_at).getTime() < Date.now()) {
-    return res.status(410).json({ error: 'Moment expired' });
-  }
-
-  if (String(moment.receiver_id) !== String(userId)) {
-    return res.status(403).json({ error: 'Access denied' });
-  }
-
-  const viewed = await new Promise((resolve, reject) => {
-    db.get('SELECT * FROM moment_views WHERE moment_id = $1 AND user_id = $2', [momentId, userId], (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
-
-  if (viewed) {
-    return res.status(410).json({ error: 'Moment already viewed' });
-  }
-
-  const token = crypto.randomBytes(24).toString('hex');
-  const expiresAt = new Date(Date.now() + 60 * 1000).toISOString();
-
-  await new Promise((resolve, reject) => {
-    db.run(
-      'INSERT INTO moment_tokens (moment_id, user_id, token, expires_at) VALUES ($1, $2, $3, $4)',
-      [momentId, userId, token, expiresAt],
-      (err) => {
-        if (err) reject(err);
-        else resolve();
-      }
-    );
-  });
-
-  res.json({ token, expiresAt });
+  res.json({ messageId, momentId, thumbDataUrl, ttlSeconds: ttlValue, expiresAt });
 }));
 
 router.get('/moments/:id/content', authenticateToken, asyncHandler(async (req, res) => {
   const userId = req.user.userId;
   const momentId = parseInt(req.params.id);
-  const token = String(req.query.token || '');
+  const token = String(req.headers['authorization']?.replace(/^Bearer\s+/i, '') || req.query.token || '');
 
   if (!token) {
     return res.status(403).json({ error: 'Token required' });
@@ -3255,7 +4074,18 @@ router.get('/moments/:id/content', authenticateToken, asyncHandler(async (req, r
     return res.status(410).json({ error: 'Moment revoked' });
   }
 
-  if (String(moment.receiver_id) !== String(userId)) {
+  if (!moment.receiver_id) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  const memberRow = await new Promise((resolve) => {
+    db.get('SELECT 1 FROM chat_members WHERE chat_id = $1 AND user_id = $2', [moment.receiver_id, userId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (!memberRow) {
     return res.status(403).json({ error: 'Access denied' });
   }
 
@@ -3277,13 +4107,11 @@ router.get('/moments/:id/content', authenticateToken, asyncHandler(async (req, r
     });
   });
 
-  res.setHeader('Content-Type', moment.mime || 'image/jpeg');
-  res.setHeader('Cache-Control', 'no-store');
-  res.setHeader('Content-Disposition', 'inline');
-
-  const stream = fs.createReadStream(moment.file_path);
-  stream.on('error', () => res.status(500).end());
-  stream.pipe(res);
+  res.json({
+    url: moment.file_path,
+    mime: moment.mime || 'image/jpeg',
+    expiresAt: moment.expires_at || null
+  });
 }));
 
 router.post('/moments/:id/viewed', authenticateToken, asyncHandler(async (req, res) => {
@@ -3301,7 +4129,18 @@ router.post('/moments/:id/viewed', authenticateToken, asyncHandler(async (req, r
     return res.status(404).json({ error: 'Moment not found' });
   }
 
-  if (String(moment.receiver_id) !== String(userId)) {
+  if (!moment.receiver_id) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  const memberRow = await new Promise((resolve) => {
+    db.get('SELECT 1 FROM chat_members WHERE chat_id = $1 AND user_id = $2', [moment.receiver_id, userId], (err, row) => {
+      if (err) return resolve(null);
+      resolve(row || null);
+    });
+  });
+
+  if (!memberRow) {
     return res.status(403).json({ error: 'Access denied' });
   }
 
@@ -3344,235 +4183,10 @@ router.get('/attachments/:attachmentId', authenticateToken, (req, res) => {
   });
 });
 
-// ==================== MESSENGER ====================
-
-// Get user presence (online/offline + last_seen)
-router.get('/users/:userId/presence', authenticateToken, (req, res) => {
-  const userId = req.params.userId;
-
-  db.get('SELECT last_seen_at FROM users WHERE id = $1', [parseInt(userId)], (err, user) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Check if user is online via onlineUsers map
-    const onlineUsers = req.app.get('onlineUsers');
-    const isOnline = onlineUsers && onlineUsers.has(parseInt(userId));
-
-    res.json({
-      userId: userId.toString(),
-      online: isOnline,
-      lastSeenAt: user.last_seen_at
-    });
-  });
-});
-
-// Mark messages as read in a chat (REST alternative to WS)
-router.post('/chats/:chatId/read', authenticateToken, (req, res) => {
-  const userId = req.user.userId;
-  const chatId = req.params.chatId;
-  const { lastReadMessageId } = req.body;
-
-  if (!lastReadMessageId) {
-    return res.status(400).json({ error: 'lastReadMessageId is required' });
-  }
-
-  // Upsert chat_reads record
-  db.run(
-    `INSERT INTO chat_reads (chat_id, user_id, last_read_message_id, updated_at)
-     VALUES ($1, $2, $3, NOW())
-     ON CONFLICT(chat_id, user_id) 
-     DO UPDATE SET last_read_message_id = $4, updated_at = NOW()`,
-    [chatId, userId, lastReadMessageId, lastReadMessageId],
-    function(err) {
-      if (err) {
-        return res.status(500).json({ error: 'Database error' });
-      }
-
-      // Broadcast read update to other chat participants via WebSocket
-      const sendToUser = req.app.get('sendToUser');
-      if (sendToUser) {
-        // Get other participants in the chat
-        db.get('SELECT user1_id, user2_id FROM chats WHERE id = $1', [chatId], (err, chat) => {
-          if (err || !chat) return;
-          
-          const otherUserId = chat.user1_id === userId ? chat.user2_id : chat.user1_id;
-          
-          // Send read update to the other user
-          sendToUser(otherUserId, {
-            type: 'chat:read_update',
-            data: {
-              chatId: chatId.toString(),
-              userId: userId.toString(),
-              lastReadMessageId: lastReadMessageId.toString()
-            }
-          });
-        });
-      }
-
-      res.json({ 
-        message: 'Chat marked as read',
-        chatId: chatId.toString(),
-        lastReadMessageId: lastReadMessageId.toString()
-      });
-    }
-  );
-});
-
-// Get chat read status for all participants
-router.get('/chats/:chatId/read-status', authenticateToken, (req, res) => {
-  const userId = req.user.userId;
-  const chatId = req.params.chatId;
-
-  const query = `
-    SELECT cr.user_id, cr.last_read_message_id, cr.updated_at, u.name, u.username
-    FROM chat_reads cr
-    JOIN users u ON cr.user_id = u.id
-    WHERE cr.chat_id = $1
-  `;
-
-  db.all(query, [chatId], (err, readStatuses) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    const formatted = readStatuses.map(status => ({
-      userId: status.user_id.toString(),
-      name: status.name,
-      username: status.username,
-      lastReadMessageId: status.last_read_message_id.toString(),
-      updatedAt: status.updated_at
-    }));
-
-    res.json({ chatId: chatId.toString(), readStatuses: formatted });
-  });
-});
-
-// ==================== MESSAGE DELETION ====================
-
-// Delete message (for me or for all)
-router.delete('/messages/:messageId', authenticateToken, (req, res) => {
-  const userId = req.user.userId;
-  const messageId = req.params.messageId;
-  const { scope } = req.query; // 'me' or 'all'
-
-  // Get the message
-  db.get('SELECT * FROM messages WHERE id = $1', [messageId], (err, message) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    if (!message) {
-      return res.status(404).json({ error: 'Message not found' });
-    }
-
-    const isAuthor = String(message.sender_id) === String(userId);
-    const isReceiver = String(message.receiver_id) === String(userId);
-
-    if (!isAuthor && !isReceiver) {
-      return res.status(403).json({ error: 'You can only delete messages you sent or received' });
-    }
-
-    if (scope === 'all') {
-      // Only author can delete for all
-      if (!isAuthor) {
-        return res.status(403).json({ error: 'Only the sender can delete a message for everyone' });
-      }
-
-      // Mark as deleted for all
-      db.run(
-        'UPDATE messages SET deleted_for_all_at = NOW(), deleted_for_all_by = $1 WHERE id = $2',
-        [userId, messageId],
-        function(err) {
-          if (err) {
-            console.error('[messages] delete-for-all error:', { err, messageId, userId });
-            return res.status(500).json({ error: 'Database error' });
-          }
-
-          // Notify via WebSocket
-          const sendToUser = req.app.get('sendToUser');
-          if (sendToUser && message.receiver_id) {
-            sendToUser(message.receiver_id, {
-              type: 'message:deleted',
-              data: { 
-                messageId: messageId.toString(), 
-                scope: 'all', 
-                byUserId: userId.toString() 
-              }
-            });
-          }
-
-          res.json({ 
-            message: 'Message deleted for everyone',
-            messageId: messageId.toString(),
-            scope: 'all'
-          });
-        }
-      );
-    } else {
-      // Delete for me (default)
-      // Check if already deleted for this user
-      db.get(
-        'SELECT * FROM message_deletions WHERE message_id = $1 AND user_id = $2',
-        [messageId, userId],
-        (err, deletion) => {
-          if (err) {
-            console.error('[messages] delete-for-me select error:', { err, messageId, userId });
-            return res.status(500).json({ error: 'Database error' });
-          }
-
-          if (deletion) {
-            return res.status(400).json({ error: 'Already deleted for you' });
-          }
-
-          // Insert deletion record
-          db.run(
-            'INSERT INTO message_deletions (message_id, user_id) VALUES ($1, $2)',
-            [messageId, userId],
-            function(err) {
-              if (err) {
-                console.error('[messages] delete-for-me insert error:', { err, messageId, userId });
-                return res.status(500).json({ error: 'Database error' });
-              }
-
-              // Notify via WebSocket
-              const sendToUser = req.app.get('sendToUser');
-              const otherUserId = isAuthor ? message.receiver_id : message.sender_id;
-              
-              if (sendToUser && otherUserId) {
-                sendToUser(otherUserId, {
-                  type: 'message:deleted',
-                  data: { 
-                    messageId: messageId.toString(), 
-                    scope: 'me', 
-                    byUserId: userId.toString() 
-                  }
-                });
-              }
-
-              res.json({ 
-                message: 'Message deleted for you',
-                messageId: messageId.toString(),
-                scope: 'me'
-              });
-            }
-          );
-        }
-      );
-    }
-  });
-});
-
-// Servers (Communities) module routes
-const serversRoutes = require('./servers');
-router.use('/servers', serversRoutes);
+// Servers module removed
 
 // Link Preview (Open Graph)
-router.post('/link-preview', asyncHandler(async (req, res) => {
+router.post('/link-preview', authenticateToken, asyncHandler(async (req, res) => {
   const { url } = req.body;
 
   if (!url || typeof url !== 'string') {
@@ -3589,123 +4203,5 @@ router.post('/link-preview', asyncHandler(async (req, res) => {
   res.json(result.data);
 }));
 
-// ========== NOTIFICATIONS ==========
-
-// Get user notifications
-router.get('/notifications', authenticateToken, asyncHandler(async (req, res) => {
-  const userId = req.user.userId;
-  const { limit = 50, unreadOnly = false } = req.query;
-
-  const safeLimit = Math.min(parseInt(limit, 10) || 20, 50);
-  const offset = Math.max(parseInt(req.query.offset || '0', 10) || 0, 0);
-  const query = unreadOnly === 'true'
-    ? `SELECT n.*, COALESCE(u.username, n.actor_username) as actor_username, COALESCE(u.avatar, n.actor_avatar) as actor_avatar
-       FROM notifications n
-       LEFT JOIN users u ON n.actor_id = u.id
-       WHERE n.user_id = $1 AND n.read = 0
-       ORDER BY n.created_at DESC LIMIT $2 OFFSET $3`
-    : `SELECT n.*, COALESCE(u.username, n.actor_username) as actor_username, COALESCE(u.avatar, n.actor_avatar) as actor_avatar
-       FROM notifications n
-       LEFT JOIN users u ON n.actor_id = u.id
-       WHERE n.user_id = $1
-       ORDER BY n.created_at DESC LIMIT $2 OFFSET $3`;
-
-  const params = [userId, safeLimit, offset];
-
-  const notifications = await new Promise((resolve, reject) => {
-    db.all(query, params, (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows);
-    });
-  });
-
-  const formattedNotifications = notifications.map(notification => ({
-    id: notification.id.toString(),
-    type: notification.type,
-    actor_id: notification.actor_id ? notification.actor_id.toString() : null,
-    actor_username: notification.actor_username,
-    actor_avatar: notification.actor_avatar,
-    target_id: notification.target_id ? notification.target_id.toString() : null,
-    target_type: notification.target_type,
-    message: notification.message,
-    created_at: notification.created_at,
-    read: notification.read === 1,
-    url: notification.url,
-  }));
-
-  res.json({ notifications: formattedNotifications, limit: safeLimit, offset });
-}));
-
-// Mark notification as read
-router.post('/notifications/read', authenticateToken, asyncHandler(async (req, res) => {
-  const userId = req.user.userId;
-  const { notificationId, markAllAsRead = false } = req.body;
-
-  if (markAllAsRead) {
-    // Mark all notifications as read for this user
-    await new Promise((resolve, reject) => {
-      db.run(
-        'UPDATE notifications SET read = 1 WHERE user_id = $1 AND read = 0',
-        [userId],
-        (err) => {
-          if (err) reject(err);
-          else resolve();
-        }
-      );
-    });
-
-    res.json({ message: 'All notifications marked as read' });
-  } else {
-    if (!notificationId) {
-      throw new ValidationError('Notification ID is required');
-    }
-
-    // Mark specific notification as read
-    const result = await new Promise((resolve, reject) => {
-      db.run(
-        'UPDATE notifications SET read = 1 WHERE id = $1 AND user_id = $2',
-        [notificationId, userId],
-        function(err) {
-          if (err) reject(err);
-          else resolve(this);
-        }
-      );
-    });
-
-    if (result.changes === 0) {
-      throw new ValidationError('Notification not found or already read');
-    }
-
-    res.json({ message: 'Notification marked as read' });
-  }
-}));
-
-// Mark notification as read (new endpoint)
-router.post('/notifications/:id/read', authenticateToken, asyncHandler(async (req, res) => {
-  const userId = req.user.userId;
-  const notificationId = req.params.id;
-
-  const result = await new Promise((resolve, reject) => {
-    db.run(
-      'UPDATE notifications SET read = 1 WHERE id = $1 AND user_id = $2',
-      [notificationId, userId],
-      function(err) {
-        if (err) reject(err);
-        else resolve(this);
-      }
-    );
-  });
-
-  if (result.changes === 0) {
-    throw new ValidationError('Notification not found or already read');
-  }
-
-  res.json({ message: 'Notification marked as read' });
-}));
-
 module.exports = router;
 module.exports.ensureStickerData = ensureStickerData;
-
-
-
-

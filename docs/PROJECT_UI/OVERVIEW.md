@@ -2,7 +2,7 @@
 
 English | [Русский](../../docs-ru/PROJECT_UI/OVERVIEW.ru.md) | [中文](../../docs-cn/PROJECT_UI/OVERVIEW.cn.md)
 
-**Last updated:** 2026-03-11
+**Last updated:** 2026-03-19
 
 ---
 
@@ -23,18 +23,17 @@ LUME
 │   ├── /messages         — Messenger
 │   │   └── /messages/:chatId
 │   ├── /messages?userId=... — Open chat via query param
-│   ├── /servers          — Servers catalog
-│   ├── /server/:identifier
-│   │   ├── /channel/:channelName
-│   │   ├── /settings
-│   │   └── /members
+│   ├── /onboarding       — Onboarding flow (new users)
+│   ├── /workspaces       — Workspaces list
+│   │   └── /workspaces/:slug — Workspace detail
+│   ├── /projects         — Projects list
+│   │   └── /projects/:slug — Project detail
 │   ├── /profile          — My profile
 │   ├── /profile/:userId  — User profile
 │   ├── /verified         — Verification
 │   ├── /settings         — Account settings
-│   ├── /admin            — Admin panel
-│   └── /settings/sessions
-│   └── /verified          — Verification flow
+│   │   └── /settings/sessions — Session management
+│   └── /admin            — Admin panel
 └── System
     └── *                 — 404 Not Found
 ```
@@ -59,8 +58,8 @@ LUME
 
 ```
 Landing → Login → Feed
-Feed → Explore / Messages / Servers / Profile / Settings / Admin
-Servers → Server → Channel / Members / Settings
+Feed → Explore / Messages / Profile / Settings / Admin
+Messages → Chat list → Chat panel
 ```
 
 ---
@@ -72,10 +71,11 @@ Servers → Server → Channel / Members / Settings
 | Feed | `src/pages/Index.tsx` | AppLayout |
 | Explore | `src/pages/Explore.tsx` | AppLayout |
 | Messages | `src/pages/Messages.tsx` | AppLayout |
-| Servers | `src/pages/ServersPage.tsx` | AppLayout |
-| Server | `src/pages/ServerPage.tsx` | AppLayout |
-| Server Settings | `src/pages/ServerSettingsPage.tsx` | AppLayout |
-| Server Members | `src/pages/ServerMembersPage.tsx` | AppLayout |
+| Onboarding | `src/pages/onboarding/OnboardingPage.tsx` | AppLayout |
+| Workspaces | `src/pages/workspaces/WorkspacesPage.tsx` | AppLayout |
+| Workspace Detail | `src/pages/workspaces/WorkspaceDetailPage.tsx` | AppLayout |
+| Projects | `src/pages/projects/ProjectsPage.tsx` | AppLayout |
+| Project Detail | `src/pages/projects/ProjectDetailPage.tsx` | AppLayout |
 | Profile | `src/pages/Profile.tsx` | AppLayout |
 | User Profile | `src/pages/UserProfile.tsx` | AppLayout |
 | Verified | `src/pages/Verified.tsx` | AppLayout |
