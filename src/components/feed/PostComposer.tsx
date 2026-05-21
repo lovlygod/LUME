@@ -6,7 +6,7 @@ import type { User } from "@/types/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { normalizeImageUrl } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import EmojiPicker from "@/components/ui/EmojiPicker";
+import PostEmojiPicker from "@/components/ui/PostEmojiPicker";
 
 const PostComposer = () => {
   const [text, setText] = useState("");
@@ -280,7 +280,7 @@ const PostComposer = () => {
                       }}
                       data-emoji-picker
                     >
-                    <EmojiPicker onEmojiClick={handleEmojiClick} />
+                    <PostEmojiPicker onEmojiClick={handleEmojiClick} />
                   </motion.div>
                 )}
               </AnimatePresence>

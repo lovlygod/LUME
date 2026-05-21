@@ -37,7 +37,7 @@ type EmojiPickerProps = {
   onEmojiClick: (emoji: string) => void;
 };
 
-const EmojiPicker = ({ onEmojiClick }: EmojiPickerProps) => {
+const PostEmojiPicker = ({ onEmojiClick }: EmojiPickerProps) => {
   const [emojiData, setEmojiData] = useState<EmojiItem[] | null>(null);
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState(0);
@@ -219,4 +219,4 @@ const EmojiPicker = ({ onEmojiClick }: EmojiPickerProps) => {
   );
 };
 
-export default EmojiPicker;
+export default PostEmojiPicker;

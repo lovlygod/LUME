@@ -1,7 +1,7 @@
-import { useRef, useCallback, useEffect } from "react";
+import { useRef, useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Paperclip, Send, X, FileImage, File, Mic, Smile } from "lucide-react";
+import { Paperclip, Send, X, FileImage, File, Mic, Smile, Sticker } from "lucide-react";
 import StickerPicker from "@/components/stickers/StickerPicker";
 import type { Sticker, StickerPack } from "@/types/stickers";
 import { useDropzone, type FileRejection } from "react-dropzone";
@@ -10,6 +10,7 @@ import { ReplyBar } from "@/components/chat/ReplyBar";
 import { ImageThumb } from "@/components/media/ImageViewer";
 import VoiceRecorder from "@/components/chat/VoiceRecorder";
 import type { Attachment } from "@/types/messages";
+import ChatEmojiPicker from "@/components/ui/ChatEmojiPicker";
 
 interface ReplyPreview {
   author: string;
@@ -95,6 +96,9 @@ const MessageComposer = ({
 }: MessageComposerProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const emojiButtonRef = useRef<HTMLButtonElement>(null);
+  const emojiPopoverRef = useRef<HTMLDivElement>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   useEffect(() => {
     if (!msgText && textareaRef.current) {
@@ -102,11 +106,55 @@ const MessageComposer = ({
     }
   }, [msgText]);
 
+  useEffect(() => {
+  if (!isSending && textareaRef.current) {
+    textareaRef.current.focus();
+    }
+  }, [isSending]);
+
+  const insertEmoji = (emoji: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      onSetMsgText(msgText + emoji);
+      return;
+    }
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const newText = msgText.substring(0, start) + emoji + msgText.substring(end);
+    onSetMsgText(newText);
+    setTimeout(() => {
+      textarea.selectionStart = textarea.selectionEnd = start + emoji.length;
+      textarea.focus();
+    }, 0);
+  };
+
+  useEffect(() => {
+    if (!showEmojiPicker) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowEmojiPicker(false);
+    };
+
+    const handleOutsideClick = (event: PointerEvent) => {
+      const target = event.target as HTMLElement;
+      if (emojiButtonRef.current?.contains(target)) return;
+      if (emojiPopoverRef.current?.contains(target)) return;
+      setShowEmojiPicker(false);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("pointerdown", handleOutsideClick, true);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("pointerdown", handleOutsideClick, true);
+    };
+  }, [showEmojiPicker]);
+
   const validateFiles = useCallback((files: File[]): File[] => {
     const validFiles: File[] = [];
-    
+
     files.forEach((file) => {
-      // Проверка размера
       if (file.size > MAX_FILE_SIZE) {
         const message = t("messages.fileTooLarge")
           .replace("{filename}", file.name)
@@ -115,7 +163,6 @@ const MessageComposer = ({
         return;
       }
 
-      // Проверка типа файла
       const isAllowedType = ALLOWED_FILE_TYPES.some(
         (type) => file.type === type || file.type.startsWith(type.split("/")[0] + "/")
       );
@@ -135,10 +182,8 @@ const MessageComposer = ({
 
   const onDrop = useCallback(
     (acceptedFiles: File[], fileRejections: FileRejection[]) => {
-      // Обработка отклоненных файлов
       fileRejections.forEach((rejection) => {
         const { file, errors } = rejection;
-
         errors.forEach((error) => {
           if (error.code === "file-too-large") {
             const message =
@@ -157,7 +202,6 @@ const MessageComposer = ({
         });
       });
 
-      // Валидация и загрузка принятых файлов
       const validFiles = validateFiles(acceptedFiles);
       if (validFiles.length > 0) {
         onFileSelect(validFiles);
@@ -166,7 +210,7 @@ const MessageComposer = ({
     [onFileSelect, validateFiles, t]
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getInputProps, isDragActive } = useDropzone({
     onDrop,
     multiple: true,
     accept: {
@@ -202,6 +246,28 @@ const MessageComposer = ({
     return <File className="h-6 w-6 text-white/60" />;
   };
 
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const files = Array.from(e.dataTransfer?.files || []).filter((file) =>
+        file.type.startsWith("image/") || ALLOWED_FILE_TYPES.some((type) => file.type === type || file.type.startsWith(type.split("/")[0] + "/"))
+      );
+      if (files.length > 0) {
+        const validFiles = validateFiles(files);
+        if (validFiles.length > 0) {
+          onFileSelect(validFiles);
+        }
+      }
+    },
+    [onFileSelect, validateFiles]
+  );
+
   if (!canSend) {
     return (
       <div className="mt-3 px-6 pb-6 bg-transparent border-0 shadow-none backdrop-blur-0 relative">
@@ -213,11 +279,29 @@ const MessageComposer = ({
   }
 
   return (
-    <div
-      className="mt-3 px-6 pb-6 bg-transparent border-0 shadow-none backdrop-blur-0 relative"
-      {...getRootProps()}
-    >
-      <input {...getInputProps()} />
+    <div className="relative">
+      <AnimatePresence>
+        {showEmojiPicker && (
+          <motion.div
+            ref={emojiPopoverRef}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+            className="absolute bottom-full left-0 right-0 mb-2 z-50 px-6"
+            data-emoji-picker
+          >
+            <ChatEmojiPicker onEmojiClick={insertEmoji} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div
+        className="mt-3 px-6 pb-6 bg-transparent border-0 shadow-none backdrop-blur-0 relative"
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
+        <input {...getInputProps()} />
 
         <StickerPicker
           isOpen={stickersOpen}
@@ -230,160 +314,183 @@ const MessageComposer = ({
           onBrowsePacks={onBrowseStickerPacks}
         />
 
-      {/* Drag Overlay */}
-      <AnimatePresence>
-        {isDragActive && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 z-50 flex items-center justify-center bg-white/10 backdrop-blur-md rounded-[28px] border-2 border-dashed border-white/40"
-          >
-            <div className="text-center">
-              <motion.div
-                initial={{ scale: 0.8 }}
-                animate={{ scale: 1 }}
-                className="h-16 w-16 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-4"
-              >
-                <FileImage className="h-8 w-8 text-white" />
-              </motion.div>
-              <p className="text-lg font-semibold text-white mb-1">
-                {t("messages.dropFiles") || "Перетащите файлы сюда"}
-              </p>
-              <p className="text-sm text-white/60">
-                {t("messages.dropFilesHint") || "Изображения и документы до 25MB"}
-              </p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Attachments Preview */}
-      {attachments.length > 0 && (
-        <div className="flex gap-2 mb-3 overflow-x-auto">
-          {attachments.map((att, idx) => (
-            <div key={att.id} className="relative flex-shrink-0 group">
-              {att.type === "image" ? (
-                <ImageThumb
-                  imageId={`dm-upload-${att.id}`}
-                  src={att.url}
-                  alt="attachment"
-                  className="h-20 w-20 object-cover rounded-2xl border border-white/10"
-                  onOpen={(imageId, src) => onOpenImage(imageId, src)}
-                />
-              ) : (
-                <div className="h-20 w-20 flex flex-col items-center justify-center gap-1 bg-white/5 rounded-2xl border border-white/10 p-1">
-                  {getFileIcon(att.mime)}
-                  <span className="text-[8px] text-white/50 truncate w-full text-center">
-                    {formatFileSize(att.size)}
-                  </span>
-                </div>
-              )}
-              <button
-                onClick={() => onRemoveAttachment(idx)}
-                className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-white/20 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-smooth hover:bg-white/30"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Reply Bar */}
-      {replyTo && (
-        <ReplyBar
-          author={replyTo.author}
-          text={replyTo.text}
-          imageUrl={replyTo.imageUrl}
-          onClose={onClearReply}
-        />
-      )}
-
-      {/* Composer Input */}
-      <div className="flex items-center gap-3">
-        <motion.button
-          type="button"
-          onClick={onToggleStickers}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-white/6 text-white/80 hover:bg-white/12 transition-smooth"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <Smile className="h-5 w-5" />
-        </motion.button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          className="hidden"
-          accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,.rar,.7z"
-          onChange={(event) => {
-            const files = Array.from(event.target.files || []);
-            if (files.length > 0) {
-              const validFiles = validateFiles(files);
-              if (validFiles.length > 0) {
-                onFileSelect(validFiles);
-              }
-            }
-            event.currentTarget.value = "";
-          }}
-        />
-        <motion.button
-          onClick={() => fileInputRef.current?.click()}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-white/6 text-white/80 hover:bg-white/12 transition-smooth"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <Paperclip className="h-5 w-5" />
-        </motion.button>
-        <textarea
-          ref={(el) => {
-            textareaRef.current = el;
-            if (el) el.scrollTop = el.scrollHeight;
-          }}
-          value={msgText}
-          onChange={(event) => onSetMsgText(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Escape") {
-              onClearReply();
-            }
-            if (event.key === "Enter") {
-              if (event.shiftKey) {
-                return;
-              }
-              event.preventDefault();
-              onSend();
-            }
-          }}
-          placeholder={t("messages.sendMessage")}
-          disabled={isSending}
-          rows={1}
-          className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder:text-white/35 disabled:opacity-50 resize-none overflow-y-auto min-h-[48px] max-h-[200px] focus:outline-none focus:ring-1 focus:ring-white/20"
-          style={{ height: "auto" }}
-          onInput={(e) => {
-            const target = e.target as HTMLTextAreaElement;
-            target.style.height = "auto";
-            target.style.height = Math.min(target.scrollHeight, 200) + "px";
-            target.scrollTop = target.scrollHeight;
-          }}
-        />
-        <motion.button
-          disabled={(!msgText.trim() && attachments.length === 0) || isSending}
-          onClick={onSend}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-smooth"
-          whileHover={msgText.trim() || attachments.length > 0 ? { scale: 1.02 } : {}}
-          whileTap={msgText.trim() || attachments.length > 0 ? { scale: 0.98 } : {}}
-        >
-          {isSending ? (
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-          ) : (
-            <Send className="h-5 w-5" />
+        <AnimatePresence>
+          {isDragActive && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-50 flex items-center justify-center bg-white/10 backdrop-blur-md rounded-[28px] border-2 border-dashed border-white/40"
+            >
+              <div className="text-center">
+                <motion.div
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  className="h-16 w-16 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-4"
+                >
+                  <FileImage className="h-8 w-8 text-white" />
+                </motion.div>
+                <p className="text-lg font-semibold text-white mb-1">
+                  {t("messages.dropFiles") || "Перетащите файлы сюда"}
+                </p>
+                <p className="text-sm text-white/60">
+                  {t("messages.dropFilesHint") || "Изображения и документы до 25MB"}
+                </p>
+              </div>
+            </motion.div>
           )}
-        </motion.button>
-        <VoiceRecorder
-          onSendVoice={onSendVoice}
-          t={t}
-        />
+        </AnimatePresence>
+
+        {attachments.length > 0 && (
+          <div className="flex gap-2 mb-3 overflow-x-auto">
+            {attachments.map((att, idx) => (
+              <div key={att.id} className="relative flex-shrink-0 group">
+                {att.type === "image" ? (
+                  <ImageThumb
+                    imageId={`dm-upload-${att.id}`}
+                    src={att.url}
+                    alt="attachment"
+                    className="h-20 w-20 object-cover rounded-2xl border border-white/10"
+                    onOpen={(imageId, src) => onOpenImage(imageId, src)}
+                  />
+                ) : (
+                  <div className="h-20 w-20 flex flex-col items-center justify-center gap-1 bg-white/5 rounded-2xl border border-white/10 p-1">
+                    {getFileIcon(att.mime)}
+                    <span className="text-[8px] text-white/50 truncate w-full text-center">
+                      {formatFileSize(att.size)}
+                    </span>
+                  </div>
+                )}
+                <button
+                  onClick={() => onRemoveAttachment(idx)}
+                  className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-white/20 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-smooth hover:bg-white/30"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {replyTo && (
+          <ReplyBar
+            author={replyTo.author}
+            text={replyTo.text}
+            imageUrl={replyTo.imageUrl}
+            onClose={onClearReply}
+          />
+        )}
+
+        <div className="flex items-center gap-3">
+          <motion.button
+            type="button"
+            ref={emojiButtonRef}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowEmojiPicker((prev) => !prev);
+            }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className={`flex h-11 w-11 items-center justify-center rounded-full transition-smooth ${
+              showEmojiPicker
+                ? 'bg-white/15 text-white'
+                : 'bg-white/6 text-white/80 hover:bg-white/12'
+            }`}
+          >
+            <Smile className="h-5 w-5" />
+          </motion.button>
+
+          <motion.button
+            type="button"
+            onClick={onToggleStickers}
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/6 text-white/80 hover:bg-white/12 transition-smooth"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Sticker className="h-5 w-5" />
+          </motion.button>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,.rar,.7z"
+            onChange={(event) => {
+              const files = Array.from(event.target.files || []);
+              if (files.length > 0) {
+                const validFiles = validateFiles(files);
+                if (validFiles.length > 0) {
+                  onFileSelect(validFiles);
+                }
+              }
+              event.currentTarget.value = "";
+            }}
+          />
+          <motion.button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/6 text-white/80 hover:bg-white/12 transition-smooth"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Paperclip className="h-5 w-5" />
+          </motion.button>
+
+          <textarea
+            ref={(el) => {
+              textareaRef.current = el;
+              if (el) el.scrollTop = el.scrollHeight;
+            }}
+            value={msgText}
+            onChange={(event) => onSetMsgText(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                if (showEmojiPicker) {
+                  setShowEmojiPicker(false);
+                  return;
+                }
+                onClearReply();
+              }
+              if (event.key === "Enter") {
+                if (event.shiftKey) {
+                  return;
+                }
+                event.preventDefault();
+                onSend();
+              }
+            }}
+            placeholder={t("messages.sendMessage")}
+            disabled={isSending}
+            rows={1}
+            className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder:text-white/35 disabled:opacity-50 resize-none overflow-y-auto min-h-[48px] max-h-[200px] focus:outline-none focus:ring-1 focus:ring-white/20"
+            style={{ height: "auto" }}
+            onInput={(e) => {
+              const target = e.target as HTMLTextAreaElement;
+              target.style.height = "auto";
+              target.style.height = Math.min(target.scrollHeight, 200) + "px";
+              target.scrollTop = target.scrollHeight;
+            }}
+          />
+
+          <motion.button
+            disabled={(!msgText.trim() && attachments.length === 0) || isSending}
+            onClick={onSend}
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-smooth"
+            whileHover={msgText.trim() || attachments.length > 0 ? { scale: 1.02 } : {}}
+            whileTap={msgText.trim() || attachments.length > 0 ? { scale: 0.98 } : {}}
+          >
+            {isSending ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            ) : (
+              <Send className="h-5 w-5" />
+            )}
+          </motion.button>
+
+          <VoiceRecorder
+            onSendVoice={onSendVoice}
+            t={t}
+          />
+        </div>
       </div>
     </div>
   );
