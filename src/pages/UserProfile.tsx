@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, MapPin, Link as LinkIcon, MessageCircle, UserPlus, UserCheck, Users, Code, CheckCircle, Search, Clock, Github, FolderKanban, ExternalLink } from "lucide-react";
+import { Calendar, MapPin, Link as LinkIcon, MessageCircle, UserPlus, UserCheck, Users, Code, CheckCircle, Search, Clock, Github, FolderKanban, ExternalLink, QrCode } from "lucide-react";
 import { motion } from "framer-motion";
 import { profileAPI, postsAPI, onboardingAPI, projectsAPI } from "@/services/api";
 import type { User } from "@/types/api";
@@ -12,6 +12,8 @@ import { isVerifiedUser, isDeveloper, isDeveloperCrown, VerifiedBadge, Developer
 import { toast } from 'sonner';
 import { useLanguage } from "@/contexts/LanguageContext";
 import FollowModal from "@/components/profile/FollowModal";
+import QRCodeModal from "@/components/profile/QRCodeModal";
+import { getProfileRoute } from "@/lib/profileRoute";
 
 const UserProfile = () => {
   const { user: currentUser } = useAuth();
@@ -47,6 +49,9 @@ const UserProfile = () => {
   const [modalTab, setModalTab] = useState<'followers' | 'following'>('followers');
   const [followersList, setFollowersList] = useState<User[]>([]);
   const [followingList, setFollowingList] = useState<User[]>([]);
+
+  // QR Code modal
+  const [showQRModal, setShowQRModal] = useState(false);
 
   // Dev profile data
   const [projects, setProjects] = useState<Array<{ id: number; name: string; slug: string; status: string }>>([]);
@@ -247,36 +252,47 @@ const UserProfile = () => {
               </div>
             {/* Action Buttons - only if not own profile */}
             {currentUser && user.id !== currentUser.id && String(user.id) !== String(currentUser.id) && (
-              <div className="flex gap-2 mt-2">
+              <div className="relative mt-2">
+                <div className="flex gap-2">
+                  <motion.button
+                    onClick={handleFollowToggle}
+                    disabled={isFollowLoading}
+                    className={`btn-glass gap-2 ${isFollowing ? '' : isVerifiedUser(user) ? 'bg-blue-500/80 hover:bg-blue-500' : ''}`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {isFollowLoading ? (
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    ) : isFollowing ? (
+                      <>
+                        <UserCheck className="h-4 w-4" />
+                        <span>{t("profile.followingLabel")}</span>
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="h-4 w-4" />
+                        <span>{t("profile.follow")}</span>
+                      </>
+                    )}
+                  </motion.button>
+                  <motion.button
+                    onClick={() => navigate(`/messages?userId=${user.id}`)}
+                    className="btn-glass gap-2"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    <span>{t("profile.message")}</span>
+                  </motion.button>
+                </div>
                 <motion.button
-                  onClick={handleFollowToggle}
-                  disabled={isFollowLoading}
-                  className={`btn-glass gap-2 ${isFollowing ? '' : isVerifiedUser(user) ? 'bg-blue-500/80 hover:bg-blue-500' : ''}`}
+                  onClick={() => setShowQRModal(true)}
+                  className="btn-glass gap-2 absolute top-full right-0 mt-2 z-10"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  {isFollowLoading ? (
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  ) : isFollowing ? (
-                    <>
-                      <UserCheck className="h-4 w-4" />
-                      <span>{t("profile.followingLabel")}</span>
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="h-4 w-4" />
-                      <span>{t("profile.follow")}</span>
-                    </>
-                  )}
-                </motion.button>
-                <motion.button
-                  onClick={() => navigate(`/messages?userId=${user.id}`)}
-                  className="btn-glass gap-2"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  <span>{t("profile.message")}</span>
+                  <QrCode className="h-4 w-4" />
+                  <span>QR</span>
                 </motion.button>
               </div>
             )}
@@ -374,6 +390,14 @@ const UserProfile = () => {
         followers={followersList}
         following={followingList}
         onClose={() => setShowFollowModal(false)}
+      />
+
+      <QRCodeModal
+        open={showQRModal}
+        onClose={() => setShowQRModal(false)}
+        data={window.location.origin + getProfileRoute(user)}
+        username={user.username}
+        avatarUrl={avatarImageUrl || undefined}
       />
 {/* Posts Section */}
       <div className="mt-6">

@@ -15,7 +15,9 @@
     "confirm": "Confirm",
     "yes": "Yes",
     "no": "No",
-    "optional": "Optional"
+    "optional": "Optional",
+    "share": "Share",
+    "copyLink": "Copy Link"
   },
   "notifications": {
     "title": "Notifications",
@@ -451,7 +453,8 @@
     "looking": "Looking",
     "busy": "Busy",
     "avatarUpdated": "Avatar updated",
-    "avatarError": "Failed to upload avatar"
+    "avatarError": "Failed to upload avatar",
+    "qrCode": "QR Code"
   },
   "messages": {
     "title": "Messages",

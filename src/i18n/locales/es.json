@@ -15,7 +15,9 @@
     "confirm": "Confirmar",
     "yes": "Sí",
     "no": "No",
-    "optional": "Opcional"
+    "optional": "Opcional",
+    "share": "Compartir",
+    "copyLink": "Copiar enlace"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -283,7 +285,8 @@
     "profileNotFoundDesc": "El usuario que buscas no existe o no tienes permiso para ver este perfil.",
     "userNotFound": "Usuario no encontrado",
     "noFollowers": "Aún no hay seguidores",
-    "noFollowing": "Aún no sigue a nadie"
+    "noFollowing": "Aún no sigue a nadie",
+    "qrCode": "Código QR"
   },
   "messages": {
     "title": "Mensajes",

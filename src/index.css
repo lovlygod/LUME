@@ -212,6 +212,10 @@
     transform: translateY(-2px);
   }
 
+  .no-hover-lift:hover {
+    transform: none !important;
+  }
+
   .glass-input {
     background: var(--glass-surface);
     backdrop-filter: blur(var(--glass-blur));

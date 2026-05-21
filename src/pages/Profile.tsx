@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Camera, MapPin, Link as LinkIcon, Edit2, Save, X, MessageCircle, Pin, ExternalLink, UserPlus, UserCheck, Users, BadgeCheck, Github, Code, Briefcase, FolderKanban, CheckCircle, Search, Clock, ChevronDown } from "lucide-react";
+import { Calendar, Camera, MapPin, Link as LinkIcon, Edit2, Save, X, MessageCircle, Pin, ExternalLink, UserPlus, UserCheck, Users, BadgeCheck, Github, Code, Briefcase, FolderKanban, CheckCircle, Search, Clock, ChevronDown, QrCode } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { profileAPI, postsAPI, usersAPI, onboardingAPI, searchAPI, projectsAPI } from "@/services/api";
 import type { User } from "@/types/api";
@@ -10,6 +10,8 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useLanguage } from "@/contexts/LanguageContext";
 import FollowModal from "@/components/profile/FollowModal";
+import QRCodeModal from "@/components/profile/QRCodeModal";
+import { getProfileRoute } from "@/lib/profileRoute";
 
 type PostItem = {
   id: string | number;
@@ -70,6 +72,9 @@ const ProfilePage = () => {
   const [modalTab, setModalTab] = useState<'followers' | 'following'>('followers');
   const [followersList, setFollowersList] = useState<User[]>([]);
   const [followingList, setFollowingList] = useState<User[]>([]);
+
+  // QR Code modal
+  const [showQRModal, setShowQRModal] = useState(false);
 
   // Dev profile data
   const [projects, setProjects] = useState<UserProject[]>([]);
@@ -404,24 +409,35 @@ const ProfilePage = () => {
           {/* Action Buttons */}
           <div className="flex gap-2">
             {isOwnProfile && (
-              <motion.button
-                className="btn-glass"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleEditToggle}
-              >
-                {isEditing ? (
-                  <>
-                    <X className="h-4 w-4" />
-                    <span>{t("common.cancel")}</span>
-                  </>
-                ) : (
-                  <>
-                    <Edit2 className="h-4 w-4" />
-                    <span>{t("profile.editProfile")}</span>
-                  </>
-                )}
-              </motion.button>
+              <>
+                <motion.button
+                  className="btn-glass"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setShowQRModal(true)}
+                >
+                  <QrCode className="h-4 w-4" />
+                  <span>QR</span>
+                </motion.button>
+                <motion.button
+                  className="btn-glass"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleEditToggle}
+                >
+                  {isEditing ? (
+                    <>
+                      <X className="h-4 w-4" />
+                      <span>{t("common.cancel")}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Edit2 className="h-4 w-4" />
+                      <span>{t("profile.editProfile")}</span>
+                    </>
+                  )}
+                </motion.button>
+              </>
             )}
             {!isOwnProfile && user && (
               <div className="flex gap-2">
@@ -822,6 +838,14 @@ const ProfilePage = () => {
         followers={followersList}
         following={followingList}
         onClose={() => setShowFollowModal(false)}
+      />
+
+      <QRCodeModal
+        open={showQRModal}
+        onClose={() => setShowQRModal(false)}
+        data={window.location.origin + getProfileRoute(user)}
+        username={user.username}
+        avatarUrl={avatarImageUrl || undefined}
       />
 
       {/* Posts Section */}

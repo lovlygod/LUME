@@ -15,7 +15,9 @@
     "confirm": "确认",
     "yes": "是",
     "no": "否",
-    "optional": "可选"
+    "optional": "可选",
+    "share": "分享",
+    "copyLink": "复制链接"
   },
   "notifications": {
     "title": "通知",
@@ -283,7 +285,8 @@
     "profileNotFoundDesc": "你查找的用户不存在或无权查看。",
     "userNotFound": "未找到用户",
     "noFollowers": "暂无粉丝",
-    "noFollowing": "暂无关注"
+    "noFollowing": "暂无关注",
+    "qrCode": "二维码"
   },
   "messages": {
     "title": "消息",
