@@ -2,8 +2,7 @@
 node_modules
 dist
 .DS_Store
-PROBLEMS.md
-REPORT.md
+AUDIT.md
 tools/
 developer-platform/
 
