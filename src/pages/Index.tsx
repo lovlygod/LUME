@@ -48,13 +48,6 @@ const Index = () => {
 
     window.addEventListener("refreshHome", handleRefreshHome);
 
-    // Автообновление каждые 30 секунд
-    const intervalId = setInterval(() => {
-      if (document.visibilityState === "visible") {
-        refetch();
-      }
-    }, 30000);
-
     // Подписка на WebSocket события
     const unsubscribeNewPost = wsService.on('new_post', (newPost: PostType) => {
       queryClient.setQueryData<{ posts: PostType[] }>(
@@ -115,7 +108,6 @@ const Index = () => {
     });
 
     return () => {
-      clearInterval(intervalId);
       unsubscribeNewPost();
       unsubscribeResonance();
       unsubscribeNewComment();

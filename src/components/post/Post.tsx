@@ -1,9 +1,7 @@
-import { MessageCircle, Image as ImageIcon, Smile, Share2, MoreHorizontal, Trash2, Flag, Pin } from "lucide-react";
+import { MessageCircle, Image as ImageIcon, Share2, MoreHorizontal, Trash2, Flag, Pin } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { profileAPI, postsAPI, usersAPI } from "@/services/api";
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { createPortal } from "react-dom";
-import Picker, { Theme } from "emoji-picker-react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from 'react-router-dom';
 import { useAuth, isVerifiedUser, isDeveloper, isDeveloperCrown, VerifiedBadge, DeveloperBadge, DeveloperCrownBadge } from "@/contexts/AuthContext";
 import { normalizeImageUrl } from "@/lib/utils";
@@ -56,19 +54,10 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, imageUrls, timestamp, re
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState<Array<{ id: string | number; userId?: string | number; user_id?: string | number; text: string; createdAt: string; name?: string; username?: string; avatar?: string; verified?: boolean }>>([]);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [commentsLoaded, setCommentsLoaded] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [showPostMenu, setShowPostMenu] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
-  const emojiButtonRef = useRef<HTMLButtonElement | null>(null);
-  const emojiPopoverRef = useRef<HTMLDivElement | null>(null);
-  const [emojiPosition, setEmojiPosition] = useState<{ top: number; left: number; origin: "top" | "bottom" }>({
-    top: 0,
-    left: 0,
-    origin: "top"
-  });
-  const isEmojiOpeningRef = useRef(false);
   const [isReporting, setIsReporting] = useState(false);
   const [isPinning, setIsPinning] = useState(false);
   const postImages = useMemo(() => {
@@ -268,81 +257,6 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, imageUrls, timestamp, re
       }
     }
   };
-
-  const handleEmojiClick = (emojiObject: { emoji: string }) => {
-    setCommentText(prev => prev + emojiObject.emoji);
-    setShowEmojiPicker(false);
-  };
-
-  const updateEmojiPosition = useCallback(() => {
-    const trigger = emojiButtonRef.current;
-    const popover = emojiPopoverRef.current;
-    if (!trigger || !popover) return;
-
-    const triggerRect = trigger.getBoundingClientRect();
-    const popoverRect = popover.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - triggerRect.bottom;
-    const spaceAbove = triggerRect.top;
-    const shouldFlip = spaceBelow < popoverRect.height + 12 && spaceAbove > spaceBelow;
-    const top = shouldFlip
-      ? triggerRect.top - popoverRect.height - 12
-      : triggerRect.bottom + 12;
-    const left = Math.min(
-      Math.max(triggerRect.left, 12),
-      window.innerWidth - popoverRect.width - 12
-    );
-
-    setEmojiPosition({
-      top: Math.max(12, top),
-      left,
-      origin: shouldFlip ? "bottom" : "top"
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!showEmojiPicker) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setShowEmojiPicker(false);
-    };
-
-    const handleOutsideClick = (event: PointerEvent) => {
-      const path = event.composedPath?.() ?? [];
-      if (path.includes(emojiPopoverRef.current) || path.includes(emojiButtonRef.current)) {
-        return;
-      }
-      if (isEmojiOpeningRef.current) {
-        isEmojiOpeningRef.current = false;
-        return;
-      }
-      setShowEmojiPicker(false);
-    };
-
-    const handleScroll = () => updateEmojiPosition();
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("resize", updateEmojiPosition);
-    window.addEventListener("scroll", handleScroll, true);
-    window.addEventListener("pointerdown", handleOutsideClick, true);
-
-    isEmojiOpeningRef.current = false;
-
-    let observer: ResizeObserver | null = null;
-    if (emojiPopoverRef.current && "ResizeObserver" in window) {
-      observer = new ResizeObserver(() => updateEmojiPosition());
-      observer.observe(emojiPopoverRef.current);
-    }
-
-    const raf = requestAnimationFrame(() => updateEmojiPosition());
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("resize", updateEmojiPosition);
-      window.removeEventListener("scroll", handleScroll, true);
-      window.removeEventListener("pointerdown", handleOutsideClick, true);
-      if (observer) observer.disconnect();
-      cancelAnimationFrame(raf);
-    };
-  }, [showEmojiPicker, updateEmojiPosition]);
 
   if (!user) return null;
 
@@ -563,43 +477,6 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, imageUrls, timestamp, re
                         placeholder={t("feed.writeComment")}
                         className="glass-input w-full px-4 py-2 text-sm text-white"
                       />
-
-                      <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
-                        <motion.button
-                          ref={emojiButtonRef}
-                          type="button"
-                          onClick={() => {
-                            isEmojiOpeningRef.current = !showEmojiPicker;
-                            setShowEmojiPicker(!showEmojiPicker);
-                          }}
-                          className="text-white/40 hover:text-white transition-smooth"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <Smile className="h-4 w-4" />
-                        </motion.button>
-
-                        <AnimatePresence>
-                          {showEmojiPicker && createPortal(
-                            <motion.div
-                              ref={emojiPopoverRef}
-                              initial={{ opacity: 0, scale: 0.96, y: emojiPosition.origin === "top" ? -6 : 6 }}
-                              animate={{ opacity: 1, scale: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.96, y: emojiPosition.origin === "top" ? -6 : 6 }}
-                              transition={{ duration: 0.18 }}
-                              className="fixed z-[9999]"
-                              style={{ top: emojiPosition.top, left: emojiPosition.left, transformOrigin: emojiPosition.origin }}
-                            >
-                              <Picker
-                                onEmojiClick={handleEmojiClick}
-                                theme={Theme.DARK}
-                                previewConfig={{ showPreview: false }}
-                              />
-                            </motion.div>,
-                            document.body
-                          )}
-                        </AnimatePresence>
-                      </div>
                     </div>
                     <motion.button
                       type="submit"

@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { Image, Zap, X, Loader2 } from "lucide-react";
+import { Image, Zap, X, Loader2, Smile } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { profileAPI, postsAPI } from "@/services/api";
 import type { User } from "@/types/api";
-import { useAuth, isVerifiedUser } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { normalizeImageUrl } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import EmojiPicker from "@/components/ui/EmojiPicker";
 
 const PostComposer = () => {
   const [text, setText] = useState("");
@@ -16,6 +17,11 @@ const PostComposer = () => {
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const emojiButtonRef = useRef<HTMLButtonElement>(null);
+  const emojiPopoverRef = useRef<HTMLDivElement>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [emojiPos, setEmojiPos] = useState<{ top: number; left: number } | null>(null);
+  const isEmojiOpeningRef = useRef(false);
   const { user: authUser } = useAuth();
   const { t } = useLanguage();
 
@@ -111,6 +117,53 @@ const PostComposer = () => {
     setSelectedImages((prev) => prev.filter((_, idx) => idx !== index));
   };
 
+  const handleEmojiClick = (emoji: string) => {
+    setText((prev) => prev + emoji);
+    setShowEmojiPicker(false);
+  };
+
+  useEffect(() => {
+    if (!showEmojiPicker) return;
+
+    const btn = emojiButtonRef.current;
+    if (btn) {
+      const rect = btn.getBoundingClientRect();
+      const pickerWidth = 288;
+      const centerX = rect.left + rect.width / 2;
+      let left = centerX - pickerWidth / 2;
+      left = Math.max(8, Math.min(left, window.innerWidth - pickerWidth - 8));
+      setEmojiPos({
+        top: rect.bottom + 8,
+        left,
+      });
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowEmojiPicker(false);
+    };
+
+    const handleOutsideClick = (event: PointerEvent) => {
+      if (isEmojiOpeningRef.current) {
+        isEmojiOpeningRef.current = false;
+        return;
+      }
+      const target = event.target as HTMLElement;
+      if (emojiButtonRef.current?.contains(target)) return;
+      if (emojiPopoverRef.current?.contains(target)) return;
+      setShowEmojiPicker(false);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("pointerdown", handleOutsideClick, true);
+
+    isEmojiOpeningRef.current = false;
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("pointerdown", handleOutsideClick, true);
+    };
+  }, [showEmojiPicker]);
+
   const currentUser = user || authUser;
 
   return (
@@ -137,7 +190,7 @@ const PostComposer = () => {
         </div>
 
         {/* Compose Area */}
-        <div className="flex-1">
+        <div className="flex-1 relative">
           <textarea
             ref={textareaRef}
             value={text}
@@ -182,7 +235,7 @@ const PostComposer = () => {
           </AnimatePresence>
 
           {/* Action Buttons */}
-          <div className="mt-4 flex items-center justify-between">
+          <div className="mt-4 flex items-center justify-between relative">
             <div className="flex items-center gap-1">
               <motion.button
                 type="button"
@@ -193,6 +246,44 @@ const PostComposer = () => {
               >
                 <Image className="h-4 w-4" />
               </motion.button>
+
+              <motion.button
+                ref={emojiButtonRef}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowEmojiPicker((prev) => {
+                    isEmojiOpeningRef.current = !prev;
+                    return !prev;
+                  });
+                }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="rounded-full p-2 text-white/50 hover:bg-white/5 transition-smooth"
+              >
+                <Smile className="h-4 w-4" />
+              </motion.button>
+
+              <AnimatePresence>
+                {showEmojiPicker && (
+                    <motion.div
+                      ref={emojiPopoverRef}
+                      initial={{ opacity: 0, scale: 0.92, y: -8 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.92, y: -8 }}
+                      transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                      style={{
+                        position: 'fixed',
+                        top: emojiPos?.top ?? 0,
+                        left: emojiPos?.left ?? 0,
+                        zIndex: 9999,
+                      }}
+                      data-emoji-picker
+                    >
+                    <EmojiPicker onEmojiClick={handleEmojiClick} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               <input
                 type="file"
