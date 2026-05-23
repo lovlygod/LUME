@@ -460,12 +460,16 @@ module.exports = function registerMessengerRoutes(router, deps) {
 
   router.post('/chats', authenticateToken, asyncHandler(async (req, res) => {
     const userId = req.user.userId;
-    const { type, title, isPublic, isPrivate, username } = req.body;
+    const { type, title, isPublic, isPrivate, username, userIds, userId: targetUserId } = req.body;
 
     if (!type || !['private', 'group', 'channel'].includes(type)) {
       return res.status(400).json({ error: 'Invalid chat type' });
     }
-    if (!title || title.trim().length === 0) {
+
+    const isPrivateChat = type === 'private';
+    const normalizedTitle = typeof title === 'string' ? title.trim() : '';
+
+    if (!isPrivateChat && normalizedTitle.length === 0) {
       return res.status(400).json({ error: 'Title is required' });
     }
 
@@ -474,20 +478,46 @@ module.exports = function registerMessengerRoutes(router, deps) {
       return res.status(400).json({ error: 'Invalid username' });
     }
 
+    let chatMembers = [];
+    if (isPrivateChat) {
+      const targetIds = Array.isArray(userIds)
+        ? userIds
+        : targetUserId
+        ? [targetUserId]
+        : [];
+
+      const otherUserIds = [...new Set((targetIds || []).map((id) => String(id).trim()))]
+        .filter(Boolean)
+        .filter((id) => id !== String(userId));
+
+      if (otherUserIds.length !== 1) {
+        return res.status(400).json({ error: 'Private chat requires exactly one other user' });
+      }
+
+      chatMembers = [String(userId), otherUserIds[0]];
+    }
+
     const { rows } = await db.query(
         `INSERT INTO chats (type, title, is_public, is_private, username, owner_id)
          VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING id`,
-        [type, title.trim(), Boolean(isPublic), Boolean(isPrivate), username || null, userId]
+        [type, isPrivateChat ? null : normalizedTitle, Boolean(isPublic), Boolean(isPrivate) || isPrivateChat, username || null, userId]
       );
-      const chatId = rows[0].id;
+    const chatId = rows[0].id;
 
+    await db.query(
+      'INSERT INTO chat_members (chat_id, user_id, role) VALUES ($1, $2, $3)',
+      [chatId, userId, 'owner']
+    );
+
+    if (isPrivateChat) {
       await db.query(
         'INSERT INTO chat_members (chat_id, user_id, role) VALUES ($1, $2, $3)',
-        [chatId, userId, 'owner']
+        [chatId, chatMembers[1], 'member']
       );
+    }
 
-      res.status(201).json({ chatId: chatId.toString() });
+    res.status(201).json({ chatId: chatId.toString(), existing: false });
   }));
 
   // Bulk delete messages

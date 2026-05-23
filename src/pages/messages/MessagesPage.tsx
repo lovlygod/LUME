@@ -90,6 +90,7 @@ const MessagesPage = () => {
   const [blockedProject, setBlockedProject] = useState<any>(null);
   const [joiningProject, setJoiningProject] = useState(false);
   const [selectedMessages, setSelectedMessages] = useState<string[]>([]);
+  const [pendingTargetUser, setPendingTargetUser] = useState<User | null>(null);
   const { backgroundStyle } = useChatBackground();
 
   useEffect(() => {
@@ -113,7 +114,38 @@ const MessagesPage = () => {
       ) || null,
     [chatsData?.chats, selectedChatId]
   );
-  const displayChat = useMemo(() => selectedChat || publicChannel, [selectedChat, publicChannel]);
+
+  const targetChatPlaceholder = useMemo<Chat | null>(() => {
+    if (selectedChat || publicChannel || !pendingTargetUser) return null;
+    const placeholderId = selectedChatId || targetUserId || pendingTargetUser.id;
+    if (!placeholderId) return null;
+
+    return {
+      id: placeholderId,
+      type: "private",
+      title: pendingTargetUser.name || pendingTargetUser.username || "User",
+      avatar: pendingTargetUser.avatar || null,
+      isPublic: false,
+      isPrivate: true,
+      username: pendingTargetUser.username || null,
+      lastMessage: "",
+      lastMessageType: "text",
+      timestamp: new Date().toISOString(),
+      unread: 0,
+      members: [
+        {
+          id: pendingTargetUser.id,
+          role: "member",
+          name: pendingTargetUser.name,
+          username: pendingTargetUser.username,
+          avatar: pendingTargetUser.avatar,
+          verified: pendingTargetUser.verified,
+        },
+      ],
+    };
+  }, [selectedChat, publicChannel, pendingTargetUser, selectedChatId, targetUserId]);
+
+  const displayChat = useMemo(() => selectedChat || publicChannel || targetChatPlaceholder, [selectedChat, publicChannel, targetChatPlaceholder]);
   const chatPanelUser = useMemo(() => {
     if (!displayChat) return null;
 
@@ -155,7 +187,12 @@ const MessagesPage = () => {
 
     return null;
   }, [displayChat, currentUser?.id]);
-  const activeChatId = useMemo(() => selectedChat?.id || publicChannel?.id || null, [selectedChat, publicChannel]);
+  const activeChatId = useMemo(() => {
+    if (selectedChat?.id) return selectedChat.id;
+    if (publicChannel?.id) return publicChannel.id;
+    if (selectedChatId && /^-?\d+$/.test(selectedChatId)) return selectedChatId;
+    return null;
+  }, [selectedChat, publicChannel, selectedChatId]);
   const { data: messagesData, isLoading: messagesLoading } = useChatMessages(activeChatId);
   const sendMessage = useSendMessage(currentUser?.id);
   const deleteMessage = useDeleteMessage(activeChatId);
@@ -219,9 +256,15 @@ const MessagesPage = () => {
       .then((res) => {
         if (cancelled || !res.chatId) return;
         setSelectedChatId(res.chatId);
+        queryClient.invalidateQueries({ queryKey: messageQueryKeys.chatList() });
         navigate(`/messages/${res.chatId}`, { replace: true });
       })
-      .catch(() => null);
+      .catch((error) => {
+        console.error("Failed to create private chat", error);
+      })
+      .finally(() => {
+        queryClient.invalidateQueries({ queryKey: messageQueryKeys.chatList() });
+      });
     return () => {
       cancelled = true;
     };
@@ -499,11 +542,18 @@ const MessagesPage = () => {
   }, [chatId, rest, selectedChat?.id, selectedChat?.type, selectedChat?.role, selectedChat?.isPublic, selectedChat?.projectId, chatsData?.chats, navigate]);
 
   useEffect(() => {
-    if (!targetUserId) return;
+    if (!targetUserId) {
+      if (!selectedChatId) {
+        setPendingTargetUser(null);
+      }
+      return;
+    }
     const controller = new AbortController();
-    profileAPI.getUserById(targetUserId, controller.signal).catch(() => null);
+    profileAPI.getUserById(targetUserId, controller.signal)
+      .then((res) => setPendingTargetUser(res.user))
+      .catch(() => null);
     return () => controller.abort();
-  }, [targetUserId]);
+  }, [targetUserId, selectedChatId]);
 
   useEffect(() => {
     if (!selectedChatId || !selectedChat || selectedChat.type !== "private") return;
