@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { MinimalTabs } from "@/components/ui/glass";
-import logo from "@/assets/icons/logo.png";
+import logo from "@/assets/icons/logo.svg";
 
 const tabs = ["For you", "Following"];
 
