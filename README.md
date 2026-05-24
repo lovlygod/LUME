@@ -211,7 +211,6 @@ LUME/
 - File and image attachments
 - Read receipts
 - Voice messages
-- Ephemeral moments
 
 ### 4. User profiles
 
@@ -458,17 +457,6 @@ Message cache persistence and contract behavior are covered by [`src/test/messag
 | text | TEXT | Text |
 | created_at | DATETIME | Timestamp |
 | deleted_for_all | BOOLEAN | Deleted for all flag |
-| moment_id | INTEGER | Moment ID (ephemeral) |
-
-#### `moments`
-| Field | Type | Description |
-|-------|------|-------------|
-| id | INTEGER | Primary key |
-| sender_id | INTEGER | Sender |
-| receiver_id | INTEGER | Receiver |
-| thumb_data_url | TEXT | Thumbnail preview |
-| ttl_seconds | INTEGER | TTL seconds |
-| expires_at | DATETIME | Expiration time |
 
 ### Chat tables
 

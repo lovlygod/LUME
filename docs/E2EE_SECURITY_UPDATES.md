@@ -37,7 +37,7 @@ This document summarizes the implemented security migration work toward a Signal
 When `E2EE_ENFORCE=true`:
 
 - plaintext message body is rejected,
-- plaintext voice/moment body pathways are constrained by enforcement checks where applicable.
+- plaintext voice body pathways are constrained by enforcement checks where applicable.
 
 ### Migrations
 

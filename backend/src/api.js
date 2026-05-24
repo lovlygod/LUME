@@ -9,7 +9,7 @@ const {
   upload
 } = require('./profile');
 const { upload: fileUpload, uploadFile, voiceUpload, uploadVoiceMessage } = require('./uploads');
-const { upload: cloudImageUpload, uploadStickers, uploadMemoryImage } = require('./middleware/upload');
+const { upload: cloudImageUpload, uploadStickers } = require('./middleware/upload');
 const crypto = require('crypto');
 const { getPublicBaseUrl } = require('./utils/baseUrl');
 const path = require('path');
@@ -370,8 +370,6 @@ const ensureStickerData = async () => {
     });
   }
 };
-
-const momentUpload = uploadMemoryImage;
 
 // Test route - самый первый роут
 
@@ -1935,8 +1933,6 @@ router.get('/chats/:chatId/messages', authenticateToken, (req, res) => {
     const messageQuery = `
       SELECT m.*, u.name, u.username, u.avatar, u.verified,
              md.deleted_at as deleted_for_me,
-             mo.thumb_data_url, mo.ttl_seconds, mo.expires_at,
-             mv.viewed_at as moment_viewed_at,
              s.id as sticker_id,
              s.pack_id as sticker_pack_id,
              s.name as sticker_name,
@@ -1945,15 +1941,13 @@ router.get('/chats/:chatId/messages', authenticateToken, (req, res) => {
         JOIN users u ON m.sender_id = u.id
         LEFT JOIN stickers s ON s.id = m.sticker_id
         LEFT JOIN message_deletions md ON md.message_id = m.id AND md.user_id = $1
-        LEFT JOIN moments mo ON mo.id = m.moment_id
-        LEFT JOIN moment_views mv ON mv.moment_id = mo.id AND mv.user_id = $2
-        WHERE m.chat_id = $3
+        WHERE m.chat_id = $2
           AND m.deleted_for_all_at IS NULL
         ORDER BY m.created_at ASC
-        LIMIT $4 OFFSET $5
+        LIMIT $3 OFFSET $4
      `;
 
-    db.all(messageQuery, [currentUserId, currentUserId, chatId, limit, offset], (err, messages) => {
+    db.all(messageQuery, [currentUserId, chatId, limit, offset], (err, messages) => {
       if (err) {
         console.error('[messages] messageQuery error:', err);
         return res.status(500).json({ error: 'Database error' });
@@ -2018,13 +2012,6 @@ router.get('/chats/:chatId/messages', authenticateToken, (req, res) => {
                 ? msg.sticker_file_path
                 : `${getPublicBaseUrl(req)}/api/stickers/${msg.sticker_id}`)
               : null,
-          } : null,
-          moment: msg.moment_id ? {
-            id: msg.moment_id.toString(),
-            thumbDataUrl: msg.thumb_data_url || null,
-            ttlSeconds: msg.ttl_seconds || 86400,
-            expiresAt: msg.expires_at || null,
-            viewedAt: msg.moment_viewed_at || null
           } : null,
           timestamp: msg.created_at || msg.timestamp,
           own: msg.sender_id === currentUserId,
@@ -3939,270 +3926,6 @@ router.delete('/users/me/pin', authenticateToken, (req, res) => {
     res.json({ message: 'Post unpinned successfully' });
   });
 });
-
-// ==================== MOMENTS (ONE-TIME PHOTO) ====================
-
-router.post('/moments', authenticateToken, momentUpload.single('file'), asyncHandler(async (req, res) => {
-  const senderId = req.user.userId;
-  const { chatId, ttlSeconds = 86400 } = req.body;
-
-  if (process.env.E2EE_ENFORCE === 'true') {
-    return res.status(400).json({ error: 'Moment plaintext flow is disabled when E2EE_ENFORCE=true' });
-  }
-
-  if (!chatId) {
-    throw new ValidationError('chatId is required');
-  }
-
-  const membership = await new Promise((resolve) => {
-    db.get(
-      'SELECT role, c.type FROM chat_members cm JOIN chats c ON c.id = cm.chat_id WHERE cm.chat_id = $1 AND cm.user_id = $2',
-      [chatId, senderId],
-      (err, row) => {
-        if (err) return resolve(null);
-        resolve(row || null);
-      }
-    );
-  });
-
-  if (!membership) {
-    throw new ValidationError('Access denied');
-  }
-
-  if (membership.type === 'channel' && !['owner', 'admin'].includes(membership.role)) {
-    throw new ValidationError('Only admins can write to channel');
-  }
-
-  if (!req.file) {
-    throw new ValidationError('No file uploaded');
-  }
-
-  const mime = req.file.mimetype || '';
-  if (!mime.startsWith('image/')) {
-    throw new ValidationError('Only image files are allowed for moments');
-  }
-
-  const cloudinary = require('./config/cloudinary');
-  const uploadToCloudinary = () => new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      {
-        folder: 'lume/moments',
-        resource_type: 'image',
-        allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
-        transformation: [{ quality: 'auto', fetch_format: 'auto' }],
-      },
-      (error, result) => {
-        if (error) return reject(error);
-        resolve(result);
-      }
-    );
-    stream.end(req.file.buffer);
-  });
-
-  const cloudResult = await uploadToCloudinary();
-  const filePath = cloudResult?.secure_url || cloudResult?.url;
-  const size = req.file.size;
-
-  let width = null;
-  let height = null;
-  let thumbDataUrl = null;
-  if (req.file.buffer) {
-    try {
-      const sizeOf = require('image-size');
-      const dimensions = sizeOf(req.file.buffer);
-      width = dimensions.width || null;
-      height = dimensions.height || null;
-    } catch (e) {
-      // ignore
-    }
-
-    try {
-      const sharp = require('sharp');
-      const thumbBuffer = await sharp(req.file.buffer)
-        .resize(32, 32, { fit: 'inside' })
-        .blur(12)
-        .toBuffer();
-      thumbDataUrl = `data:image/jpeg;base64,${thumbBuffer.toString('base64')}`;
-    } catch (e) {
-      // ignore
-    }
-  }
-
-  const ttlValue = Number.isFinite(Number(ttlSeconds)) ? Math.max(60, Math.min(7 * 24 * 3600, Number(ttlSeconds))) : 86400;
-
-  const expiresAt = new Date(Date.now() + ttlValue * 1000).toISOString();
-
-  const momentId = await new Promise((resolve, reject) => {
-    db.run(
-      `INSERT INTO moments (sender_id, receiver_id, file_path, mime, size, width, height, thumb_data_url, ttl_seconds, expires_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
-      ,
-      [senderId, chatId, filePath, mime, size, width, height, thumbDataUrl, ttlValue, expiresAt],
-      function(err) {
-        if (err) reject(err);
-        else resolve(this.lastID);
-      }
-    );
-  });
-
-  // Insert message referencing moment
-  const messageId = await new Promise((resolve, reject) => {
-    db.run(
-      `INSERT INTO messages (chat_id, sender_id, text, type, moment_id)
-       VALUES ($1, $2, $3, $4, $5)`
-      ,
-      [chatId, senderId, 'Исчезающее фото', 'moment_image', momentId],
-      function(err) {
-        if (err) reject(err);
-        else resolve(this.lastID);
-      }
-    );
-  });
-
-  const sendChatMessage = req.app.get('sendChatMessage');
-  if (sendChatMessage) {
-    sendChatMessage({
-      id: messageId,
-      chatId: String(chatId),
-      senderId: senderId.toString(),
-      text: 'Исчезающее фото',
-      timestamp: new Date().toISOString(),
-      type: 'moment_image',
-      moment: {
-        id: momentId.toString(),
-        thumbDataUrl: thumbDataUrl,
-        ttlSeconds: ttlValue,
-        expiresAt,
-        viewedBy: []
-      }
-    });
-  }
-
-  res.json({ messageId, momentId, thumbDataUrl, ttlSeconds: ttlValue, expiresAt });
-}));
-
-router.get('/moments/:id/content', authenticateToken, asyncHandler(async (req, res) => {
-  const userId = req.user.userId;
-  const momentId = parseInt(req.params.id);
-  const token = String(req.headers['authorization']?.replace(/^Bearer\s+/i, '') || req.query.token || '');
-
-  if (!token) {
-    return res.status(403).json({ error: 'Token required' });
-  }
-
-  const tokenRow = await new Promise((resolve, reject) => {
-    db.get('SELECT * FROM moment_tokens WHERE token = $1 AND moment_id = $2 AND user_id = $3', [token, momentId, userId], (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
-
-  if (!tokenRow) {
-    return res.status(403).json({ error: 'Invalid token' });
-  }
-
-  if (tokenRow.used_at) {
-    return res.status(410).json({ error: 'Token already used' });
-  }
-
-  if (new Date(tokenRow.expires_at).getTime() < Date.now()) {
-    return res.status(403).json({ error: 'Token expired' });
-  }
-
-  const moment = await new Promise((resolve, reject) => {
-    db.get('SELECT * FROM moments WHERE id = $1', [momentId], (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
-
-  if (!moment) {
-    return res.status(404).json({ error: 'Moment not found' });
-  }
-
-  if (moment.revoked_at) {
-    return res.status(410).json({ error: 'Moment revoked' });
-  }
-
-  if (!moment.receiver_id) {
-    return res.status(403).json({ error: 'Access denied' });
-  }
-
-  const memberRow = await new Promise((resolve) => {
-    db.get('SELECT 1 FROM chat_members WHERE chat_id = $1 AND user_id = $2', [moment.receiver_id, userId], (err, row) => {
-      if (err) return resolve(null);
-      resolve(row || null);
-    });
-  });
-
-  if (!memberRow) {
-    return res.status(403).json({ error: 'Access denied' });
-  }
-
-  if (moment.expires_at && new Date(moment.expires_at).getTime() < Date.now()) {
-    return res.status(410).json({ error: 'Moment expired' });
-  }
-
-  await new Promise((resolve, reject) => {
-    db.run('UPDATE moment_tokens SET used_at = NOW() WHERE id = $1', [tokenRow.id], (err) => {
-      if (err) reject(err);
-      else resolve();
-    });
-  });
-
-  await new Promise((resolve, reject) => {
-    db.run('INSERT INTO moment_views (moment_id, user_id) VALUES ($1, $2) ON CONFLICT (moment_id, user_id) DO NOTHING', [momentId, userId], (err) => {
-      if (err) reject(err);
-      else resolve();
-    });
-  });
-
-  res.json({
-    url: moment.file_path,
-    mime: moment.mime || 'image/jpeg',
-    expiresAt: moment.expires_at || null
-  });
-}));
-
-router.post('/moments/:id/viewed', authenticateToken, asyncHandler(async (req, res) => {
-  const userId = req.user.userId;
-  const momentId = parseInt(req.params.id);
-
-  const moment = await new Promise((resolve, reject) => {
-    db.get('SELECT * FROM moments WHERE id = $1', [momentId], (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
-
-  if (!moment) {
-    return res.status(404).json({ error: 'Moment not found' });
-  }
-
-  if (!moment.receiver_id) {
-    return res.status(403).json({ error: 'Access denied' });
-  }
-
-  const memberRow = await new Promise((resolve) => {
-    db.get('SELECT 1 FROM chat_members WHERE chat_id = $1 AND user_id = $2', [moment.receiver_id, userId], (err, row) => {
-      if (err) return resolve(null);
-      resolve(row || null);
-    });
-  });
-
-  if (!memberRow) {
-    return res.status(403).json({ error: 'Access denied' });
-  }
-
-  await new Promise((resolve, reject) => {
-    db.run('INSERT INTO moment_views (moment_id, user_id) VALUES ($1, $2) ON CONFLICT (moment_id, user_id) DO NOTHING', [momentId, userId], (err) => {
-      if (err) reject(err);
-      else resolve();
-    });
-  });
-
-  res.json({ ok: true });
-}));
 
 // Get attachment by ID
 router.get('/attachments/:attachmentId', authenticateToken, (req, res) => {

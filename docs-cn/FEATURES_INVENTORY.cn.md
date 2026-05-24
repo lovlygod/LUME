@@ -94,17 +94,6 @@
   - 删除的上下文菜单
   - Image viewer 放大
 
-### Moments（消失照片）
-- **文件：** `src/pages/messages/MessagesPage.tsx`（内置）
-- **状态：** ⚠️ 部分实现
-- **功能：**
-  - TTL 24 小时的消失照片
-  - 点击查看
-  - 禁止下载
-  - 缩略图预览
-  - 已读标记
-- 切换标签页自动关闭
-
 ### NPM Package Preview（NPM 包预览）
 - **文件：** `backend/src/npm.js`, `src/components/npm/NpmPackageCard.tsx`, `src/utils/npmDetector.ts`
 - **状态:** ✅ 已实现

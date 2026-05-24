@@ -53,7 +53,6 @@ Chat Panel (right)
 - Shows read receipts for own messages
 - Typing indicator
 - Voice messages (record + playback)
-- Ephemeral "moment" messages with TTL and view tracking
 - **NPM Package Preview** — automatic detection of `npm <package>` commands
 
 ---
@@ -88,7 +87,6 @@ Chat Panel (right)
 - Reply bar
 - Attachments
 - Send button
-- Moment toggle (ephemeral image)
 - Voice recorder
 
 ---
@@ -124,15 +122,6 @@ Chat Panel (right)
 
 - Auto-scroll to newest on new message
 - Preserve scroll position when loading history
-
----
-
-## Moments (ephemeral media)
-
-- TTL-based ephemeral images (24 hours)
-- Open token flow: `POST /moments/:id/open` → signed content URL
-- Viewed status tracked via `POST /moments/:id/viewed`
-- Hidden if already viewed
 
 ---
 

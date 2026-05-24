@@ -175,7 +175,6 @@ LUME/
 - 文件与图片附件
 - 已读状态
 - 语音消息
-- 消失的瞬间（moments）
 
 ### 4. 用户资料
 
@@ -277,17 +276,6 @@ LUME/
 | text | TEXT | 文本 |
 | created_at | DATETIME | 时间 |
 | deleted_for_all | BOOLEAN | 双方删除标记 |
-| moment_id | INTEGER | 对应 moment |
-
-#### `moments`
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | INTEGER | 主键 |
-| sender_id | INTEGER | 发送者 |
-| receiver_id | INTEGER | 接收者 |
-| thumb_data_url | TEXT | 预览缩略图 |
-| ttl_seconds | INTEGER | 有效期 |
-| expires_at | DATETIME | 过期时间 |
 
 ### 聊天相关表
 

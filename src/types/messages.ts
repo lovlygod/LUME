@@ -21,7 +21,7 @@ export interface Chat {
   }>;
   verified?: boolean;
   lastMessage: string;
-  lastMessageType?: "text" | "image" | "sticker" | "voice" | "moment_image" | "diagram";
+  lastMessageType?: "text" | "image" | "sticker" | "voice" | "diagram";
   timestamp: string;
   unread?: number;
   projectId?: number | null;
@@ -63,20 +63,13 @@ export interface Message {
   } | null;
   text: string;
   diagramSvg?: string | null;
-  type?: "text" | "moment_image" | "voice" | "sticker";
+  type?: "text" | "voice" | "sticker";
   sticker?: {
     id: string;
     packId?: string | null;
     name?: string | null;
     filePath?: string | null;
     url?: string | null;
-  } | null;
-  moment?: {
-    id: string;
-    thumbDataUrl?: string | null;
-    ttlSeconds?: number | null;
-    expiresAt?: string | null;
-    viewedAt?: string | null;
   } | null;
   timestamp: string;
   own: boolean;

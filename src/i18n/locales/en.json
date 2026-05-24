@@ -572,11 +572,9 @@
     "deleteSelectedForAll": "Delete for all",
     "cancelSelection": "Cancel selection",
     "maxSelectionError": "Maximum 100 messages can be selected",
-    "momentSendError": "Failed to send moment",
     "voiceNoChat": "No chat selected",
     "voiceSent": "Voice message sent",
-    "voiceSendError": "Failed to send voice message",
-    "momentReplyLabel": "Expiring photo"
+    "voiceSendError": "Failed to send voice message"
   },
   "voice": {
     "record": "Record voice message",
@@ -1038,7 +1036,7 @@
       },
       "messages": {
         "title": "Messages",
-        "description": "Private chats, replies, attachments, and moments in one place."
+        "description": "Private chats, replies, and attachments in one place."
       },
       "servers": {
         "title": "Servers",
@@ -1086,8 +1084,8 @@
           "content": "The feed offers recommended and following views. Publish signals, attach images, and pin important posts on your profile. Comments and resonance help your content reach more people."
         },
         "section3": {
-          "title": "Messages & Moments",
-          "content": "Chats support attachments, replies, and ephemeral moments. A moment opens once and is then marked as viewed. If uploads fail, check connectivity and file size limits."
+          "title": "Messages",
+          "content": "Chats support attachments and replies. If uploads fail, check connectivity and file size limits."
         }
       }
     },
@@ -1260,22 +1258,14 @@
       },
       "messages": {
         "q1": {
-          "title": "How do I send an expiring photo?",
-          "answer": "In chat, enable Moment mode and add an image.",
-          "bullet1": "Opens once",
-          "bullet2": "No saving",
-          "bullet3": "Lives up to 24 hours",
-          "popular": "true"
-        },
-        "q2": {
           "title": "How do I delete a message?",
           "answer": "Long-press and delete for yourself or everyone.",
           "bullet1": "For everyone only within 15 minutes",
           "bullet2": "Deletion is irreversible",
           "bullet3": "Media is removed with the message",
-          "popular": "false"
+          "popular": "true"
         },
-        "q3": {
+        "q2": {
           "title": "Are files supported?",
           "answer": "Yes, you can send images and documents.",
           "bullet1": "10 MB size limit",
@@ -1283,7 +1273,7 @@
           "bullet3": "Files stay in chat history",
           "popular": "false"
         },
-        "q4": {
+        "q3": {
           "title": "Why aren’t messages delivered?",
           "answer": "Check your connection and service status.",
           "bullet1": "Check /status",
@@ -1291,7 +1281,7 @@
           "bullet3": "Retry sending",
           "popular": "false"
         },
-        "q5": {
+        "q4": {
           "title": "How do I reply to a message?",
           "answer": "Long-press a message and choose Reply.",
           "bullet1": "Replies show in thread",

@@ -404,11 +404,9 @@
     "deleteSelectedForAll": "Excluir para todos",
     "cancelSelection": "Cancelar seleção",
     "maxSelectionError": "Máximo de 100 mensagens podem ser selecionadas",
-    "momentSendError": "Falha ao enviar momento",
     "voiceNoChat": "Nenhum chat selecionado",
     "voiceSent": "Mensagem de voz enviada",
-    "voiceSendError": "Falha ao enviar mensagem de voz",
-    "momentReplyLabel": "Foto temporária"
+    "voiceSendError": "Falha ao enviar mensagem de voz"
   },
   "voice": {
     "record": "Gravar mensagem de voz",
@@ -868,7 +866,7 @@
       },
       "messages": {
         "title": "Mensagens",
-        "description": "Chats privados, respostas, anexos e momentos em um só lugar."
+        "description": "Chats privados, respostas e anexos em um só lugar."
       },
       "servers": {
         "title": "Servidores",
@@ -916,8 +914,8 @@
           "content": "O feed oferece visualizações recomendadas e seguidas. Publique sinais, anexe imagens e fixe publicações importantes no seu perfil. Comentários e ressonância ajudam seu conteúdo a alcançar mais pessoas."
         },
         "section3": {
-          "title": "Mensagens e momentos",
-          "content": "Chats suportam anexos, respostas e momentos efêmeros. Um momento abre uma vez e então é marcado como visto. Se os uploads falharem, verifique a conexão e o limite de tamanho do arquivo."
+          "title": "Mensagens",
+          "content": "Chats suportam anexos e respostas. Se os uploads falharem, verifique a conexão e o limite de tamanho do arquivo."
         }
       }
     },
@@ -1090,22 +1088,14 @@
       },
       "messages": {
         "q1": {
-          "title": "Como envio uma foto temporária?",
-          "answer": "No chat, habilite o modo Moment e adicione uma imagem.",
-          "bullet1": "Abre uma vez",
-          "bullet2": "Sem salvamento",
-          "bullet3": "Dura até 24 horas",
-          "popular": "true"
-        },
-        "q2": {
           "title": "Como excluo uma mensagem?",
           "answer": "Pressione e segure e exclua para você ou para todos.",
           "bullet1": "Para todos apenas dentro de 15 minutos",
           "bullet2": "Exclusão é irreversível",
           "bullet3": "Mídia é removida junto",
-          "popular": "false"
+          "popular": "true"
         },
-        "q3": {
+        "q2": {
           "title": "Arquivos são suportados?",
           "answer": "Sim, você pode enviar imagens e documentos.",
           "bullet1": "Limite de 10 MB",
@@ -1113,7 +1103,7 @@
           "bullet3": "Arquivos ficam no histórico do chat",
           "popular": "false"
         },
-        "q4": {
+        "q3": {
           "title": "Por que as mensagens não são entregues?",
           "answer": "Verifique sua conexão e o status do serviço.",
           "bullet1": "Verifique /status",
@@ -1121,7 +1111,7 @@
           "bullet3": "Tente enviar novamente",
           "popular": "false"
         },
-        "q5": {
+        "q4": {
           "title": "Como respondo a uma mensagem?",
           "answer": "Pressione e segure uma mensagem e escolha Responder.",
           "bullet1": "Respostas aparecem no thread",

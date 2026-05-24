@@ -10,7 +10,6 @@ developer-platform/
 backend/node_modules
 backend/.env
 backend/uploads
-backend/moment-uploads
 backend/package-lock.json
 
 # logs

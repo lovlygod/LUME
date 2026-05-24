@@ -404,11 +404,9 @@
     "deleteSelectedForAll": "Eliminar para todos",
     "cancelSelection": "Cancelar selección",
     "maxSelectionError": "Máximo 100 mensajes pueden ser seleccionados",
-    "momentSendError": "No se pudo enviar el momento",
     "voiceNoChat": "No hay chat seleccionado",
     "voiceSent": "Mensaje de voz enviado",
-    "voiceSendError": "No se pudo enviar el mensaje de voz",
-    "momentReplyLabel": "Foto temporal"
+    "voiceSendError": "No se pudo enviar el mensaje de voz"
   },
   "voice": {
     "record": "Grabar mensaje de voz",
@@ -868,7 +866,7 @@
       },
       "messages": {
         "title": "Mensajes",
-        "description": "Chats privados, respuestas, adjuntos y momentos en un solo lugar."
+        "description": "Chats privados, respuestas y adjuntos en un solo lugar."
       },
       "servers": {
         "title": "Servidores",
@@ -916,8 +914,8 @@
           "content": "El feed ofrece vistas recomendadas y seguidas. Publica señales, adjunta imágenes y fija publicaciones importantes en tu perfil. Los comentarios y la resonancia ayudan a que tu contenido llegue a más personas."
         },
         "section3": {
-          "title": "Mensajes y momentos",
-          "content": "Los chats admiten adjuntos, respuestas y momentos efímeros. Un momento se abre una vez y luego se marca como visto. Si las subidas fallan, revisa la conexión y el límite de tamaño de archivo."
+          "title": "Mensajes",
+          "content": "Los chats admiten adjuntos y respuestas. Si las subidas fallan, revisa la conexión y el límite de tamaño de archivo."
         }
       }
     },
@@ -1090,22 +1088,14 @@
       },
       "messages": {
         "q1": {
-          "title": "¿Cómo envío una foto temporal?",
-          "answer": "En el chat, activa el modo Moment y agrega una imagen.",
-          "bullet1": "Se abre una vez",
-          "bullet2": "Sin guardado",
-          "bullet3": "Dura hasta 24 horas",
-          "popular": "true"
-        },
-        "q2": {
           "title": "¿Cómo elimino un mensaje?",
           "answer": "Mantén presionado y elimina para ti o para todos.",
           "bullet1": "Para todos solo dentro de 15 minutos",
           "bullet2": "La eliminación es irreversible",
           "bullet3": "El contenido se elimina con el mensaje",
-          "popular": "false"
+          "popular": "true"
         },
-        "q3": {
+        "q2": {
           "title": "¿Se admiten archivos?",
           "answer": "Sí, puedes enviar imágenes y documentos.",
           "bullet1": "Límite de 10 MB",
@@ -1113,7 +1103,7 @@
           "bullet3": "Los archivos permanecen en el historial",
           "popular": "false"
         },
-        "q4": {
+        "q3": {
           "title": "¿Por qué no llegan los mensajes?",
           "answer": "Revisa tu conexión y el estado del servicio.",
           "bullet1": "Revisa /status",
@@ -1121,7 +1111,7 @@
           "bullet3": "Reintenta enviar",
           "popular": "false"
         },
-        "q5": {
+        "q4": {
           "title": "¿Cómo respondo a un mensaje?",
           "answer": "Mantén presionado un mensaje y elige Responder.",
           "bullet1": "Las respuestas aparecen en el hilo",

@@ -8,7 +8,6 @@ const buildFolder = (req) => {
   if (reqPath.includes('banner')) return 'lume/banners';
   if (reqPath.includes('messages')) return 'lume/messages';
   if (reqPath.includes('stickers')) return 'lume/stickers';
-  if (reqPath.includes('moments')) return 'lume/moments';
   if (reqPath.includes('voice')) return 'lume/voice';
   return 'lume/misc';
 };

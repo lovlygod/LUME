@@ -11,8 +11,7 @@ const ensureMessageShape = (data: {
   chatId: string | number;
   text: string;
   timestamp: string;
-  type?: "text" | "moment_image" | "sticker";
-  moment?: Message["moment"];
+  type?: "text" | "sticker";
   attachments?: Attachment[];
   replyToMessageId?: string | null;
   sticker?: Message["sticker"] | null;
@@ -24,7 +23,6 @@ const ensureMessageShape = (data: {
   sender: data.sender || null,
   text: data.text,
   type: data.type || "text",
-  moment: data.moment || null,
   sticker: data.sticker || null,
   timestamp: data.timestamp,
   own: false,
@@ -57,8 +55,7 @@ export const useChatWs = (params: {
         chatId: string | number;
         text: string;
         timestamp: string;
-        type?: "text" | "moment_image" | "sticker";
-        moment?: Message["moment"];
+        type?: "text" | "sticker";
         attachments?: Attachment[];
         replyToMessageId?: string | null;
         sticker?: Message["sticker"] | null;

@@ -590,50 +590,6 @@ export const messagesAPI = {
     return response.json() as Promise<{ message: string; messageId: string; attachment: Attachment }>;
   },
 
-  sendMoment: async (data: { chatId: string; file: File; ttlSeconds?: number }) => {
-    const formData = new FormData();
-    formData.append('file', data.file);
-    formData.append('chatId', data.chatId);
-    if (data.ttlSeconds) {
-      formData.append('ttlSeconds', String(data.ttlSeconds));
-    }
-
-    const response = await fetch(`${API_BASE_URL}/moments`, {
-      method: 'POST',
-      body: formData,
-      credentials: 'include',
-      headers: {
-        ...(getCsrfToken() ? { 'X-CSRF-Token': getCsrfToken() as string } : {}),
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-    }
-
-    return response.json() as Promise<{ messageId: string | number; momentId: string | number; thumbDataUrl?: string | null; ttlSeconds?: number; expiresAt?: string | null }>;
-  },
-
-  openMoment: async (momentId: string) => {
-    return apiRequest<{ token: string; expiresAt: string }>(`/moments/${momentId}/open`, {
-      method: 'POST',
-    });
-  },
-
-  getMomentContent: async (momentId: string, token: string): Promise<{ url: string; mime?: string; expiresAt?: string | null }> => {
-    const params = new URLSearchParams({ token });
-    return apiRequest(`/moments/${momentId}/content?${params.toString()}`, {
-      method: 'GET',
-    });
-  },
-
-  markMomentViewed: async (momentId: string) => {
-    return apiRequest(`/moments/${momentId}/viewed`, {
-      method: 'POST',
-    });
-  },
-
   markAsRead: async (chatId: string, lastReadMessageId: string) => {
     return apiRequest(`/chats/${chatId}/read`, {
       method: 'POST',

@@ -404,11 +404,9 @@
     "deleteSelectedForAll": "为所有人删除",
     "cancelSelection": "取消选择",
     "maxSelectionError": "最多可以选择100条消息",
-    "momentSendError": "发送瞬时照片失败",
     "voiceNoChat": "未选择聊天",
     "voiceSent": "语音消息已发送",
-    "voiceSendError": "发送语音消息失败",
-    "momentReplyLabel": "限时照片"
+    "voiceSendError": "发送语音消息失败"
   },
   "voice": {
     "record": "录制语音消息",
@@ -868,7 +866,7 @@
       },
       "messages": {
         "title": "消息",
-        "description": "私聊、回复、附件与瞬时照片一体化。"
+        "description": "私聊、回复与附件一体化。"
       },
       "servers": {
         "title": "服务器",
@@ -916,8 +914,8 @@
           "content": "动态提供推荐和关注视图。发布内容可附加图片并在个人资料中置顶重要动态。评论与共鸣有助于内容传播。"
         },
         "section3": {
-          "title": "消息与瞬时照片",
-          "content": "聊天支持附件、回复和限时照片。照片仅可打开一次，之后标记为已查看。若上传失败，请检查网络与文件大小限制。"
+          "title": "消息",
+          "content": "聊天支持附件和回复。若上传失败，请检查网络与文件大小限制。"
         }
       }
     },
@@ -1090,22 +1088,14 @@
       },
       "messages": {
         "q1": {
-          "title": "如何发送限时照片？",
-          "answer": "在聊天中启用 Moment 模式并添加图片。",
-          "bullet1": "仅可打开一次",
-          "bullet2": "不可保存",
-          "bullet3": "最长存在 24 小时",
-          "popular": "true"
-        },
-        "q2": {
           "title": "如何删除消息？",
           "answer": "长按消息后选择仅自己删除或为所有人删除。",
           "bullet1": "为所有人删除仅限 15 分钟内",
           "bullet2": "删除不可撤销",
           "bullet3": "媒体与消息一起删除",
-          "popular": "false"
+          "popular": "true"
         },
-        "q3": {
+        "q2": {
           "title": "支持发送文件吗？",
           "answer": "支持，可发送图片和文档。",
           "bullet1": "大小限制 10 MB",
@@ -1113,7 +1103,7 @@
           "bullet3": "文件保留在聊天记录中",
           "popular": "false"
         },
-        "q4": {
+        "q3": {
           "title": "为何消息未送达？",
           "answer": "检查网络连接和服务状态。",
           "bullet1": "查看 /status",
@@ -1121,7 +1111,7 @@
           "bullet3": "重试发送",
           "popular": "false"
         },
-        "q5": {
+        "q4": {
           "title": "如何回复消息？",
           "answer": "长按消息并选择回复。",
           "bullet1": "回复显示在同一线程",

@@ -620,7 +620,7 @@ const sendChatMessage = async (data) => {
   // Локальная рассылка подписчикам чата
   const { chatId } = data;
   if (chatId) {
-    const contentTypes = new Set(['text', 'moment_image', 'sticker', 'voice']);
+    const contentTypes = new Set(['text', 'sticker', 'voice']);
     const eventType = data.eventType || (contentTypes.has(data.type) ? 'new_message' : data.type || 'new_message');
     broadcastToChat(chatId, {
       type: eventType,

@@ -173,7 +173,6 @@ LUME/
 - Удаление сообщений (для себя / для всех)
 - Вложения файлов и изображений
 - Индикаторы прочтения
-- Исчезающие моменты (moments)
 
 ### 4. Профили пользователей
 
@@ -318,17 +317,6 @@ LUME/
 | text | TEXT | Текст |
 | created_at | DATETIME | Дата |
 | deleted_for_all | BOOLEAN | Удалено для всех |
-| moment_id | INTEGER | ID момента (для исчезающих) |
-
-#### `moments`
-| Поле | Тип | Описание |
-|------|-----|----------|
-| id | INTEGER | Первичный ключ |
-| sender_id | INTEGER | Отправитель |
-| receiver_id | INTEGER | Получатель |
-| thumb_data_url | TEXT | Thumb preview |
-| ttl_seconds | INTEGER | Время жизни |
-| expires_at | DATETIME | Истекает |
 
 ### Таблицы чатов
 

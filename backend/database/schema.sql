@@ -247,38 +247,6 @@ CREATE TABLE IF NOT EXISTS link_previews (
   fetched_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS moments (
-  id BIGSERIAL PRIMARY KEY,
-  sender_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  receiver_id BIGINT NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
-  file_path TEXT NOT NULL,
-  mime TEXT,
-  size BIGINT,
-  width INTEGER,
-  height INTEGER,
-  thumb_data_url TEXT,
-  ttl_seconds INTEGER,
-  expires_at TIMESTAMPTZ,
-  revoked_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS moment_tokens (
-  id BIGSERIAL PRIMARY KEY,
-  moment_id BIGINT NOT NULL REFERENCES moments(id) ON DELETE CASCADE,
-  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  token TEXT NOT NULL,
-  expires_at TIMESTAMPTZ NOT NULL,
-  used_at TIMESTAMPTZ
-);
-
-CREATE TABLE IF NOT EXISTS moment_views (
-  moment_id BIGINT NOT NULL REFERENCES moments(id) ON DELETE CASCADE,
-  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  viewed_at TIMESTAMPTZ DEFAULT NOW(),
-  PRIMARY KEY (moment_id, user_id)
-);
-
 CREATE TABLE IF NOT EXISTS chat_reads (
   chat_id BIGINT NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
   user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
