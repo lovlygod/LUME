@@ -1,5 +1,5 @@
 // WebSocket service for real-time updates
-import { WS_URL } from "@/lib/config";
+import { WS_ENABLED, WS_URL } from "@/lib/config";
 
 type WebSocketPayload = Record<string, unknown>;
 
@@ -27,6 +27,10 @@ class WebSocketService {
   private lastPongAt: number | null = null;
 
   connect(userId: string): void {
+    if (!WS_ENABLED) {
+      return;
+    }
+
     if (this.ws?.readyState === WebSocket.OPEN) {
       return;
     }
