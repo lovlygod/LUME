@@ -264,14 +264,14 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, imageUrls, timestamp, re
     <LayoutGroup>
       <motion.article
         data-post-id={dataPostId || id}
-        className={`relative isolate rounded-3xl border border-white/10 bg-white/5 px-5 py-5 shadow-[0_18px_50px_rgba(0,0,0,0.35)] transition-smooth hover:bg-white/6 ${
+        className={`relative isolate rounded-3xl border border-white/10 bg-white/5 px-5 py-5 shadow-[0_18px_50px_rgba(0,0,0,0.35)] transition-smooth hover:bg-white/6 max-sm:px-4 max-sm:py-4 ${
           showPostMenu ? "z-20" : "z-0"
         }`}
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
       >
-        <div className="flex gap-3">
+        <div className="flex gap-3 max-sm:gap-2.5">
           {/* Avatar */}
           <div className="flex-shrink-0 cursor-pointer" onClick={() => navigate(getProfileRoute(user))}>
             {user?.avatar ? (
@@ -294,9 +294,9 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, imageUrls, timestamp, re
 
           <div className="flex-1 min-w-0">
             {/* User Info */}
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap max-sm:gap-x-1.5 max-sm:gap-y-0.5">
               <span
-                className="text-sm font-medium text-white hover:text-white/80 transition-smooth cursor-pointer"
+                className="text-sm font-medium text-white hover:text-white/80 transition-smooth cursor-pointer max-sm:max-w-[52vw] max-sm:truncate"
                 onClick={() => navigate(getProfileRoute(user))}
               >
                 {user?.name || 'Loading...'}
@@ -320,7 +320,7 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, imageUrls, timestamp, re
 
             {/* Post Text */}
             {displayText && (
-              <p className="mt-2 text-[15px] leading-relaxed text-white/90 whitespace-pre-wrap">
+              <p className="mt-2 text-[15px] leading-relaxed text-white/90 whitespace-pre-wrap max-sm:text-[14px] max-sm:leading-6">
                 <RichText text={displayText} />
               </p>
             )}
@@ -333,11 +333,11 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, imageUrls, timestamp, re
             )}
 
             {/* Actions */}
-            <div className="mt-4 flex items-center justify-between">
+            <div className="mt-4 flex items-center justify-between max-sm:mt-3">
               <div className="flex items-center gap-1">
                 <motion.button
                   onClick={handleReply}
-                  className={`group flex items-center gap-2 px-3 py-1.5 rounded-full transition-smooth ${
+                  className={`group flex items-center gap-2 px-3 py-1.5 rounded-full transition-smooth max-sm:gap-1.5 max-sm:px-2.5 ${
                     showComments
                       ? 'bg-white/10 text-white'
                       : 'text-white/50 hover:bg-white/5 hover:text-white'
@@ -352,7 +352,7 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, imageUrls, timestamp, re
                 <motion.button
                   onClick={handleResonance}
                   disabled={isLiking}
-                  className="group flex items-center gap-2 px-3 py-1.5 rounded-full transition-smooth"
+                  className="group flex items-center gap-2 px-3 py-1.5 rounded-full transition-smooth max-sm:gap-1.5 max-sm:px-2.5"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -381,7 +381,7 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, imageUrls, timestamp, re
               <div className="relative">
                 <motion.button
                   onClick={() => setShowPostMenu(!showPostMenu)}
-                  className="p-2 rounded-full text-white/40 hover:bg-white/5 transition-smooth"
+                  className="p-2 rounded-full text-white/40 hover:bg-white/5 transition-smooth max-sm:p-1.5"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -453,9 +453,9 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, imageUrls, timestamp, re
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-                  className="mt-4 ml-3 pl-4 border-l border-white/10"
+                  className="mt-4 ml-3 pl-4 border-l border-white/10 max-sm:ml-0 max-sm:pl-3"
                 >
-                  <form onSubmit={handleCommentSubmit} className="flex items-start gap-2 mb-4">
+                  <form onSubmit={handleCommentSubmit} className="flex items-start gap-2 mb-4 max-sm:items-center">
                     <div className="flex-shrink-0">
                       {currentUser?.avatar ? (
                         <img
@@ -481,7 +481,7 @@ const Post = ({ id, dataPostId, userId, text, imageUrl, imageUrls, timestamp, re
                     <motion.button
                       type="submit"
                       disabled={!commentText.trim()}
-                      className="btn-glass px-4 py-2 text-sm"
+                        className="btn-glass px-4 py-2 text-sm max-sm:px-3 max-sm:text-xs"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >

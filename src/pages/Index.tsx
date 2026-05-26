@@ -153,11 +153,11 @@ const Index = () => {
   }
 
   return (
-    <div className="py-7" ref={feedRef}>
+    <div className="py-7 max-sm:py-3" ref={feedRef}>
       {/* Header with Tabs */}
-      <div className="mb-6 rounded-3xl border border-white/10 bg-white/5">
-        <div className="flex items-center justify-between px-6 py-5">
-          <div className="flex items-center gap-3">
+      <div className="mb-6 rounded-3xl border border-white/10 bg-white/5 max-sm:mb-3">
+        <div className="flex items-center justify-between px-6 py-5 max-sm:px-4 max-sm:py-3.5">
+          <div className="flex min-w-0 items-center gap-3 max-sm:gap-2.5">
             {activeTab === "recommended" ? (
               <TrendingUp className="h-5 w-5 text-secondary" />
             ) : (
@@ -167,7 +167,7 @@ const Index = () => {
               <h1 className="text-lg font-semibold text-white">
                 {activeTab === "recommended" ? t("feed.recommended") : t("feed.following")}
               </h1>
-              <p className="text-xs text-secondary">
+              <p className="text-xs text-secondary max-sm:line-clamp-1">
                 {activeTab === "recommended" ? t("feed.recommendedSubtitle") : t("feed.followingSubtitle")}
               </p>
             </div>
@@ -175,7 +175,7 @@ const Index = () => {
           <motion.button
             onClick={handleManualRefresh}
             disabled={isRefreshing}
-            className="rounded-full p-2 hover:bg-white/5 transition-smooth"
+            className="rounded-full p-2 hover:bg-white/5 transition-smooth max-sm:p-1.5"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
@@ -184,20 +184,20 @@ const Index = () => {
         </div>
 
         {/* Tabs */}
-        <div className="px-5 pb-5">
-          <div className="flex gap-2 rounded-full border border-white/12 bg-white/5 p-1.5">
+        <div className="px-5 pb-5 max-sm:px-3.5 max-sm:pb-3.5">
+          <div className="flex gap-2 rounded-full border border-white/12 bg-white/5 p-1.5 max-sm:gap-1 max-sm:p-1">
             <button
               onClick={() => {
                 setActiveTab("recommended");
                 hasLoadedInitial.current = false;
                 refetch();
               }}
-              className={`flex-1 rounded-full py-2.5 text-sm font-medium transition-smooth ${
+              className={`flex-1 rounded-full py-2.5 text-sm font-medium transition-smooth max-sm:py-2 max-sm:text-xs ${
                 activeTab === "recommended" ? "bg-white/10 text-white" : "text-secondary hover:text-white"
               }`}
             >
-              <div className="flex items-center justify-center gap-2">
-                <TrendingUp className="h-4 w-4" />
+              <div className="flex items-center justify-center gap-2 max-sm:gap-1.5">
+                <TrendingUp className="h-4 w-4 max-sm:h-3.5 max-sm:w-3.5" />
                 <span>{t("feed.forYou")}</span>
               </div>
             </button>
@@ -207,12 +207,12 @@ const Index = () => {
                 hasLoadedInitial.current = false;
                 refetch();
               }}
-              className={`flex-1 rounded-full py-2.5 text-sm font-medium transition-smooth ${
+              className={`flex-1 rounded-full py-2.5 text-sm font-medium transition-smooth max-sm:py-2 max-sm:text-xs ${
                 activeTab === "following" ? "bg-white/10 text-white" : "text-secondary hover:text-white"
               }`}
             >
-              <div className="flex items-center justify-center gap-2">
-                <Users className="h-4 w-4" />
+              <div className="flex items-center justify-center gap-2 max-sm:gap-1.5">
+                <Users className="h-4 w-4 max-sm:h-3.5 max-sm:w-3.5" />
                 <span>{t("feed.following")}</span>
               </div>
             </button>
@@ -227,7 +227,7 @@ const Index = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-              className="px-6 py-3.5 bg-white/5"
+              className="px-6 py-3.5 bg-white/5 max-sm:px-4 max-sm:py-2.5"
             >
               <div className="flex items-center justify-center gap-2 text-sm text-white">
                 <Zap className="h-4 w-4" />
@@ -248,7 +248,7 @@ const Index = () => {
       </div>
 
       {/* Post Composer */}
-      <div className="mb-6 rounded-3xl border border-white/10 bg-white/5">
+      <div className="mb-6 rounded-3xl border border-white/10 bg-white/5 max-sm:mb-3">
         <PostComposer />
       </div>
 

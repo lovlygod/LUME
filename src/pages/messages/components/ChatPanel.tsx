@@ -52,7 +52,7 @@ const ChatPanel = ({
 
   return (
     <div
-      className="flex items-center gap-4 px-6 py-4 border-b border-white/10 cursor-pointer transition-smooth bg-white/3 backdrop-blur-[18px]"
+      className="flex items-center gap-4 px-6 py-4 border-b border-white/10 cursor-pointer transition-smooth bg-white/3 backdrop-blur-[18px] max-sm:gap-2.5 max-sm:px-3.5 max-sm:py-3"
       onClick={() => onOpenProfile()}
     >
       <div className="relative">
@@ -60,10 +60,10 @@ const ChatPanel = ({
           <img
             src={normalizeImageUrl(user.avatar) || ""}
             alt={user.name}
-            className="h-11 w-11 rounded-full object-cover"
+            className="h-11 w-11 rounded-full object-cover max-sm:h-9 max-sm:w-9"
           />
         ) : (
-          <div className="h-11 w-11 rounded-full bg-white/10 flex items-center justify-center text-xs font-semibold text-white">
+          <div className="h-11 w-11 rounded-full bg-white/10 flex items-center justify-center text-xs font-semibold text-white max-sm:h-9 max-sm:w-9">
             {user.name.charAt(0)}
           </div>
         )}
@@ -110,7 +110,7 @@ const ChatPanel = ({
       {onLeave && !isPrivate && chatType !== "channel" && (
         <button
           type="button"
-          className="ml-2 rounded-full border border-white/10 px-3 py-1 text-xs text-white/70 hover:bg-white/10"
+          className="ml-2 rounded-full border border-white/10 px-3 py-1 text-xs text-white/70 hover:bg-white/10 max-sm:ml-0 max-sm:px-2"
           onClick={(event) => {
             event.stopPropagation();
             onLeave();
@@ -122,7 +122,7 @@ const ChatPanel = ({
       {onOpenSettings && !isPrivate && (
         <button
           type="button"
-          className="ml-2 rounded-full border border-white/10 px-3 py-1 text-xs text-white/70 hover:bg-white/10"
+          className="ml-2 rounded-full border border-white/10 px-3 py-1 text-xs text-white/70 hover:bg-white/10 max-sm:ml-0 max-sm:px-2"
           onClick={(event) => {
             event.stopPropagation();
             onOpenSettings();

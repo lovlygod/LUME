@@ -50,8 +50,8 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         <div
           className={
             hideRightSidebar || isPolicyPage
-              ? "relative mx-auto w-full max-w-none px-6"
-              : "relative mx-auto w-full max-w-[1560px] px-9 [&>div]:!grid [&>div]:grid-cols-[280px_1fr_280px] [&>div]:gap-[80px] [&>div]:items-stretch [&>div]:w-full [&>div>aside:first-child]:!w-[280px] [&>div>aside:last-child]:!w-[280px] [&>div>main]:w-full [&>div>main]:!max-w-none max-[1400px]:[&>div]:gap-[64px] max-[1400px]:[&>div]:grid-cols-[280px_1fr_280px] max-[1400px]:[&>div>aside:last-child]:!w-[280px] max-[1280px]:[&>div]:grid-cols-[280px_1fr] max-[1280px]:[&>div>aside:last-child]:!hidden max-[1023px]:[&>div]:grid-cols-1 max-[1023px]:[&>div>aside:first-child]:!hidden max-[1023px]:[&>div>aside:last-child]:!hidden max-[1023px]:[&>div>main]:!w-full max-[1023px]:[&>div>main]:!max-w-none"
+              ? "relative mx-auto w-full max-w-none px-6 max-sm:px-0"
+              : "relative mx-auto w-full max-w-[1560px] px-9 max-sm:px-0 [&>div]:!grid [&>div]:grid-cols-[280px_1fr_280px] [&>div]:gap-[80px] [&>div]:items-stretch [&>div]:w-full [&>div>aside:first-child]:!w-[280px] [&>div>aside:last-child]:!w-[280px] [&>div>main]:w-full [&>div>main]:!max-w-none max-[1400px]:[&>div]:gap-[64px] max-[1400px]:[&>div]:grid-cols-[280px_1fr_280px] max-[1400px]:[&>div>aside:last-child]:!w-[280px] max-[1280px]:[&>div]:grid-cols-[280px_1fr] max-[1280px]:[&>div>aside:last-child]:!hidden max-[1023px]:[&>div]:grid-cols-1 max-[1023px]:[&>div>aside:first-child]:!hidden max-[1023px]:[&>div>aside:last-child]:!hidden max-[1023px]:[&>div>main]:!w-full max-[1023px]:[&>div>main]:!max-w-none"
           }
         >
         {children}

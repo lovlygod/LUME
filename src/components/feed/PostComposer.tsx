@@ -167,8 +167,8 @@ const PostComposer = () => {
   const currentUser = user || authUser;
 
   return (
-    <div className={`px-5 py-5 transition-smooth ${isFocused ? 'bg-white/4' : ''}`}>
-      <div className="flex gap-3">
+    <div className={`px-5 py-5 transition-smooth max-sm:px-4 max-sm:py-3.5 ${isFocused ? 'bg-white/4' : ''}`}>
+      <div className="flex gap-3 max-sm:gap-2.5">
         {/* Avatar */}
         <div className="flex-shrink-0">
           {currentUser?.avatar ? (
@@ -210,14 +210,14 @@ const PostComposer = () => {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="mt-3 flex flex-wrap gap-3"
+                className="mt-3 flex flex-wrap gap-3 max-sm:gap-2"
               >
                 {imagePreviews.map((preview, index) => (
                   <div key={`${preview}-${index}`} className="relative">
                     <img
                       src={preview}
                       alt={`Preview ${index + 1}`}
-                      className="h-28 w-28 rounded-2xl object-cover border border-white/10"
+                      className="h-28 w-28 rounded-2xl object-cover border border-white/10 max-sm:h-20 max-sm:w-20"
                     />
                     <motion.button
                       type="button"
@@ -235,7 +235,7 @@ const PostComposer = () => {
           </AnimatePresence>
 
           {/* Action Buttons */}
-          <div className="mt-4 flex items-center justify-between relative">
+          <div className="mt-4 flex items-center justify-between relative max-sm:mt-3">
             <div className="flex items-center gap-1">
               <motion.button
                 type="button"
@@ -295,7 +295,7 @@ const PostComposer = () => {
               />
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 max-sm:gap-2">
               {/* Character Counter */}
               {charCount > 0 && (
                 <span className={`text-xs font-mono ${isNearLimit ? 'text-red-200' : 'text-white/40'}`}>
@@ -307,7 +307,7 @@ const PostComposer = () => {
               <motion.button
                 onClick={handleSubmit}
                 disabled={!canPost}
-                className="btn-glass"
+                className="btn-glass max-sm:px-3 max-sm:py-2"
                 whileHover={canPost ? { scale: 1.02 } : {}}
                 whileTap={canPost ? { scale: 0.98 } : {}}
               >

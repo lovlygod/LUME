@@ -967,7 +967,7 @@ const MessagesPage = () => {
 
   return (
     <LayoutGroup>
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex h-screen overflow-hidden max-sm:h-[calc(100vh-76px)]">
         <ChatList
           chats={chats}
           loading={isLoading}
@@ -1058,10 +1058,10 @@ const MessagesPage = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-              className="flex-1 flex flex-col min-w-0 p-3"
+              className="flex-1 flex flex-col min-w-0 p-3 max-sm:p-0"
             >
               <div className="flex-1 flex flex-col min-h-0 relative">
-                  <div className="flex-1 flex flex-col min-h-0 rounded-3xl overflow-hidden border border-white/10 bg-transparent relative">
+                  <div className="flex-1 flex flex-col min-h-0 rounded-3xl overflow-hidden border border-white/10 bg-transparent relative max-sm:rounded-none max-sm:border-0">
                     <ChatPanel
                     user={chatPanelUser}
                     chatType={displayChat?.type}

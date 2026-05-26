@@ -14,14 +14,14 @@ const MainLayout = () => {
 
   return (
     <AppLayout>
-      <div className="flex h-screen w-full overflow-hidden min-h-0 pb-24 lg:pb-0">
+      <div className="flex h-screen w-full overflow-hidden min-h-0 pb-24 max-sm:pb-[76px] lg:pb-0">
         {/* Left Sidebar - 260px fixed */}
         {!isPolicyPage && <SidebarLeft />}
 
         {/* Main Content - scrollable area */}
         <main
-          className={`flex-1 overflow-y-auto min-h-0 ${
-            isPolicyPage ? "px-6" : "px-9"
+          className={`flex-1 overflow-y-auto min-h-0 mobile-main ${
+            isPolicyPage ? "px-6 max-sm:px-4" : "px-9 max-sm:px-3"
           } ${hideRightSidebar ? "max-w-none" : "max-w-[720px]"} ${
             isPolicyPage ? "mx-auto w-full max-w-[720px]" : ""
           }`}

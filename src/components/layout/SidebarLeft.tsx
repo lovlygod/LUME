@@ -363,19 +363,19 @@ const SidebarLeft = () => {
       </aside>
 
       {/* Mobile Bottom Navigation */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-safe pt-2">
-        <div className="flex items-center justify-between gap-2 rounded-[26px] border border-white/10 bg-white/5 px-4 py-2.5 shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-3 pb-[calc(0.5rem+var(--mobile-safe-bottom))] pt-2">
+        <div className="mx-auto flex max-w-[430px] items-center justify-between gap-1.5 rounded-2xl border border-white/10 bg-black/70 px-2.5 py-2 shadow-[0_10px_34px_rgba(0,0,0,0.38)] backdrop-blur-2xl">
           {getNavigationItems().map((item) => {
             const isActive = location.pathname === item.to;
             const isHome = item.to === "/home";
-            const buttonClasses = `relative flex h-11 w-11 items-center justify-center rounded-full transition-smooth ${
+            const buttonClasses = `relative flex h-10 w-10 items-center justify-center rounded-xl transition-smooth ${
               isActive ? "bg-white/12 text-white" : "text-white/60 hover:text-white"
             }`;
 
             if (isHome) {
               return (
                 <a key={item.to} href={item.to} onClick={handleHomeClick} className={buttonClasses}>
-                  <item.icon className="h-5 w-5" />
+                  <item.icon className="h-[18px] w-[18px]" />
                   <span className="sr-only">{item.label}</span>
                 </a>
               );
@@ -383,7 +383,7 @@ const SidebarLeft = () => {
 
             return (
               <RouterNavLink key={item.to} to={item.to} className={buttonClasses}>
-                <item.icon className="h-5 w-5" />
+                <item.icon className="h-[18px] w-[18px]" />
                 <span className="sr-only">{item.label}</span>
               </RouterNavLink>
             );
@@ -392,9 +392,9 @@ const SidebarLeft = () => {
             <button
               type="button"
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative flex h-11 w-11 items-center justify-center rounded-full text-white/60 transition-smooth hover:text-white"
+              className="relative flex h-10 w-10 items-center justify-center rounded-xl text-white/60 transition-smooth hover:text-white"
             >
-              <Bell className="h-5 w-5" />
+              <Bell className="h-[18px] w-[18px]" />
               <span className="sr-only">{t('notifications.title') || 'Уведомления'}</span>
               {unreadNotifications > 0 && (
                 <span className={`absolute -top-0.5 -right-0.5 h-4 flex items-center justify-center text-[10px] font-bold bg-red-500 text-white rounded-full leading-none ${unreadNotifications > 9 ? 'min-w-4 px-0.5' : 'w-4 px-0'}`}>

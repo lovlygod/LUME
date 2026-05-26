@@ -436,3 +436,194 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+@media (max-width: 640px) {
+  :root {
+    --radius: 18px;
+    --glass-radius: 18px;
+    --glass-blur: 18px;
+    --glass-shadow: 0 10px 28px rgba(0,0,0,0.28);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
+  .mobile-main {
+    scrollbar-width: none;
+  }
+
+  .mobile-main::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-main > div {
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+  }
+
+  .mobile-main .rounded-3xl,
+  .mobile-main .rounded-\[28px\],
+  .mobile-main .rounded-\[26px\],
+  .mobile-main .rounded-\[24px\] {
+    border-radius: 18px !important;
+  }
+
+  .mobile-main .rounded-2xl {
+    border-radius: 14px !important;
+  }
+
+  .mobile-main .p-6,
+  .mobile-main .p-5 {
+    padding: 16px !important;
+  }
+
+  .mobile-main .px-6,
+  .mobile-main .px-5 {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .mobile-main .py-6,
+  .mobile-main .py-5 {
+    padding-top: 16px !important;
+    padding-bottom: 16px !important;
+  }
+
+  .mobile-main .gap-6,
+  .mobile-main .gap-5 {
+    gap: 14px !important;
+  }
+
+  .mobile-main .mb-8 {
+    margin-bottom: 24px !important;
+  }
+
+  .mobile-main .mb-6 {
+    margin-bottom: 16px !important;
+  }
+
+  .mobile-main .mt-6 {
+    margin-top: 16px !important;
+  }
+
+  .mobile-main h1,
+  .mobile-main .text-2xl {
+    font-size: 1.25rem !important;
+    line-height: 1.75rem !important;
+  }
+
+  .mobile-main .text-xl {
+    font-size: 1.125rem !important;
+    line-height: 1.625rem !important;
+  }
+
+  .mobile-main .text-lg {
+    font-size: 1rem !important;
+    line-height: 1.5rem !important;
+  }
+
+  .mobile-main .text-\[15px\] {
+    font-size: 0.925rem !important;
+  }
+
+  .mobile-main button,
+  .mobile-main a,
+  .mobile-main input,
+  .mobile-main textarea,
+  .mobile-main select {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-main button,
+  .mobile-main a[role="button"],
+  .mobile-main .btn-glass,
+  .mobile-main .btn-glass-outline {
+    min-height: 38px;
+  }
+
+  .mobile-main .btn-glass,
+  .mobile-main .btn-glass-outline {
+    gap: 0.4rem;
+    padding: 0.5rem 0.85rem !important;
+    font-size: 0.8125rem !important;
+    border-radius: 14px !important;
+    box-shadow: none;
+  }
+
+  .mobile-main .btn-glass:hover,
+  .mobile-main .btn-glass-outline:hover,
+  .mobile-main .glass-panel:hover,
+  .mobile-main .card-glass:hover {
+    transform: none;
+  }
+
+  .mobile-main .glass-input,
+  .mobile-main input,
+  .mobile-main textarea {
+    font-size: 16px !important;
+  }
+
+  .mobile-main .glass-input {
+    border-radius: 14px;
+  }
+
+  .mobile-main input.glass-input,
+  .mobile-main textarea.glass-input {
+    padding-top: 0.65rem !important;
+    padding-bottom: 0.65rem !important;
+  }
+
+  .mobile-main [class*="h-12"][class*="w-12"] {
+    height: 2.5rem !important;
+    width: 2.5rem !important;
+  }
+
+  .mobile-main [class*="h-11"][class*="w-11"] {
+    height: 2.375rem !important;
+    width: 2.375rem !important;
+  }
+
+  .mobile-main [class*="h-10"][class*="w-10"] {
+    height: 2.25rem !important;
+    width: 2.25rem !important;
+  }
+
+  .mobile-main [class*="h-9"][class*="w-9"] {
+    height: 2rem !important;
+    width: 2rem !important;
+  }
+
+  .mobile-main .space-y-\[16px\] > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 12px !important;
+  }
+
+  .mobile-main article {
+    padding: 16px !important;
+  }
+
+  .mobile-main article .flex.gap-3 {
+    gap: 10px !important;
+  }
+
+  .mobile-main article [class*="px-3"][class*="py-1.5"] {
+    padding: 0.35rem 0.6rem !important;
+  }
+
+  .mobile-main article [class*="mt-4"] {
+    margin-top: 12px !important;
+  }
+
+  .mobile-main form.space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 12px !important;
+  }
+
+  .mobile-main .fixed.inset-0,
+  .mobile-main [role="dialog"] {
+    max-width: 100vw;
+  }
+}

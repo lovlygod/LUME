@@ -73,11 +73,11 @@ const ChatList = ({
   t,
 }: ChatListProps) => (
   <motion.div
-    className={`m-3 flex flex-col ${
-      selectedChatId ? "w-20" : "w-[360px]"
+    className={`m-3 flex flex-col max-sm:m-0 max-sm:h-full max-sm:rounded-none max-sm:border-0 ${
+      selectedChatId ? "w-20 max-sm:hidden" : "w-[360px] max-sm:w-full"
     } transition-all duration-300 ease-in-out rounded-3xl border border-white/10 bg-white/5`}
   >
-    <div className="px-5 py-5">
+    <div className="px-5 py-5 max-sm:px-4 max-sm:py-3.5">
       <div className="flex items-center justify-between">
         <motion.h2
           className="text-sm font-medium text-white/80 tracking-[0.2em]"
@@ -94,7 +94,7 @@ const ChatList = ({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               onClick={onCreateChat}
-              className="p-2 rounded-full hover:bg-white/5 transition-smooth"
+              className="p-2 rounded-full hover:bg-white/5 transition-smooth max-sm:p-1.5"
               aria-label={t("messages.createChatTitle") || "Создать чат"}
             >
               <Plus className="h-4 w-4" />
@@ -118,12 +118,12 @@ const ChatList = ({
     </div>
 
     {!selectedChatId && (
-      <div className="px-5 pb-3">
+      <div className="px-5 pb-3 max-sm:px-4 max-sm:pb-2.5">
         <MessageSearch t={t} chats={chats} />
       </div>
     )}
 
-    <div className="flex-1 overflow-y-auto px-3 pb-3">
+    <div className="flex-1 overflow-y-auto px-3 pb-3 max-sm:px-2 max-sm:pb-2">
       {loading ? (
         <div className="flex items-center justify-center py-8">
           <Loader size={48} />
@@ -135,7 +135,7 @@ const ChatList = ({
             <motion.div
               key={chat.id}
             onClick={() => onSelectChat(chat.routeId || chat.id)}
-              className={`cursor-pointer rounded-xl px-3 py-3 transition-smooth ${
+              className={`cursor-pointer rounded-xl px-3 py-3 transition-smooth max-sm:px-2.5 max-sm:py-2.5 ${
                 selectedChatId === chat.id ? "bg-white/10" : "hover:bg-white/6"
               }`}
               whileHover={{ x: 2 }}

@@ -297,7 +297,7 @@ const MessageComposer = ({
       </AnimatePresence>
 
       <div
-        className="mt-3 px-6 pb-6 bg-transparent border-0 shadow-none backdrop-blur-0 relative"
+        className="mt-3 px-6 pb-6 bg-transparent border-0 shadow-none backdrop-blur-0 relative max-sm:mt-2 max-sm:px-3 max-sm:pb-3"
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
@@ -342,7 +342,7 @@ const MessageComposer = ({
         </AnimatePresence>
 
         {attachments.length > 0 && (
-          <div className="flex gap-2 mb-3 overflow-x-auto">
+          <div className="flex gap-2 mb-3 overflow-x-auto max-sm:mb-2">
             {attachments.map((att, idx) => (
               <div key={att.id} className="relative flex-shrink-0 group">
                 {att.type === "image" ? (
@@ -350,11 +350,11 @@ const MessageComposer = ({
                     imageId={`dm-upload-${att.id}`}
                     src={att.url}
                     alt="attachment"
-                    className="h-20 w-20 object-cover rounded-2xl border border-white/10"
+                    className="h-20 w-20 object-cover rounded-2xl border border-white/10 max-sm:h-16 max-sm:w-16"
                     onOpen={(imageId, src) => onOpenImage(imageId, src)}
                   />
                 ) : (
-                  <div className="h-20 w-20 flex flex-col items-center justify-center gap-1 bg-white/5 rounded-2xl border border-white/10 p-1">
+                  <div className="h-20 w-20 flex flex-col items-center justify-center gap-1 bg-white/5 rounded-2xl border border-white/10 p-1 max-sm:h-16 max-sm:w-16">
                     {getFileIcon(att.mime)}
                     <span className="text-[8px] text-white/50 truncate w-full text-center">
                       {formatFileSize(att.size)}
@@ -381,7 +381,7 @@ const MessageComposer = ({
           />
         )}
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 max-sm:gap-1.5">
           <motion.button
             type="button"
             ref={emojiButtonRef}
@@ -391,23 +391,23 @@ const MessageComposer = ({
             }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className={`flex h-11 w-11 items-center justify-center rounded-full transition-smooth ${
+            className={`flex h-11 w-11 items-center justify-center rounded-full transition-smooth max-sm:h-9 max-sm:w-9 ${
               showEmojiPicker
                 ? 'bg-white/15 text-white'
                 : 'bg-white/6 text-white/80 hover:bg-white/12'
             }`}
           >
-            <Smile className="h-5 w-5" />
+            <Smile className="h-5 w-5 max-sm:h-4 max-sm:w-4" />
           </motion.button>
 
           <motion.button
             type="button"
             onClick={onToggleStickers}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/6 text-white/80 hover:bg-white/12 transition-smooth"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/6 text-white/80 hover:bg-white/12 transition-smooth max-sm:h-9 max-sm:w-9"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <Sticker className="h-5 w-5" />
+            <Sticker className="h-5 w-5 max-sm:h-4 max-sm:w-4" />
           </motion.button>
 
           <input
@@ -429,11 +429,11 @@ const MessageComposer = ({
           />
           <motion.button
             onClick={() => fileInputRef.current?.click()}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/6 text-white/80 hover:bg-white/12 transition-smooth"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/6 text-white/80 hover:bg-white/12 transition-smooth max-sm:h-9 max-sm:w-9"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <Paperclip className="h-5 w-5" />
+            <Paperclip className="h-5 w-5 max-sm:h-4 max-sm:w-4" />
           </motion.button>
 
           <textarea
@@ -462,7 +462,7 @@ const MessageComposer = ({
             placeholder={t("messages.sendMessage")}
             disabled={isSending}
             rows={1}
-            className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder:text-white/35 disabled:opacity-50 resize-none overflow-y-auto min-h-[48px] max-h-[200px] focus:outline-none focus:ring-1 focus:ring-white/20"
+            className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder:text-white/35 disabled:opacity-50 resize-none overflow-y-auto min-h-[48px] max-h-[200px] focus:outline-none focus:ring-1 focus:ring-white/20 max-sm:min-h-[40px] max-sm:rounded-xl max-sm:px-3 max-sm:py-2"
             style={{ height: "auto" }}
             onInput={(e) => {
               const target = e.target as HTMLTextAreaElement;
@@ -475,14 +475,14 @@ const MessageComposer = ({
           <motion.button
             disabled={(!msgText.trim() && attachments.length === 0) || isSending}
             onClick={onSend}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-smooth"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-smooth max-sm:h-9 max-sm:w-9"
             whileHover={msgText.trim() || attachments.length > 0 ? { scale: 1.02 } : {}}
             whileTap={msgText.trim() || attachments.length > 0 ? { scale: 0.98 } : {}}
           >
             {isSending ? (
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
             ) : (
-              <Send className="h-5 w-5" />
+              <Send className="h-5 w-5 max-sm:h-4 max-sm:w-4" />
             )}
           </motion.button>
 
