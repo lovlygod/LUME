@@ -359,7 +359,7 @@ npm run dev
 
 Frontend:
 
-- `VITE_API_URL` (example: `http://localhost:5000`)
+- `VITE_API_URL` (example: `http://150.241.85.189:5000`)
 - `VITE_WS_URL` (optional, defaults from `VITE_API_URL`)
 - `VITE_E2EE_ENABLED`
 - `VITE_E2EE_STRICT_MODE`
@@ -551,7 +551,7 @@ Full API docs live in [backend/API.md](./backend/API.md).
 
 ### Base URL
 ```
-http://localhost:5000/api
+http://150.241.85.189:5000/api
 ```
 
 ### Core endpoints
@@ -641,7 +641,7 @@ http://localhost:5000/api
 
 ### Connection
 ```
-ws://localhost:5000/ws
+ws://150.241.85.189:5000/ws
 ```
 
 ### Events
@@ -722,8 +722,8 @@ npm run dev
 
 ### 4. Access
 - Frontend: `http://localhost:8080`
-- Backend API: `http://localhost:5000/api`
-- Health check: `http://localhost:5000/health`
+- Backend API: `http://150.241.85.189:5000/api`
+- Health check: `http://150.241.85.189:5000/health`
 
 ---
 
@@ -744,7 +744,7 @@ E2EE_ENFORCE=false  # Enable E2EE strict mode (true/false)
 
 ### Frontend
 No environment variables required.
-API URL: `http://localhost:5000/api`
+API URL: `http://150.241.85.189:5000/api`
 
 ---
 

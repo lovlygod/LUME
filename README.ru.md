@@ -411,7 +411,7 @@ LUME/
 
 ### Базовый URL
 ```
-http://localhost:5000/api
+http://150.241.85.189:5000/api
 ```
 
 ### Основные endpoints
@@ -507,7 +507,7 @@ http://localhost:5000/api
 
 ### Подключение
 ```
-ws://localhost:5000/ws
+ws://150.241.85.189:5000/ws
 ```
 
 ### События
@@ -585,8 +585,8 @@ npm run dev
 
 ### 4. Доступ
 - Frontend: `http://localhost:8080`
-- Backend API: `http://localhost:5000/api`
-- Health check: `http://localhost:5000/health`
+- Backend API: `http://150.241.85.189:5000/api`
+- Health check: `http://150.241.85.189:5000/health`
 
 ---
 
@@ -602,7 +602,7 @@ LOG_LEVEL=info  # error | warn | info | debug
 
 ### Frontend
 Не требует переменных окружения.
-API URL: `http://localhost:5000/api`
+API URL: `http://150.241.85.189:5000/api`
 
 ---
 

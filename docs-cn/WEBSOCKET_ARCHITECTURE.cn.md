@@ -177,7 +177,7 @@ backend/
 **健康检查：**
 
 ```
-GET http://localhost:5000/health
+GET http://150.241.85.189:5000/health
 ```
 
 **示例响应：**

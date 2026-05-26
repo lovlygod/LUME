@@ -414,7 +414,7 @@ LUME/
 
 ### 基础 URL
 ```
-http://localhost:5000/api
+http://150.241.85.189:5000/api
 ```
 
 ### 主要 endpoints
@@ -510,7 +510,7 @@ http://localhost:5000/api
 
 ### 连接
 ```
-ws://localhost:5000/ws
+ws://150.241.85.189:5000/ws
 ```
 
 ### 事件
@@ -588,8 +588,8 @@ npm run dev
 
 ### 4. 访问
 - 前端：`http://localhost:8080`
-- 后端 API：`http://localhost:5000/api`
-- 健康检查：`http://localhost:5000/health`
+- 后端 API：`http://150.241.85.189:5000/api`
+- 健康检查：`http://150.241.85.189:5000/health`
 
 ---
 
@@ -605,7 +605,7 @@ LOG_LEVEL=info  # error | warn | info | debug
 
 ### 前端
 无需环境变量。
-API URL：`http://localhost:5000/api`
+API URL：`http://150.241.85.189:5000/api`
 
 ---
 
