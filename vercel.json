@@ -3,6 +3,8 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "http://150.241.85.189:5000/api/$1" },
+    { "source": "/ws", "destination": "http://150.241.85.189:5000/ws" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
