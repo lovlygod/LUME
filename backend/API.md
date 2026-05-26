@@ -2,9 +2,9 @@
 
 Full documentation for all LUME API endpoints.
 
-**Base URL:** `http://localhost:5000/api`
+**Base URL:** `http://150.241.85.189:5000/api`
 
-**Swagger UI:** `http://localhost:5000/api-docs`
+**Swagger UI:** `http://150.241.85.189:5000/api-docs`
 
 ---
 

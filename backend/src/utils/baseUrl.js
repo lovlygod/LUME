@@ -12,7 +12,7 @@ const getPublicBaseUrl = (req) => {
     return `${proto}://${host}`;
   }
 
-  return 'http://localhost:5000';
+  return 'http://150.241.85.189:5000';
 };
 
 module.exports = { getPublicBaseUrl };

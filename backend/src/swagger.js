@@ -59,7 +59,7 @@ const options = {
     },
     servers: [
       {
-        url: 'http://localhost:5000/api',
+        url: 'http://150.241.85.189:5000/api',
         description: 'Development server',
       },
       {

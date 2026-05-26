@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+require('dotenv').config();
 
 const http = require('http');
 const WebSocket = require('ws');
@@ -105,8 +105,8 @@ app.use((req, res, next) => {
   // Content Security Policy
   const connectSrc = [
     "'self'",
-    'http://localhost:5000',
-    'ws://localhost:5000',
+    'http://150.241.85.189:5000',
+    'ws://150.241.85.189:5000',
     'http://localhost:8080',
     'http://localhost:5173',
     'http://localhost:3000',
