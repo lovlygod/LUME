@@ -13,15 +13,18 @@ interface ChatListProps {
   chats: Chat[];
   loading: boolean;
   selectedChatId: string | null;
+  currentUserId?: string | null;
   onSelectChat: (chatId: string) => void;
   onCloseChat: () => void;
   onCreateChat: () => void;
   t: (key: string) => string;
 }
 
-const toUser = (chat: Chat): User => {
+const toUser = (chat: Chat, currentUserId?: string | null): User => {
   const isPrivate = chat.type === "private";
-  const otherMember = isPrivate ? chat.members?.[0] : null;
+  const otherMember = isPrivate
+    ? (chat.members?.find((member) => String(member.id) !== String(currentUserId)) || chat.members?.[0])
+    : null;
   const resolvedName =
     (isPrivate ? otherMember?.name || otherMember?.username : chat.title) ||
     chat.title ||
@@ -67,6 +70,7 @@ const ChatList = ({
   chats,
   loading,
   selectedChatId,
+  currentUserId,
   onSelectChat,
   onCloseChat,
   onCreateChat,
@@ -130,7 +134,7 @@ const ChatList = ({
         </div>
       ) : chats.length > 0 ? (
         chats.map((chat) => {
-          const user = toUser(chat);
+          const user = toUser(chat, currentUserId);
           return (
             <motion.div
               key={chat.id}

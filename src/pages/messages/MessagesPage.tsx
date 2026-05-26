@@ -972,6 +972,7 @@ const MessagesPage = () => {
           chats={chats}
           loading={isLoading}
           selectedChatId={selectedChatId}
+          currentUserId={currentUser?.id}
           onSelectChat={(chatIdValue) => navigate(resolveChatRoute(chatIdValue))}
           onCloseChat={() => navigate("/messages")}
           onCreateChat={() => setCreateChatOpen(true)}
