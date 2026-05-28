@@ -1,4 +1,4 @@
-import { API_BASE_PATH } from "@/lib/config";
+﻿import { API_BASE_PATH } from "@/lib/config";
 import type { User, VerificationRequest, VerificationStatus, Post, Comment } from "@/types";
 import type { Chat, Attachment, Message } from "@/types/messages";
 import type { StickerPack, StickerPackWithStickers } from "@/types/stickers";
@@ -598,7 +598,7 @@ export const messagesAPI = {
       formData.append('ttlSeconds', String(data.ttlSeconds));
     }
 
-    const response = await fetch(`${API_BASE_URL}/moments`, {
+    const response = await fetch(`${API_BASE_URL}/media`, {
       method: 'POST',
       body: formData,
       credentials: 'include',
@@ -615,21 +615,21 @@ export const messagesAPI = {
     return response.json() as Promise<{ messageId: string | number; momentId: string | number; thumbDataUrl?: string | null; ttlSeconds?: number; expiresAt?: string | null }>;
   },
 
-  openMoment: async (momentId: string) => {
-    return apiRequest<{ token: string; expiresAt: string }>(`/moments/${momentId}/open`, {
+  openMedia: async (momentId: string) => {
+    return apiRequest<{ token: string; expiresAt: string }>(`/media/${momentId}/open`, {
       method: 'POST',
     });
   },
 
   getMomentContent: async (momentId: string, token: string): Promise<{ url: string; mime?: string; expiresAt?: string | null }> => {
     const params = new URLSearchParams({ token });
-    return apiRequest(`/moments/${momentId}/content?${params.toString()}`, {
+    return apiRequest(`/media/${momentId}/content?${params.toString()}`, {
       method: 'GET',
     });
   },
 
-  markMomentViewed: async (momentId: string) => {
-    return apiRequest(`/moments/${momentId}/viewed`, {
+  markMediaViewed: async (momentId: string) => {
+    return apiRequest(`/media/${momentId}/viewed`, {
       method: 'POST',
     });
   },
@@ -1315,3 +1315,4 @@ export const e2eeAPI = {
     });
   },
 };
+

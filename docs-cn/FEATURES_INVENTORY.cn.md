@@ -1,373 +1,373 @@
-# LUME 功能清单
+﻿# LUME еЉџиѓЅжё…еЌ•
 
-中文 | [Русский](../docs-ru/FEATURES_INVENTORY.ru.md) | [English](../docs/FEATURES_INVENTORY.md)
+дё­ж–‡ | [Р СѓСЃСЃРєРёР№](../docs-ru/FEATURES_INVENTORY.ru.md) | [English](../docs/FEATURES_INVENTORY.md)
 
-**最后更新：** 2026-05-19
-**状态：** ✅ 最新
+**жњЂеђЋж›ґж–°пјљ** 2026-05-19
+**зЉ¶жЂЃпјљ** вњ… жњЂж–°
 
-以下列出的是 LUME 项目中**已实际实现**的功能。
+д»Ґдё‹е€—е‡єзљ„жЇ LUME йЎ№з›®дё­**е·Іе®ћй™…е®ћзЋ°**зљ„еЉџиѓЅгЂ‚
 
 ---
 
-## 🏠 Landing & Public Pages
+## рџЏ  Landing & Public Pages
 
 ### Landing Page
-- **路由：** `/`
-- **文件：** `src/pages/LandingPage.tsx`, `src/layouts/LandingLayout.tsx`
-- **状态：** ✅ 已实现
-- **说明：** 面向公众的首页，展示主要功能
-- **组件：**
-  - Hero 区域与 CTA 按钮
-  - Feature cards（6 个卡片）
-  - Footer 链接区
+- **и·Їз”±пјљ** `/`
+- **ж–‡д»¶пјљ** `src/pages/LandingPage.tsx`, `src/layouts/LandingLayout.tsx`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **иЇґжЋпјљ** йќўеђ‘е…¬дј—зљ„й¦–йЎµпјЊе±•з¤єдё»и¦ЃеЉџиѓЅ
+- **з»„д»¶пјљ**
+  - Hero еЊєеџџдёЋ CTA жЊ‰й’®
+  - Feature cardsпј€6 дёЄеЌЎз‰‡пј‰
+  - Footer й“ѕжЋҐеЊє
 
-### 静态页面
-- **路由：** `/faq`, `/rules`, `/support`, `/status`, `/contacts`
-- **文件：** `src/pages/FAQPage.tsx`, `RulesPage.tsx`, `SupportPage.tsx`, `StatusPage.tsx`, `ContactsPage.tsx`
-- **状态：** ✅ 已实现
-- **说明：** 信息类页面
-
----
-
-## 📜 Legal & Compliance
-
-### 法律页面
-- **路由：** `/privacy-policy`, `/terms-of-service`, `/cookie-policy`
-- **文件：** `src/pages/PrivacyPolicy.tsx`, `src/pages/TermsOfService.tsx`, `src/pages/CookiePolicy.tsx`, `src/pages/LegalPageLayout.tsx`
-- **状态：** ✅ 已实现
-- **说明：** 公共法律页面（政策与条款）
-
-### Cookie 同意横幅
-- **文件：** `src/components/ui/CookieBanner.tsx`
-- **状态：** ✅ 已实现
-- **功能：** Accept/Decline、指向 Cookie Policy 的链接、选择持久化（`src/lib/cookieConsent.ts`）
+### йќ™жЂЃйЎµйќў
+- **и·Їз”±пјљ** `/faq`, `/rules`, `/support`, `/status`, `/contacts`
+- **ж–‡д»¶пјљ** `src/pages/FAQPage.tsx`, `RulesPage.tsx`, `SupportPage.tsx`, `StatusPage.tsx`, `ContactsPage.tsx`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **иЇґжЋпјљ** дїЎжЃЇз±»йЎµйќў
 
 ---
 
-## 📰 Feed & Posts
+## рџ“њ Legal & Compliance
 
-### 动态信息流（Feed）
-- **路由：** `/feed`
-- **文件：** `src/pages/Index.tsx`, `src/components/feed/PostComposer.tsx`, `src/components/feed/FeedHeader.tsx`, `src/components/post/Post.tsx`
-- **状态：** ✅ 已实现
-- **功能：**
-  - 两个标签页：“For You”（recommended）与“Following”（following）
-  - 最长 420 字的文本 + 图片
-  - “Resonance”（点赞）
-  - 表情评论
-  - 转发
-  - 置顶帖子
-  - WebSocket 实时更新
-  - 每 30 秒自动刷新
-  - 新帖子提醒
+### жі•еѕ‹йЎµйќў
+- **и·Їз”±пјљ** `/privacy-policy`, `/terms-of-service`, `/cookie-policy`
+- **ж–‡д»¶пјљ** `src/pages/PrivacyPolicy.tsx`, `src/pages/TermsOfService.tsx`, `src/pages/CookiePolicy.tsx`, `src/pages/LegalPageLayout.tsx`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **иЇґжЋпјљ** е…¬е…±жі•еѕ‹йЎµйќўпј€ж”їз­–дёЋжќЎж¬ѕпј‰
 
-### 帖子组件
-- **文件：** `src/components/post/Post.tsx`
-- **状态：** ✅ 已实现
-- **功能：**
-  - 文本与图片展示
-  - Resonance（点赞）计数
-  - 评论数
-  - 回复按钮
-  - Emoji picker 反应
-  - 上下文菜单（删除、举报、置顶）
-  - Image viewer 放大
-  - Link preview（Open Graph）
+### Cookie еђЊж„ЏжЁЄе№…
+- **ж–‡д»¶пјљ** `src/components/ui/CookieBanner.tsx`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **еЉџиѓЅпјљ** Accept/DeclineгЂЃжЊ‡еђ‘ Cookie Policy зљ„й“ѕжЋҐгЂЃйЂ‰ж‹©жЊЃд№…еЊ–пј€`src/lib/cookieConsent.ts`пј‰
 
 ---
 
-## 💬 Messages & Chat
+## рџ“° Feed & Posts
 
-### 消息系统
-- **路由：** `/messages`, `/messages/:chatId`
-- **文件：** `src/pages/Messages.tsx`, `src/pages/messages/MessagesPage.tsx`, `src/pages/messages/components/ChatList.tsx`, `src/pages/messages/components/ChatPanel.tsx`, `src/pages/messages/components/MessageList.tsx`, `src/pages/messages/components/MessageComposer.tsx`
-- **状态：** ✅ 已实现
-- **功能：**
-  - 聊天列表与最后消息
-  - 未读计数
-  - 私聊（一对一）
-  - 文件与图片附件
-  - 回复（reply）
-  - 删除消息（仅自己/双方）
-  - 状态：在线、上次在线、正在输入
-  - Read receipts（已读状态）
-  - 删除的上下文菜单
-  - Image viewer 放大
+### еЉЁжЂЃдїЎжЃЇжµЃпј€Feedпј‰
+- **и·Їз”±пјљ** `/feed`
+- **ж–‡д»¶пјљ** `src/pages/Index.tsx`, `src/components/feed/PostComposer.tsx`, `src/components/feed/FeedHeader.tsx`, `src/components/post/Post.tsx`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **еЉџиѓЅпјљ**
+  - дё¤дёЄж ‡з­ѕйЎµпјљвЂњFor YouвЂќпј€recommendedпј‰дёЋвЂњFollowingвЂќпј€followingпј‰
+  - жњЂй•ї 420 е­—зљ„ж–‡жњ¬ + е›ѕз‰‡
+  - вЂњResonanceвЂќпј€з‚№иµћпј‰
+  - иЎЁжѓ…иЇ„и®є
+  - иЅ¬еЏ‘
+  - зЅ®йЎ¶её–е­ђ
+  - WebSocket е®ћж—¶ж›ґж–°
+  - жЇЏ 30 з§’и‡ЄеЉЁе€·ж–°
+  - ж–°её–е­ђжЏђй†’
 
-### Moments（消失照片）
-- **文件：** `src/pages/messages/MessagesPage.tsx`（内置）
-- **状态：** ⚠️ 部分实现
-- **功能：**
-  - TTL 24 小时的消失照片
-  - 点击查看
-  - 禁止下载
-  - 缩略图预览
-  - 已读标记
-- 切换标签页自动关闭
+### её–е­ђз»„д»¶
+- **ж–‡д»¶пјљ** `src/components/post/Post.tsx`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **еЉџиѓЅпјљ**
+  - ж–‡жњ¬дёЋе›ѕз‰‡е±•з¤є
+  - Resonanceпј€з‚№иµћпј‰и®Ўж•°
+  - иЇ„и®єж•°
+  - е›ће¤ЌжЊ‰й’®
+  - Emoji picker еЏЌеє”
+  - дёЉдё‹ж–‡иЏњеЌ•пј€е€ й™¤гЂЃдёѕжЉҐгЂЃзЅ®йЎ¶пј‰
+  - Image viewer ж”ѕе¤§
+  - Link previewпј€Open Graphпј‰
 
-### NPM Package Preview（NPM 包预览）
-- **文件：** `backend/src/npm.js`, `src/components/npm/NpmPackageCard.tsx`, `src/utils/npmDetector.ts`
-- **状态:** ✅ 已实现
-- **功能：**
-  - 自动识别消息中的 npm 命令（`npm react`、`npm express`、`npm @types/node`）
-  - 端点：`GET /api/npm/:packageName` — 从 npm Registry 获取包数据
-  - UI 卡片显示包名、版本、描述和 npmjs.com 链接
-  - LUME 风格的 Glass UI 设计
-  - 加载时显示骨架屏
-  - 错误处理（未找到包时显示 fallback）
-  - 响应缓存（内存中，15 分钟）
+---
 
-### 图表渲染（Mermaid）
-- **文件：** `backend/src/routes/diagramRoutes.js`, `src/components/chat/DiagramMessage.tsx`
-- **文档：** [DIAGRAM_RENDERING.cn.md](DIAGRAM_RENDERING.cn.md)
-- **状态：** ✅ 已实现
-- **功能：**
-  - 自动检测 Mermaid 图表（graph TD/BT/LR/RL, flowchart TD/LR, pie, gitGraph）
-  - 端点：`POST /api/diagram/render` — 通过 Kroki API 渲染（`https://kroki.io/mermaid/svg`）
-  - Redis 缓存（SHA256 哈希，TTL: 1小时）
-  - SVG 渲染带清理（安全性）
-  - 按钮：复制代码、下载 SVG（带勾号动画）
-  - 加载时显示骨架屏
-  - 发送后自动滚动聊天
+## рџ’¬ Messages & Chat
+
+### ж¶€жЃЇзі»з»џ
+- **и·Їз”±пјљ** `/messages`, `/messages/:chatId`
+- **ж–‡д»¶пјљ** `src/pages/Messages.tsx`, `src/pages/messages/MessagesPage.tsx`, `src/pages/messages/components/ChatList.tsx`, `src/pages/messages/components/ChatPanel.tsx`, `src/pages/messages/components/MessageList.tsx`, `src/pages/messages/components/MessageComposer.tsx`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **еЉџиѓЅпјљ**
+  - иЃЉе¤©е€—иЎЁдёЋжњЂеђЋж¶€жЃЇ
+  - жњЄиЇ»и®Ўж•°
+  - з§ЃиЃЉпј€дёЂеЇ№дёЂпј‰
+  - ж–‡д»¶дёЋе›ѕз‰‡й™„д»¶
+  - е›ће¤Ќпј€replyпј‰
+  - е€ й™¤ж¶€жЃЇпј€д»…и‡Єе·±/еЏЊж–№пј‰
+  - зЉ¶жЂЃпјљењЁзєїгЂЃдёЉж¬ЎењЁзєїгЂЃж­ЈењЁиѕ“е…Ґ
+  - Read receiptsпј€е·ІиЇ»зЉ¶жЂЃпј‰
+  - е€ й™¤зљ„дёЉдё‹ж–‡иЏњеЌ•
+  - Image viewer ж”ѕе¤§
+
+### Momentsпј€ж¶€е¤±з…§з‰‡пј‰
+- **ж–‡д»¶пјљ** `src/pages/messages/MessagesPage.tsx`пј€е†…зЅ®пј‰
+- **зЉ¶жЂЃпјљ** вљ пёЏ йѓЁе€†е®ћзЋ°
+- **еЉџиѓЅпјљ**
+  - TTL 24 е°Џж—¶зљ„ж¶€е¤±з…§з‰‡
+  - з‚№е‡»жџҐзњ‹
+  - з¦Ѓж­ўдё‹иЅЅ
+  - зј©з•Ґе›ѕйў„и§€
+  - е·ІиЇ»ж ‡и®°
+- е€‡жЌўж ‡з­ѕйЎµи‡ЄеЉЁе…ій—­
+
+### NPM Package Previewпј€NPM еЊ…йў„и§€пј‰
+- **ж–‡д»¶пјљ** `backend/src/npm.js`, `src/components/npm/NpmPackageCard.tsx`, `src/utils/npmDetector.ts`
+- **зЉ¶жЂЃ:** вњ… е·Іе®ћзЋ°
+- **еЉџиѓЅпјљ**
+  - и‡ЄеЉЁиЇ†е€«ж¶€жЃЇдё­зљ„ npm е‘Ѕд»¤пј€`npm react`гЂЃ`npm express`гЂЃ`npm @types/node`пј‰
+  - з«Їз‚№пјљ`GET /api/npm/:packageName` вЂ” д»Ћ npm Registry иЋ·еЏ–еЊ…ж•°жЌ®
+  - UI еЌЎз‰‡жѕз¤єеЊ…еђЌгЂЃз‰€жњ¬гЂЃжЏЏиї°е’Њ npmjs.com й“ѕжЋҐ
+  - LUME йЈЋж јзљ„ Glass UI и®ѕи®Ў
+  - еЉ иЅЅж—¶жѕз¤єйЄЁжћ¶е±Џ
+  - й”™иЇЇе¤„зђ†пј€жњЄж‰ѕе€°еЊ…ж—¶жѕз¤є fallbackпј‰
+  - е“Ќеє”зј“е­пј€е†…е­дё­пјЊ15 е€†й’џпј‰
+
+### е›ѕиЎЁжёІжџ“пј€Mermaidпј‰
+- **ж–‡д»¶пјљ** `backend/src/routes/diagramRoutes.js`, `src/components/chat/DiagramMessage.tsx`
+- **ж–‡жЎЈпјљ** [DIAGRAM_RENDERING.cn.md](DIAGRAM_RENDERING.cn.md)
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **еЉџиѓЅпјљ**
+  - и‡ЄеЉЁжЈЂжµ‹ Mermaid е›ѕиЎЁпј€graph TD/BT/LR/RL, flowchart TD/LR, pie, gitGraphпј‰
+  - з«Їз‚№пјљ`POST /api/diagram/render` вЂ” йЂљиї‡ Kroki API жёІжџ“пј€`https://kroki.io/mermaid/svg`пј‰
+  - Redis зј“е­пј€SHA256 е“€еёЊпјЊTTL: 1е°Џж—¶пј‰
+  - SVG жёІжџ“её¦жё…зђ†пј€е®‰е…ЁжЂ§пј‰
+  - жЊ‰й’®пјље¤Ќе€¶д»Јз ЃгЂЃдё‹иЅЅ SVGпј€её¦е‹ѕеЏ·еЉЁз”»пј‰
+  - еЉ иЅЅж—¶жѕз¤єйЄЁжћ¶е±Џ
+  - еЏ‘йЂЃеђЋи‡ЄеЉЁж»љеЉЁиЃЉе¤©
 
 ### Reply Bar
-- **文件：** `src/components/chat/ReplyBar.tsx`
-- **状态:** ✅ 已实现
-- **说明：** 消息回复条组件
+- **ж–‡д»¶пјљ** `src/components/chat/ReplyBar.tsx`
+- **зЉ¶жЂЃ:** вњ… е·Іе®ћзЋ°
+- **иЇґжЋпјљ** ж¶€жЃЇе›ће¤ЌжќЎз»„д»¶
 
 ---
 
-## 👥 Groups & Channels (Chats)
+## рџ‘Ґ Groups & Channels (Chats)
 
-### 群组与频道（聊天）
-- **路由：** `/messages`, `/messages/:chatId`
-- **文件：** `src/pages/Messages.tsx`, `src/pages/messages/MessagesPage.tsx`, `src/pages/messages/components/ChatList.tsx`, `src/pages/messages/components/ChatPanel.tsx`, `src/pages/messages/components/ChatSettingsModal.tsx`, `src/pages/messages/components/CreateChatModal.tsx`
-- **状态：** ✅ 已实现
-- **功能：**
-  - 聊天类型：`group`、`channel`、`private`
-  - 创建群组/频道
-  - 公开频道的搜索与加入
-  - 加入申请（approve/reject）
-  - 成员与角色管理
+### зѕ¤з»„дёЋйў‘йЃ“пј€иЃЉе¤©пј‰
+- **и·Їз”±пјљ** `/messages`, `/messages/:chatId`
+- **ж–‡д»¶пјљ** `src/pages/Messages.tsx`, `src/pages/messages/MessagesPage.tsx`, `src/pages/messages/components/ChatList.tsx`, `src/pages/messages/components/ChatPanel.tsx`, `src/pages/messages/components/ChatSettingsModal.tsx`, `src/pages/messages/components/CreateChatModal.tsx`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **еЉџиѓЅпјљ**
+  - иЃЉе¤©з±»ећ‹пјљ`group`гЂЃ`channel`гЂЃ`private`
+  - е€›е»єзѕ¤з»„/йў‘йЃ“
+  - е…¬ејЂйў‘йЃ“зљ„жђњзґўдёЋеЉ е…Ґ
+  - еЉ е…Ґз”іиЇ·пј€approve/rejectпј‰
+  - ж€ђе‘дёЋи§’и‰Із®Ўзђ†
 
 ---
 
-## 👤 Profile & Users
+## рџ‘¤ Profile & Users
 
-### 个人资料（我的）
-- **路由：** `/profile`
-- **文件：** `src/pages/Profile.tsx`
-- **状态：** ✅ 已实现
-- **功能：**
-  - 头像与横幅
-  - 统计：粉丝、关注、帖子
-  - 编辑资料（bio、city、website）
-  - 置顶帖子
-  - 帖子历史
-  - 关注按钮（他人）
+### дёЄдєєиµ„ж–™пј€ж€‘зљ„пј‰
+- **и·Їз”±пјљ** `/profile`
+- **ж–‡д»¶пјљ** `src/pages/Profile.tsx`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **еЉџиѓЅпјљ**
+  - е¤ґеѓЏдёЋжЁЄе№…
+  - з»џи®ЎпјљзІ‰дёќгЂЃе…іжіЁгЂЃеё–е­ђ
+  - зј–иѕ‘иµ„ж–™пј€bioгЂЃcityгЂЃwebsiteпј‰
+  - зЅ®йЎ¶её–е­ђ
+  - её–е­ђеЋ†еЏІ
+  - е…іжіЁжЊ‰й’®пј€д»–дєєпј‰
 
-### 用户资料
-- **路由：** `/profile/:userId`
-- **文件：** `src/pages/UserProfile.tsx`
-- **状态：** ✅ 已实现
-- **功能：**
-  - 查看他人资料
-  - 关注/发消息按钮
-  - 认证状态
+### з”Ёж€·иµ„ж–™
+- **и·Їз”±пјљ** `/profile/:userId`
+- **ж–‡д»¶пјљ** `src/pages/UserProfile.tsx`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **еЉџиѓЅпјљ**
+  - жџҐзњ‹д»–дєєиµ„ж–™
+  - е…іжіЁ/еЏ‘ж¶€жЃЇжЊ‰й’®
+  - и®¤иЇЃзЉ¶жЂЃ
 
 ### Follow Modal
-- **文件：** `src/components/profile/FollowModal.tsx`
-- **状态：** ✅ 已实现
-- **说明：** 关注/粉丝列表弹窗
+- **ж–‡д»¶пјљ** `src/components/profile/FollowModal.tsx`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **иЇґжЋпјљ** е…іжіЁ/зІ‰дёќе€—иЎЁеј№зЄ—
 
 ---
 
-## ✅ Verification
+## вњ… Verification
 
-### 认证页面
-- **路由：** `/verified`
-- **文件：** `src/pages/Verified.tsx`, `src/components/verification/VerificationHero.tsx`
-- **状态：** ✅ 已实现
-- **功能：**
-  - 通过 TikTok 视频提交申请
-  - 条件：注册 ≥7 天，视频 ≥2000 浏览
-  - 管理员审核
-  - 通过后有效 1 个月
-  - 徽章：Verified、Developer、CEO
-
----
-
-## ⚙️ Settings
-
-### 账号设置
-- **路由：** `/settings`
-- **文件：** `src/pages/Settings.tsx`
-- **状态：** ✅ 已实现
-- **功能：**
-  - 主题（暗色/亮色）
-  - 语言（ru/en）
-  - 雪花效果开关
-  - 帖子隐私
-  - 消息隐私
-  - 删除账号
-
-### 会话管理
-- **路由：** `/settings/sessions`
-- **文件：** `src/pages/settings/SessionsPage.tsx`
-- **状态：** ✅ 已实现
-- **功能：** 当前会话、活跃会话列表、退出设备、logout all
+### и®¤иЇЃйЎµйќў
+- **и·Їз”±пјљ** `/verified`
+- **ж–‡д»¶пјљ** `src/pages/Verified.tsx`, `src/components/verification/VerificationHero.tsx`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **еЉџиѓЅпјљ**
+  - йЂљиї‡ TikTok и§†йў‘жЏђдє¤з”іиЇ·
+  - жќЎд»¶пјљжіЁе†Њ в‰Ґ7 е¤©пјЊи§†йў‘ в‰Ґ2000 жµЏи§€
+  - з®Ўзђ†е‘е®Ўж ё
+  - йЂљиї‡еђЋжњ‰ж•€ 1 дёЄжњ€
+  - еѕЅз« пјљVerifiedгЂЃDeveloperгЂЃCEO
 
 ---
 
-## 🛡️ Admin Panel
+## вљ™пёЏ Settings
 
-### 管理面板
-- **路由：** `/admin`
-- **文件：** `src/pages/AdminPanel.tsx`, `src/components/AdminPanelModal.tsx`
-- **状态：** ✅ 已实现（访问取决于权限）
-- **功能：**
-  - 认证请求
-  - 用户列表
-  - 帖子举报
-  - 通过/拒绝认证
-  - 删除帖子
-  - 驳回举报
+### иґ¦еЏ·и®ѕзЅ®
+- **и·Їз”±пјљ** `/settings`
+- **ж–‡д»¶пјљ** `src/pages/Settings.tsx`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **еЉџиѓЅпјљ**
+  - дё»йўпј€жљ—и‰І/дє®и‰Іпј‰
+  - иЇ­иЁЂпј€ru/enпј‰
+  - й›ЄиЉ±ж•€жћњејЂе…і
+  - её–е­ђйљђз§Ѓ
+  - ж¶€жЃЇйљђз§Ѓ
+  - е€ й™¤иґ¦еЏ·
+
+### дјљиЇќз®Ўзђ†
+- **и·Їз”±пјљ** `/settings/sessions`
+- **ж–‡д»¶пјљ** `src/pages/settings/SessionsPage.tsx`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **еЉџиѓЅпјљ** еЅ“е‰ЌдјљиЇќгЂЃжґ»и·ѓдјљиЇќе€—иЎЁгЂЃйЂЂе‡єи®ѕе¤‡гЂЃlogout all
 
 ---
 
-## 🔐 Authentication
+## рџ›ЎпёЏ Admin Panel
 
-### 登录 / 注册
-- **路由：** `/login`, `/register`
-- **文件：** `src/pages/auth/Login.tsx`, `src/pages/auth/Register.tsx`
-- **状态：** ✅ 已实现
-- **功能：**
-  - 邮箱 + 密码
-  - username 校验（最少 5 个字符，拉丁字母 + 数字）
-  - httpOnly cookies 存储 token
-  - CSRF 保护
+### з®Ўзђ†йќўжќї
+- **и·Їз”±пјљ** `/admin`
+- **ж–‡д»¶пјљ** `src/pages/AdminPanel.tsx`, `src/components/AdminPanelModal.tsx`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°пј€и®їй—®еЏ–е†ідєЋжќѓй™ђпј‰
+- **еЉџиѓЅпјљ**
+  - и®¤иЇЃиЇ·ж±‚
+  - з”Ёж€·е€—иЎЁ
+  - её–е­ђдёѕжЉҐ
+  - йЂљиї‡/ж‹’з»ќи®¤иЇЃ
+  - е€ й™¤её–е­ђ
+  - й©іе›ћдёѕжЉҐ
+
+---
+
+## рџ”ђ Authentication
+
+### з™»еЅ• / жіЁе†Њ
+- **и·Їз”±пјљ** `/login`, `/register`
+- **ж–‡д»¶пјљ** `src/pages/auth/Login.tsx`, `src/pages/auth/Register.tsx`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **еЉџиѓЅпјљ**
+  - й‚®з®± + еЇ†з Ѓ
+  - username ж ЎйЄЊпј€жњЂе°‘ 5 дёЄе­—з¬¦пјЊж‹‰дёЃе­—жЇЌ + ж•°е­—пј‰
+  - httpOnly cookies е­е‚Ё token
+  - CSRF дїќжЉ¤
   - Rate limiting
 
 ---
 
-## 🔍 Explore
+## рџ”Ќ Explore
 
-### 搜索与发现
-- **路由：** `/explore`
-- **文件：** `src/pages/Explore.tsx`
-- **状态：** ✅ 已实现
-- **功能：**
-  - 用户搜索
-  - 公开频道/聊天搜索
-  - 趋势（热门话题）
-  - 推荐用户
+### жђњзґўдёЋеЏ‘зЋ°
+- **и·Їз”±пјљ** `/explore`
+- **ж–‡д»¶пјљ** `src/pages/Explore.tsx`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **еЉџиѓЅпјљ**
+  - з”Ёж€·жђњзґў
+  - е…¬ејЂйў‘йЃ“/иЃЉе¤©жђњзґў
+  - и¶‹еЉїпј€зѓ­й—ЁиЇќйўпј‰
+  - жЋЁиЌђз”Ёж€·
 
 ---
 
-## 🔧 System Pages
+## рџ”§ System Pages
 
 ### 404 Not Found
-- **路由：** `*`
-- **文件：** `src/pages/NotFound.tsx`
-- **状态：** ✅ 已实现
+- **и·Їз”±пјљ** `*`
+- **ж–‡д»¶пјљ** `src/pages/NotFound.tsx`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
 
 ### Error Boundary
-- **文件：** `src/components/ErrorBoundary.tsx`
-- **状态：** ✅ 已实现
-- **说明：** 渲染错误捕获
+- **ж–‡д»¶пјљ** `src/components/ErrorBoundary.tsx`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **иЇґжЋпјљ** жёІжџ“й”™иЇЇжЌ•иЋ·
 
 ---
 
-## 🌐 Internationalization (i18n)
+## рџЊђ Internationalization (i18n)
 
-### 翻译
-- **文件：** `src/i18n/translations.ts`, `src/i18n/locales/ru.json`, `en.json`
-- **状态：** ✅ 已实现
-- **语言：** Русский, English
-- **规模：** 1000+ 行翻译
-
----
-
-## 🎨 UI Components
-
-### shadcn/ui 组件（50+）
-- **文件：** `src/components/ui/*.tsx`
-- **状态：** ✅ 已实现
-- **示例：** button, input, dialog, dropdown-menu, toast, skeleton, avatar, badge, card, tabs, switch, slider, progress, table, tooltip, popover, etc.
-
-### 自定义组件
-- **文件：** `src/components/*.tsx`
-- **状态：** ✅ 已实现
-- **示例：**
-  - `Avatar.tsx` — 带首字母的头像
-  - `Presence.tsx` — 在线/离线指示
-  - `LinkPreview.tsx` — Open Graph 预览
-  - `NavLink.tsx` — 动画导航
-  - `ImageViewer.tsx` — 全屏查看
-  - `SnowEffect.tsx` — 雪花效果
-  - `LogoutModal.tsx` — 登出弹窗
-  - `CookieBanner.tsx` — Cookie 同意条
-
-### Layout 组件
-- **文件：** `src/components/layout/*.tsx`
-- **状态：** ✅ 已实现
-- **示例：**
-  - `AppLayout.tsx` — 主布局
-  - `SidebarLeft.tsx` — 左侧栏（260px）
-  - `SidebarRight.tsx` — 右侧栏（340px）
+### зї»иЇ‘
+- **ж–‡д»¶пјљ** `src/i18n/translations.ts`, `src/i18n/locales/ru.json`, `en.json`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **иЇ­иЁЂпјљ** Р СѓСЃСЃРєРёР№, English
+- **и§„жЁЎпјљ** 1000+ иЎЊзї»иЇ‘
 
 ---
 
-## 🔌 WebSocket Features
+## рџЋЁ UI Components
 
-### 实时事件
-- **文件：** `src/services/websocket.ts`
-- **状态：** ✅ 已实现
-- **事件：**
-  - `new_post` — 新帖子
-  - `post_resonance_updated` — 点赞更新
-  - `new_comment` — 新评论
-  - `new_message` — 新消息
-  - `typing:update` — 输入状态
-  - `chat:read_update` — 已读更新
-  - `message:deleted` — 消息删除
-  - `presence:update` — 在线状态
+### shadcn/ui з»„д»¶пј€50+пј‰
+- **ж–‡д»¶пјљ** `src/components/ui/*.tsx`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **з¤єдѕ‹пјљ** button, input, dialog, dropdown-menu, toast, skeleton, avatar, badge, card, tabs, switch, slider, progress, table, tooltip, popover, etc.
+
+### и‡Єе®љд№‰з»„д»¶
+- **ж–‡д»¶пјљ** `src/components/*.tsx`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **з¤єдѕ‹пјљ**
+  - `Avatar.tsx` вЂ” её¦й¦–е­—жЇЌзљ„е¤ґеѓЏ
+  - `Presence.tsx` вЂ” ењЁзєї/з¦»зєїжЊ‡з¤є
+  - `LinkPreview.tsx` вЂ” Open Graph йў„и§€
+  - `NavLink.tsx` вЂ” еЉЁз”»еЇји€Є
+  - `ImageViewer.tsx` вЂ” е…Ёе±ЏжџҐзњ‹
+  - `SnowEffect.tsx` вЂ” й›ЄиЉ±ж•€жћњ
+  - `LogoutModal.tsx` вЂ” з™»е‡єеј№зЄ—
+  - `CookieBanner.tsx` вЂ” Cookie еђЊж„ЏжќЎ
+
+### Layout з»„д»¶
+- **ж–‡д»¶пјљ** `src/components/layout/*.tsx`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **з¤єдѕ‹пјљ**
+  - `AppLayout.tsx` вЂ” дё»еёѓе±Ђ
+  - `SidebarLeft.tsx` вЂ” е·¦дѕ§ж Џпј€260pxпј‰
+  - `SidebarRight.tsx` вЂ” еЏідѕ§ж Џпј€340pxпј‰
+
+---
+
+## рџ”Њ WebSocket Features
+
+### е®ћж—¶дє‹д»¶
+- **ж–‡д»¶пјљ** `src/services/websocket.ts`
+- **зЉ¶жЂЃпјљ** вњ… е·Іе®ћзЋ°
+- **дє‹д»¶пјљ**
+  - `new_post` вЂ” ж–°её–е­ђ
+  - `post_resonance_updated` вЂ” з‚№иµћж›ґж–°
+  - `new_comment` вЂ” ж–°иЇ„и®є
+  - `new_message` вЂ” ж–°ж¶€жЃЇ
+  - `typing:update` вЂ” иѕ“е…ҐзЉ¶жЂЃ
+  - `chat:read_update` вЂ” е·ІиЇ»ж›ґж–°
+  - `message:deleted` вЂ” ж¶€жЃЇе€ й™¤
+  - `presence:update` вЂ” ењЁзєїзЉ¶жЂЃ
   - `chat:read_update`
-  - `channel:new_message` — 频道消息
+  - `channel:new_message` вЂ” йў‘йЃ“ж¶€жЃЇ
 
 ---
 
-## 📊 Summary
+## рџ“Љ Summary
 
-| 分类 | 已实现 | 部分 | Placeholder | 总计 |
+| е€†з±» | е·Іе®ћзЋ° | йѓЁе€† | Placeholder | жЂ»и®Ў |
 |------|--------|------|-------------|------|
-| 页面 | 26 | 0 | 0 | 26 |
-| 组件 | 60+ | 0 | 0 | 60+ |
+| йЎµйќў | 26 | 0 | 0 | 26 |
+| з»„д»¶ | 60+ | 0 | 0 | 60+ |
 | API endpoints | 40+ | 0 | 0 | 40+ |
-| WebSocket 事件 | 12+ | 0 | 0 | 12+ |
-| i18n 语言 | 2 | 0 | 0 | 2 |
+| WebSocket дє‹д»¶ | 12+ | 0 | 0 | 12+ |
+| i18n иЇ­иЁЂ | 2 | 0 | 0 | 2 |
 
-**总体状态：** ✅ Production-ready
-
----
-
-## 最近变更
-
-### 已删除（2026-03-05）
-- ❌ `/lume` 页面（LumeAI）— 已删除
-- ❌ `/music` 页面 — 已删除
-- ❌ `/api/lume/chat` API — 已删除
-- ❌ `backend/src/lume/` 模块 — 已删除
-- ❌ `lumeChatLimiter` 限流器 — 已删除
-
-### 已变更
-- ✅ 更新翻译（移除 LUME/Music 提及）
-- ✅ 更新 SidebarLeft（移除 LUME AI、Music 按钮）
-- ✅ 更新 App.tsx（移除路由）
+**жЂ»дЅ“зЉ¶жЂЃпјљ** вњ… Production-ready
 
 ---
 
-## 相关文档
+## жњЂиї‘еЏж›ґ
+
+### е·Іе€ й™¤пј€2026-03-05пј‰
+- вќЊ `/lume` йЎµйќўпј€LumeAIпј‰вЂ” е·Іе€ й™¤
+- вќЊ `/music` йЎµйќў вЂ” е·Іе€ й™¤
+- вќЊ `/api/lume/chat` API вЂ” е·Іе€ й™¤
+- вќЊ `backend/src/lume/` жЁЎеќ— вЂ” е·Іе€ й™¤
+- вќЊ `lumeChatLimiter` й™ђжµЃе™Ё вЂ” е·Іе€ й™¤
+
+### е·ІеЏж›ґ
+- вњ… ж›ґж–°зї»иЇ‘пј€з§»й™¤ LUME/Music жЏђеЏЉпј‰
+- вњ… ж›ґж–° SidebarLeftпј€з§»й™¤ LUME AIгЂЃMusic жЊ‰й’®пј‰
+- вњ… ж›ґж–° App.tsxпј€з§»й™¤и·Їз”±пј‰
+
+---
+
+## з›ёе…іж–‡жЎЈ
 
 - [Error Handling](./ERROR_HANDLING.cn.md)
 - [Groups Module](./GROUPS_MODULE.cn.md)

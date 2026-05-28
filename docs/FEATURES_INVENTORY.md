@@ -1,470 +1,470 @@
-# LUME Features Inventory
+﻿# LUME Features Inventory
 
-English | [Русский](../docs-ru/FEATURES_INVENTORY.ru.md) | [中文](../docs-cn/FEATURES_INVENTORY.cn.md)
+English | [Р СѓСЃСЃРєРёР№](../docs-ru/FEATURES_INVENTORY.ru.md) | [дё­ж–‡](../docs-cn/FEATURES_INVENTORY.cn.md)
 
-**Последнее обновление:** 19 мая 2026 г.
-**Статус:** ✅ Актуально
+**РџРѕСЃР»РµРґРЅРµРµ РѕР±РЅРѕРІР»РµРЅРёРµ:** 19 РјР°СЏ 2026 Рі.
+**РЎС‚Р°С‚СѓСЃ:** вњ… РђРєС‚СѓР°Р»СЊРЅРѕ
 
-Ниже перечислены **реально реализованные** функции проекта LUME.
+РќРёР¶Рµ РїРµСЂРµС‡РёСЃР»РµРЅС‹ **СЂРµР°Р»СЊРЅРѕ СЂРµР°Р»РёР·РѕРІР°РЅРЅС‹Рµ** С„СѓРЅРєС†РёРё РїСЂРѕРµРєС‚Р° LUME.
 
 ---
 
-## 🏠 Landing & Public Pages
+## рџЏ  Landing & Public Pages
 
 ### Landing Page
-- **Маршрут:** `/`
-- **Файлы:** `src/pages/LandingPage.tsx`, `src/layouts/LandingLayout.tsx`
-- **Статус:** ✅ Реализовано
-- **Описание:** Публичная главная страница с описанием возможностей
-- **Компоненты:**
-  - Hero секция с CTA кнопками
-  - Feature cards (6 карточек)
-  - Footer с ссылками
+- **РњР°СЂС€СЂСѓС‚:** `/`
+- **Р¤Р°Р№Р»С‹:** `src/pages/LandingPage.tsx`, `src/layouts/LandingLayout.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **РћРїРёСЃР°РЅРёРµ:** РџСѓР±Р»РёС‡РЅР°СЏ РіР»Р°РІРЅР°СЏ СЃС‚СЂР°РЅРёС†Р° СЃ РѕРїРёСЃР°РЅРёРµРј РІРѕР·РјРѕР¶РЅРѕСЃС‚РµР№
+- **РљРѕРјРїРѕРЅРµРЅС‚С‹:**
+  - Hero СЃРµРєС†РёСЏ СЃ CTA РєРЅРѕРїРєР°РјРё
+  - Feature cards (6 РєР°СЂС‚РѕС‡РµРє)
+  - Footer СЃ СЃСЃС‹Р»РєР°РјРё
 
-### Статические страницы
-- **Маршруты:** `/faq`, `/rules`, `/support`, `/status`, `/contacts`
-- **Файлы:** `src/pages/FAQPage.tsx`, `RulesPage.tsx`, `SupportPage.tsx`, `StatusPage.tsx`, `ContactsPage.tsx`
-- **Статус:** ✅ Реализовано
-- **Описание:** Информационные страницы
+### РЎС‚Р°С‚РёС‡РµСЃРєРёРµ СЃС‚СЂР°РЅРёС†С‹
+- **РњР°СЂС€СЂСѓС‚С‹:** `/faq`, `/rules`, `/support`, `/status`, `/contacts`
+- **Р¤Р°Р№Р»С‹:** `src/pages/FAQPage.tsx`, `RulesPage.tsx`, `SupportPage.tsx`, `StatusPage.tsx`, `ContactsPage.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **РћРїРёСЃР°РЅРёРµ:** РРЅС„РѕСЂРјР°С†РёРѕРЅРЅС‹Рµ СЃС‚СЂР°РЅРёС†С‹
 
 ---
 
-## 📜 Legal & Compliance
+## рџ“њ Legal & Compliance
 
 ### Legal Pages
-- **Маршруты:** `/privacy-policy`, `/terms-of-service`, `/cookie-policy`
-- **Файлы:** `src/pages/PrivacyPolicy.tsx`, `src/pages/TermsOfService.tsx`, `src/pages/CookiePolicy.tsx`, `src/pages/LegalPageLayout.tsx`
-- **Статус:** ✅ Реализовано
-- **Описание:** Публичные юридические страницы (политики и условия)
+- **РњР°СЂС€СЂСѓС‚С‹:** `/privacy-policy`, `/terms-of-service`, `/cookie-policy`
+- **Р¤Р°Р№Р»С‹:** `src/pages/PrivacyPolicy.tsx`, `src/pages/TermsOfService.tsx`, `src/pages/CookiePolicy.tsx`, `src/pages/LegalPageLayout.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **РћРїРёСЃР°РЅРёРµ:** РџСѓР±Р»РёС‡РЅС‹Рµ СЋСЂРёРґРёС‡РµСЃРєРёРµ СЃС‚СЂР°РЅРёС†С‹ (РїРѕР»РёС‚РёРєРё Рё СѓСЃР»РѕРІРёСЏ)
 
 ### Cookie Consent Banner
-- **Файл:** `src/components/ui/CookieBanner.tsx`
-- **Статус:** ✅ Реализовано
-- **Функции:** Accept/Decline, ссылка на Cookie Policy, хранение выбора (`src/lib/cookieConsent.ts`)
+- **Р¤Р°Р№Р»:** `src/components/ui/CookieBanner.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **Р¤СѓРЅРєС†РёРё:** Accept/Decline, СЃСЃС‹Р»РєР° РЅР° Cookie Policy, С…СЂР°РЅРµРЅРёРµ РІС‹Р±РѕСЂР° (`src/lib/cookieConsent.ts`)
 
 ---
 
-## 📰 Feed & Posts
+## рџ“° Feed & Posts
 
-### Лента публикаций (Feed)
-- **Маршрут:** `/feed`
-- **Файлы:** `src/pages/Index.tsx`, `src/components/feed/PostComposer.tsx`, `src/components/feed/FeedHeader.tsx`, `src/components/post/Post.tsx`
-- **Статус:** ✅ Реализовано
-- **Функции:**
-  - Две вкладки: "Для вас" (recommended) и "Подписки" (following)
-  - Посты до 420 символов с изображениями
-  - Реакции "Resonance" (лайки)
-  - Комментарии с эмодзи
-  - Репосты
-  - Закреплённые посты
-  - Real-time обновления через WebSocket
-  - Автообновление каждые 30 секунд
-  - Уведомление о новых постах
+### Р›РµРЅС‚Р° РїСѓР±Р»РёРєР°С†РёР№ (Feed)
+- **РњР°СЂС€СЂСѓС‚:** `/feed`
+- **Р¤Р°Р№Р»С‹:** `src/pages/Index.tsx`, `src/components/feed/PostComposer.tsx`, `src/components/feed/FeedHeader.tsx`, `src/components/post/Post.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **Р¤СѓРЅРєС†РёРё:**
+  - Р”РІРµ РІРєР»Р°РґРєРё: "Р”Р»СЏ РІР°СЃ" (recommended) Рё "РџРѕРґРїРёСЃРєРё" (following)
+  - РџРѕСЃС‚С‹ РґРѕ 420 СЃРёРјРІРѕР»РѕРІ СЃ РёР·РѕР±СЂР°Р¶РµРЅРёСЏРјРё
+  - Р РµР°РєС†РёРё "Resonance" (Р»Р°Р№РєРё)
+  - РљРѕРјРјРµРЅС‚Р°СЂРёРё СЃ СЌРјРѕРґР·Рё
+  - Р РµРїРѕСЃС‚С‹
+  - Р—Р°РєСЂРµРїР»С‘РЅРЅС‹Рµ РїРѕСЃС‚С‹
+  - Real-time РѕР±РЅРѕРІР»РµРЅРёСЏ С‡РµСЂРµР· WebSocket
+  - РђРІС‚РѕРѕР±РЅРѕРІР»РµРЅРёРµ РєР°Р¶РґС‹Рµ 30 СЃРµРєСѓРЅРґ
+  - РЈРІРµРґРѕРјР»РµРЅРёРµ Рѕ РЅРѕРІС‹С… РїРѕСЃС‚Р°С…
 
-### Компонент поста
-- **Файл:** `src/components/post/Post.tsx`
-- **Статус:** ✅ Реализовано
-- **Функции:**
-  - Отображение текста и изображений
-  - Счётчик резонанса (лайков)
-  - Счётчик комментариев
-  - Кнопка ответа (reply)
-  - Emoji picker для реакций
-  - Контекстное меню (удалить, репорт, закрепить)
-  - Image viewer с зумом
+### РљРѕРјРїРѕРЅРµРЅС‚ РїРѕСЃС‚Р°
+- **Р¤Р°Р№Р»:** `src/components/post/Post.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **Р¤СѓРЅРєС†РёРё:**
+  - РћС‚РѕР±СЂР°Р¶РµРЅРёРµ С‚РµРєСЃС‚Р° Рё РёР·РѕР±СЂР°Р¶РµРЅРёР№
+  - РЎС‡С‘С‚С‡РёРє СЂРµР·РѕРЅР°РЅСЃР° (Р»Р°Р№РєРѕРІ)
+  - РЎС‡С‘С‚С‡РёРє РєРѕРјРјРµРЅС‚Р°СЂРёРµРІ
+  - РљРЅРѕРїРєР° РѕС‚РІРµС‚Р° (reply)
+  - Emoji picker РґР»СЏ СЂРµР°РєС†РёР№
+  - РљРѕРЅС‚РµРєСЃС‚РЅРѕРµ РјРµРЅСЋ (СѓРґР°Р»РёС‚СЊ, СЂРµРїРѕСЂС‚, Р·Р°РєСЂРµРїРёС‚СЊ)
+  - Image viewer СЃ Р·СѓРјРѕРј
   - Link preview (Open Graph)
 
 ---
 
-## 💬 Messages & Chat
+## рџ’¬ Messages & Chat
 
-### Мессенджер
-- **Маршруты:** `/messages`, `/messages/:chatId`
-- **Файлы:** `src/pages/Messages.tsx`, `src/pages/messages/MessagesPage.tsx`, `src/pages/messages/components/ChatList.tsx`, `src/pages/messages/components/ChatPanel.tsx`, `src/pages/messages/components/MessageList.tsx`, `src/pages/messages/components/MessageComposer.tsx`
-- **Статус:** ✅ Реализовано
-- **Функции:**
-  - Список чатов с последними сообщениями
-  - Счётчик непрочитанных
-  - Личные сообщения между пользователями
-  - Вложения файлов и изображений
-  - Ответы на сообщения (reply)
-  - Удаление сообщений (для себя / для всех)
-  - Индикаторы: онлайн, был(а), печатает
-  - Read receipts (статус прочтения)
-  - Контекстное меню для удаления
-  - Image viewer с зумом
+### РњРµСЃСЃРµРЅРґР¶РµСЂ
+- **РњР°СЂС€СЂСѓС‚С‹:** `/messages`, `/messages/:chatId`
+- **Р¤Р°Р№Р»С‹:** `src/pages/Messages.tsx`, `src/pages/messages/MessagesPage.tsx`, `src/pages/messages/components/ChatList.tsx`, `src/pages/messages/components/ChatPanel.tsx`, `src/pages/messages/components/MessageList.tsx`, `src/pages/messages/components/MessageComposer.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **Р¤СѓРЅРєС†РёРё:**
+  - РЎРїРёСЃРѕРє С‡Р°С‚РѕРІ СЃ РїРѕСЃР»РµРґРЅРёРјРё СЃРѕРѕР±С‰РµРЅРёСЏРјРё
+  - РЎС‡С‘С‚С‡РёРє РЅРµРїСЂРѕС‡РёС‚Р°РЅРЅС‹С…
+  - Р›РёС‡РЅС‹Рµ СЃРѕРѕР±С‰РµРЅРёСЏ РјРµР¶РґСѓ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏРјРё
+  - Р’Р»РѕР¶РµРЅРёСЏ С„Р°Р№Р»РѕРІ Рё РёР·РѕР±СЂР°Р¶РµРЅРёР№
+  - РћС‚РІРµС‚С‹ РЅР° СЃРѕРѕР±С‰РµРЅРёСЏ (reply)
+  - РЈРґР°Р»РµРЅРёРµ СЃРѕРѕР±С‰РµРЅРёР№ (РґР»СЏ СЃРµР±СЏ / РґР»СЏ РІСЃРµС…)
+  - РРЅРґРёРєР°С‚РѕСЂС‹: РѕРЅР»Р°Р№РЅ, Р±С‹Р»(Р°), РїРµС‡Р°С‚Р°РµС‚
+  - Read receipts (СЃС‚Р°С‚СѓСЃ РїСЂРѕС‡С‚РµРЅРёСЏ)
+  - РљРѕРЅС‚РµРєСЃС‚РЅРѕРµ РјРµРЅСЋ РґР»СЏ СѓРґР°Р»РµРЅРёСЏ
+  - Image viewer СЃ Р·СѓРјРѕРј
 
-### Моменты (исчезающие фото)
-- **Файл:** `src/pages/messages/MessagesPage.tsx` (встроено)
-- **Статус:** ⚠️ Частично реализовано
-- **Функции:**
-  - Исчезающие фото с TTL (24 часа)
-  - Просмотр по клику
-  - Запрет на скачивание
+### РњРѕРјРµРЅС‚С‹ (РёСЃС‡РµР·Р°СЋС‰РёРµ С„РѕС‚Рѕ)
+- **Р¤Р°Р№Р»:** `src/pages/messages/MessagesPage.tsx` (РІСЃС‚СЂРѕРµРЅРѕ)
+- **РЎС‚Р°С‚СѓСЃ:** вљ пёЏ Р§Р°СЃС‚РёС‡РЅРѕ СЂРµР°Р»РёР·РѕРІР°РЅРѕ
+- **Р¤СѓРЅРєС†РёРё:**
+  - РСЃС‡РµР·Р°СЋС‰РёРµ С„РѕС‚Рѕ СЃ TTL (24 С‡Р°СЃР°)
+  - РџСЂРѕСЃРјРѕС‚СЂ РїРѕ РєР»РёРєСѓ
+  - Р—Р°РїСЂРµС‚ РЅР° СЃРєР°С‡РёРІР°РЅРёРµ
   - Thumb preview
-  - Отметка о просмотре
-  - Автоматическое закрытие при переключении вкладки
+  - РћС‚РјРµС‚РєР° Рѕ РїСЂРѕСЃРјРѕС‚СЂРµ
+  - РђРІС‚РѕРјР°С‚РёС‡РµСЃРєРѕРµ Р·Р°РєСЂС‹С‚РёРµ РїСЂРё РїРµСЂРµРєР»СЋС‡РµРЅРёРё РІРєР»Р°РґРєРё
 
 ### NPM Package Preview
-- **Файлы:** `backend/src/npm.js`, `src/components/npm/NpmPackageCard.tsx`, `src/utils/npmDetector.ts`
-- **Статус:** ✅ Реализовано
-- **Функции:**
-  - Автоматическое определение npm команд в сообщениях (`npm react`, `npm express`, `npm @types/node`)
-  - Endpoint: `GET /api/npm/:packageName` — получение данных о пакете из npm Registry
-  - UI карточка с названием пакета, версией, описанием и ссылкой на npmjs.com
-  - Glass UI дизайн в стиле LUME
-  - Loading skeleton при загрузке
-  - Обработка ошибок (пакет не найден — fallback)
-  - Кеширование ответов (in-memory, 15 минут)
+- **Р¤Р°Р№Р»С‹:** `backend/src/npm.js`, `src/components/npm/NpmPackageCard.tsx`, `src/utils/npmDetector.ts`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **Р¤СѓРЅРєС†РёРё:**
+  - РђРІС‚РѕРјР°С‚РёС‡РµСЃРєРѕРµ РѕРїСЂРµРґРµР»РµРЅРёРµ npm РєРѕРјР°РЅРґ РІ СЃРѕРѕР±С‰РµРЅРёСЏС… (`npm react`, `npm express`, `npm @types/node`)
+  - Endpoint: `GET /api/npm/:packageName` вЂ” РїРѕР»СѓС‡РµРЅРёРµ РґР°РЅРЅС‹С… Рѕ РїР°РєРµС‚Рµ РёР· npm Registry
+  - UI РєР°СЂС‚РѕС‡РєР° СЃ РЅР°Р·РІР°РЅРёРµРј РїР°РєРµС‚Р°, РІРµСЂСЃРёРµР№, РѕРїРёСЃР°РЅРёРµРј Рё СЃСЃС‹Р»РєРѕР№ РЅР° npmjs.com
+  - Glass UI РґРёР·Р°Р№РЅ РІ СЃС‚РёР»Рµ LUME
+  - Loading skeleton РїСЂРё Р·Р°РіСЂСѓР·РєРµ
+  - РћР±СЂР°Р±РѕС‚РєР° РѕС€РёР±РѕРє (РїР°РєРµС‚ РЅРµ РЅР°Р№РґРµРЅ вЂ” fallback)
+  - РљРµС€РёСЂРѕРІР°РЅРёРµ РѕС‚РІРµС‚РѕРІ (in-memory, 15 РјРёРЅСѓС‚)
 
 ### Diagram Rendering (Mermaid)
-- **Файлы:** `backend/src/routes/diagramRoutes.js`, `src/components/chat/DiagramMessage.tsx`
-- **Документация:** [DIAGRAM_RENDERING.md](DIAGRAM_RENDERING.md)
-- **Статус:** ✅ Реализовано
-- **Функции:**
-  - Автоматическое определение Mermaid диаграмм (graph TD/BT/LR/RL, flowchart TD/LR, pie, gitGraph)
-  - Endpoint: `POST /api/diagram/render` — рендеринг через Kroki API (`https://kroki.io/mermaid/svg`)
-  - Кеширование в Redis по SHA256 хешу (TTL: 1 час)
-  - SVG рендеринг с санитизацией (безопасность)
-  - Кнопки: Copy code, Download SVG (с анимацией галочки)
-  - Loading skeleton при загрузке
-  - Автоматическая прокрутка чата после отправки
+- **Р¤Р°Р№Р»С‹:** `backend/src/routes/diagramRoutes.js`, `src/components/chat/DiagramMessage.tsx`
+- **Р”РѕРєСѓРјРµРЅС‚Р°С†РёСЏ:** [DIAGRAM_RENDERING.md](DIAGRAM_RENDERING.md)
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **Р¤СѓРЅРєС†РёРё:**
+  - РђРІС‚РѕРјР°С‚РёС‡РµСЃРєРѕРµ РѕРїСЂРµРґРµР»РµРЅРёРµ Mermaid РґРёР°РіСЂР°РјРј (graph TD/BT/LR/RL, flowchart TD/LR, pie, gitGraph)
+  - Endpoint: `POST /api/diagram/render` вЂ” СЂРµРЅРґРµСЂРёРЅРі С‡РµСЂРµР· Kroki API (`https://kroki.io/mermaid/svg`)
+  - РљРµС€РёСЂРѕРІР°РЅРёРµ РІ Redis РїРѕ SHA256 С…РµС€Сѓ (TTL: 1 С‡Р°СЃ)
+  - SVG СЂРµРЅРґРµСЂРёРЅРі СЃ СЃР°РЅРёС‚РёР·Р°С†РёРµР№ (Р±РµР·РѕРїР°СЃРЅРѕСЃС‚СЊ)
+  - РљРЅРѕРїРєРё: Copy code, Download SVG (СЃ Р°РЅРёРјР°С†РёРµР№ РіР°Р»РѕС‡РєРё)
+  - Loading skeleton РїСЂРё Р·Р°РіСЂСѓР·РєРµ
+  - РђРІС‚РѕРјР°С‚РёС‡РµСЃРєР°СЏ РїСЂРѕРєСЂСѓС‚РєР° С‡Р°С‚Р° РїРѕСЃР»Рµ РѕС‚РїСЂР°РІРєРё
 
 ### Reply Bar
-- **Файл:** `src/components/chat/ReplyBar.tsx`
-- **Статус:** ✅ Реализовано
-- **Описание:** Компонент для ответа на сообщения
+- **Р¤Р°Р№Р»:** `src/components/chat/ReplyBar.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **РћРїРёСЃР°РЅРёРµ:** РљРѕРјРїРѕРЅРµРЅС‚ РґР»СЏ РѕС‚РІРµС‚Р° РЅР° СЃРѕРѕР±С‰РµРЅРёСЏ
 
 ---
 
-## 👥 Groups & Channels (Chats)
+## рџ‘Ґ Groups & Channels (Chats)
 
-### Чаты (группы и каналы)
-- **Маршруты:** `/messages`, `/messages/:chatId`
-- **Файлы:** `src/pages/Messages.tsx`, `src/pages/messages/MessagesPage.tsx`, `src/pages/messages/components/ChatList.tsx`, `src/pages/messages/components/ChatPanel.tsx`, `src/pages/messages/components/ChatSettingsModal.tsx`, `src/pages/messages/components/CreateChatModal.tsx`
-- **Статус:** ✅ Реализовано
-- **Функции:**
-  - Типы чатов: `group`, `channel`, `private`
-  - Создание группы/канала
-  - Публичные каналы (поиск и join)
-  - Заявки на вступление (approve/reject)
-  - Управление участниками и ролями
+### Р§Р°С‚С‹ (РіСЂСѓРїРїС‹ Рё РєР°РЅР°Р»С‹)
+- **РњР°СЂС€СЂСѓС‚С‹:** `/messages`, `/messages/:chatId`
+- **Р¤Р°Р№Р»С‹:** `src/pages/Messages.tsx`, `src/pages/messages/MessagesPage.tsx`, `src/pages/messages/components/ChatList.tsx`, `src/pages/messages/components/ChatPanel.tsx`, `src/pages/messages/components/ChatSettingsModal.tsx`, `src/pages/messages/components/CreateChatModal.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **Р¤СѓРЅРєС†РёРё:**
+  - РўРёРїС‹ С‡Р°С‚РѕРІ: `group`, `channel`, `private`
+  - РЎРѕР·РґР°РЅРёРµ РіСЂСѓРїРїС‹/РєР°РЅР°Р»Р°
+  - РџСѓР±Р»РёС‡РЅС‹Рµ РєР°РЅР°Р»С‹ (РїРѕРёСЃРє Рё join)
+  - Р—Р°СЏРІРєРё РЅР° РІСЃС‚СѓРїР»РµРЅРёРµ (approve/reject)
+  - РЈРїСЂР°РІР»РµРЅРёРµ СѓС‡Р°СЃС‚РЅРёРєР°РјРё Рё СЂРѕР»СЏРјРё
 
 ---
 
-## 👤 Profile & Users
+## рџ‘¤ Profile & Users
 
-### Профиль (мой)
-- **Маршрут:** `/profile`
-- **Файлы:** `src/pages/Profile.tsx`
-- **Статус:** ✅ Реализовано
-- **Функции:**
-  - Аватары и баннеры
-  - Счётчики: подписчики, подписки, публикации
-  - Редактирование профиля (bio, city, website)
-  - Закреплённый пост
-  - История постов
-  - Кнопка подписки (для других)
+### РџСЂРѕС„РёР»СЊ (РјРѕР№)
+- **РњР°СЂС€СЂСѓС‚:** `/profile`
+- **Р¤Р°Р№Р»С‹:** `src/pages/Profile.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **Р¤СѓРЅРєС†РёРё:**
+  - РђРІР°С‚Р°СЂС‹ Рё Р±Р°РЅРЅРµСЂС‹
+  - РЎС‡С‘С‚С‡РёРєРё: РїРѕРґРїРёСЃС‡РёРєРё, РїРѕРґРїРёСЃРєРё, РїСѓР±Р»РёРєР°С†РёРё
+  - Р РµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ РїСЂРѕС„РёР»СЏ (bio, city, website)
+  - Р—Р°РєСЂРµРїР»С‘РЅРЅС‹Р№ РїРѕСЃС‚
+  - РСЃС‚РѕСЂРёСЏ РїРѕСЃС‚РѕРІ
+  - РљРЅРѕРїРєР° РїРѕРґРїРёСЃРєРё (РґР»СЏ РґСЂСѓРіРёС…)
 
-### Профиль пользователя
-- **Маршрут:** `/profile/:userId`
-- **Файлы:** `src/pages/UserProfile.tsx`
-- **Статус:** ✅ Реализовано
-- **Функции:**
-  - Просмотр чужого профиля
-  - Кнопки: подписаться, написать
-  - Статус верификации
+### РџСЂРѕС„РёР»СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
+- **РњР°СЂС€СЂСѓС‚:** `/profile/:userId`
+- **Р¤Р°Р№Р»С‹:** `src/pages/UserProfile.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **Р¤СѓРЅРєС†РёРё:**
+  - РџСЂРѕСЃРјРѕС‚СЂ С‡СѓР¶РѕРіРѕ РїСЂРѕС„РёР»СЏ
+  - РљРЅРѕРїРєРё: РїРѕРґРїРёСЃР°С‚СЊСЃСЏ, РЅР°РїРёСЃР°С‚СЊ
+  - РЎС‚Р°С‚СѓСЃ РІРµСЂРёС„РёРєР°С†РёРё
 
 ### Follow Modal
-- **Файл:** `src/components/profile/FollowModal.tsx`
-- **Статус:** ✅ Реализовано
-- **Описание:** Модальное окно со списком подписчиков/подписок
+- **Р¤Р°Р№Р»:** `src/components/profile/FollowModal.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **РћРїРёСЃР°РЅРёРµ:** РњРѕРґР°Р»СЊРЅРѕРµ РѕРєРЅРѕ СЃРѕ СЃРїРёСЃРєРѕРј РїРѕРґРїРёСЃС‡РёРєРѕРІ/РїРѕРґРїРёСЃРѕРє
 
 ---
 
-## ✅ Verification
+## вњ… Verification
 
-### Страница верификации
-- **Маршрут:** `/verified`
-- **Файлы:** `src/pages/Verified.tsx`, `src/components/verification/VerificationHero.tsx`
-- **Статус:** ✅ Реализовано
-- **Функции:**
-  - Подача заявки через TikTok видео
-  - Требования: регистрация ≥7 дней, видео ≥2000 просмотров
-  - Рассмотрение администратором
-  - Одобрение на 1 месяц
-  - Значки: Verified, Developer, CEO
-
----
-
-## ⚙️ Settings
-
-### Настройки аккаунта
-- **Маршрут:** `/settings`
-- **Файлы:** `src/pages/Settings.tsx`
-- **Статус:** ✅ Реализовано
-- **Функции:**
-  - Тема (тёмная/светлая)
-  - Язык (ru/en)
-  - Эффект снега (вкл/выкл)
-  - Приватность постов
-  - Приватность сообщений
-  - Удаление аккаунта
-
-### Управление сессиями
-- **Маршрут:** `/settings/sessions`
-- **Файл:** `src/pages/settings/SessionsPage.tsx`
-- **Статус:** ✅ Реализовано
-- **Функции:** текущая сессия, список активных сессий, выход из устройства, logout all
+### РЎС‚СЂР°РЅРёС†Р° РІРµСЂРёС„РёРєР°С†РёРё
+- **РњР°СЂС€СЂСѓС‚:** `/verified`
+- **Р¤Р°Р№Р»С‹:** `src/pages/Verified.tsx`, `src/components/verification/VerificationHero.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **Р¤СѓРЅРєС†РёРё:**
+  - РџРѕРґР°С‡Р° Р·Р°СЏРІРєРё С‡РµСЂРµР· TikTok РІРёРґРµРѕ
+  - РўСЂРµР±РѕРІР°РЅРёСЏ: СЂРµРіРёСЃС‚СЂР°С†РёСЏ в‰Ґ7 РґРЅРµР№, РІРёРґРµРѕ в‰Ґ2000 РїСЂРѕСЃРјРѕС‚СЂРѕРІ
+  - Р Р°СЃСЃРјРѕС‚СЂРµРЅРёРµ Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂРѕРј
+  - РћРґРѕР±СЂРµРЅРёРµ РЅР° 1 РјРµСЃСЏС†
+  - Р—РЅР°С‡РєРё: Verified, Developer, CEO
 
 ---
 
-## 🛡️ Admin Panel
+## вљ™пёЏ Settings
 
-### Панель администратора
-- **Маршрут:** `/admin`
-- **Файлы:** `src/pages/AdminPanel.tsx`, `src/components/AdminPanelModal.tsx`
-- **Статус:** ✅ Реализовано (доступ зависит от прав)
-- **Функции:**
-  - Запросы на верификацию
-  - Список пользователей
-  - Жалобы на посты
-  - Одобрение/отклонение верификации
-  - Удаление постов
-  - Отклонение жалоб
+### РќР°СЃС‚СЂРѕР№РєРё Р°РєРєР°СѓРЅС‚Р°
+- **РњР°СЂС€СЂСѓС‚:** `/settings`
+- **Р¤Р°Р№Р»С‹:** `src/pages/Settings.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **Р¤СѓРЅРєС†РёРё:**
+  - РўРµРјР° (С‚С‘РјРЅР°СЏ/СЃРІРµС‚Р»Р°СЏ)
+  - РЇР·С‹Рє (ru/en)
+  - Р­С„С„РµРєС‚ СЃРЅРµРіР° (РІРєР»/РІС‹РєР»)
+  - РџСЂРёРІР°С‚РЅРѕСЃС‚СЊ РїРѕСЃС‚РѕРІ
+  - РџСЂРёРІР°С‚РЅРѕСЃС‚СЊ СЃРѕРѕР±С‰РµРЅРёР№
+  - РЈРґР°Р»РµРЅРёРµ Р°РєРєР°СѓРЅС‚Р°
+
+### РЈРїСЂР°РІР»РµРЅРёРµ СЃРµСЃСЃРёСЏРјРё
+- **РњР°СЂС€СЂСѓС‚:** `/settings/sessions`
+- **Р¤Р°Р№Р»:** `src/pages/settings/SessionsPage.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **Р¤СѓРЅРєС†РёРё:** С‚РµРєСѓС‰Р°СЏ СЃРµСЃСЃРёСЏ, СЃРїРёСЃРѕРє Р°РєС‚РёРІРЅС‹С… СЃРµСЃСЃРёР№, РІС‹С…РѕРґ РёР· СѓСЃС‚СЂРѕР№СЃС‚РІР°, logout all
 
 ---
 
-## 🔐 Authentication
+## рџ›ЎпёЏ Admin Panel
 
-### Вход / Регистрация
-- **Маршруты:** `/login`, `/register`
-- **Файлы:** `src/pages/auth/Login.tsx`, `src/pages/auth/Register.tsx`
-- **Статус:** ✅ Реализовано
-- **Функции:**
-  - Email + пароль
-  - Валидация username (мин. 5 символов, латиница + цифры)
-  - httpOnly cookies для токенов
-  - CSRF защита
+### РџР°РЅРµР»СЊ Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР°
+- **РњР°СЂС€СЂСѓС‚:** `/admin`
+- **Р¤Р°Р№Р»С‹:** `src/pages/AdminPanel.tsx`, `src/components/AdminPanelModal.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ (РґРѕСЃС‚СѓРї Р·Р°РІРёСЃРёС‚ РѕС‚ РїСЂР°РІ)
+- **Р¤СѓРЅРєС†РёРё:**
+  - Р—Р°РїСЂРѕСЃС‹ РЅР° РІРµСЂРёС„РёРєР°С†РёСЋ
+  - РЎРїРёСЃРѕРє РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№
+  - Р–Р°Р»РѕР±С‹ РЅР° РїРѕСЃС‚С‹
+  - РћРґРѕР±СЂРµРЅРёРµ/РѕС‚РєР»РѕРЅРµРЅРёРµ РІРµСЂРёС„РёРєР°С†РёРё
+  - РЈРґР°Р»РµРЅРёРµ РїРѕСЃС‚РѕРІ
+  - РћС‚РєР»РѕРЅРµРЅРёРµ Р¶Р°Р»РѕР±
+
+---
+
+## рџ”ђ Authentication
+
+### Р’С…РѕРґ / Р РµРіРёСЃС‚СЂР°С†РёСЏ
+- **РњР°СЂС€СЂСѓС‚С‹:** `/login`, `/register`
+- **Р¤Р°Р№Р»С‹:** `src/pages/auth/Login.tsx`, `src/pages/auth/Register.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **Р¤СѓРЅРєС†РёРё:**
+  - Email + РїР°СЂРѕР»СЊ
+  - Р’Р°Р»РёРґР°С†РёСЏ username (РјРёРЅ. 5 СЃРёРјРІРѕР»РѕРІ, Р»Р°С‚РёРЅРёС†Р° + С†РёС„СЂС‹)
+  - httpOnly cookies РґР»СЏ С‚РѕРєРµРЅРѕРІ
+  - CSRF Р·Р°С‰РёС‚Р°
   - Rate limiting
 
 ---
 
-## 🔍 Explore
+## рџ”Ќ Explore
 
-### Поиск и обзор
-- **Маршрут:** `/explore`
-- **Файлы:** `src/pages/Explore.tsx`
-- **Статус:** ✅ Реализовано
-- **Функции:**
-  - Поиск пользователей
-  - Поиск чатов/каналов (public)
-  - Тренды (популярные хэштеги)
-  - Рекомендуемые пользователи
-  - Поиск builders/разработчиков
-  - Поиск проектов
-  - Поиск workspaces
-  - Проекты, ищущие команду
-
----
-
-## 🎯 Onboarding
-
-### Онбординг новых пользователей
-- **Маршрут:** `/onboarding`
-- **Файлы:** `src/pages/onboarding/OnboardingPage.tsx`, `backend/src/routes/onboardingRoutes.js`, `backend/src/services/onboardingService.js`
-- **Статус:** ✅ Реализовано
-- **Функции:**
-  - 4-шаговый процесс настройки профиля
-  - Шаг 1: Выбор основной роли (Developer, Designer, и т.д.)
-  - Шаг 2: Выбор навыков (React, Node.js, PostgreSQL, и т.д.)
-  - Шаг 3: Установка целей (Найти команду, Показать проект, и т.д.)
-  - Шаг 4: Создание или присоединение к workspace
-  - Сохранение черновика в localStorage
-  - Автоматическое восстановление при перезагрузке
-  - Анимированные переходы между шагами
+### РџРѕРёСЃРє Рё РѕР±Р·РѕСЂ
+- **РњР°СЂС€СЂСѓС‚:** `/explore`
+- **Р¤Р°Р№Р»С‹:** `src/pages/Explore.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **Р¤СѓРЅРєС†РёРё:**
+  - РџРѕРёСЃРє РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№
+  - РџРѕРёСЃРє С‡Р°С‚РѕРІ/РєР°РЅР°Р»РѕРІ (public)
+  - РўСЂРµРЅРґС‹ (РїРѕРїСѓР»СЏСЂРЅС‹Рµ С…СЌС€С‚РµРіРё)
+  - Р РµРєРѕРјРµРЅРґСѓРµРјС‹Рµ РїРѕР»СЊР·РѕРІР°С‚РµР»Рё
+  - РџРѕРёСЃРє builders/СЂР°Р·СЂР°Р±РѕС‚С‡РёРєРѕРІ
+  - РџРѕРёСЃРє РїСЂРѕРµРєС‚РѕРІ
+  - РџРѕРёСЃРє workspaces
+  - РџСЂРѕРµРєС‚С‹, РёС‰СѓС‰РёРµ РєРѕРјР°РЅРґСѓ
 
 ---
 
-## 🏢 Workspaces
+## рџЋЇ Onboarding
 
-### Рабочие пространства для команд
-- **Маршруты:** `/workspaces`, `/workspaces/:slug`
-- **Файлы:** `src/pages/workspaces/WorkspacesPage.tsx`, `src/pages/workspaces/WorkspaceDetailPage.tsx`, `backend/src/routes/workspaceRoutes.js`, `backend/src/services/workspaceService.js`
-- **Статус:** ✅ Реализовано
-- **Функции:**
-  - Создание публичных/приватных workspaces
-  - Управление участниками с ролями (owner, admin, lead, developer, designer, member, guest)
-  - Генерация пригласительных кодов
-  - Присоединение через invite code
-  - Список проектов workspace
-  - Фокус-теги для категоризации
-  - Поиск публичных workspaces
-
----
-
-## 📁 Projects
-
-### Управление проектами
-- **Маршруты:** `/projects`, `/projects/:slug`
-- **Файлы:** `src/pages/projects/ProjectsPage.tsx`, `src/pages/projects/ProjectDetailPage.tsx`, `backend/src/routes/projectRoutes.js`, `backend/src/services/projectService.js`
-- **Статус:** ✅ Реализовано
-- **Функции:**
-  - Создание проектов (standalone или в workspace)
-  - Статусы: Planning, Active, On Hold, Completed, Archived
-  - Видимость: Public/Private
-  - Tech stack и теги
-  - Ссылки на GitHub и demo
-  - Управление командой с ролями
-  - Поиск участников команды
-  - Open source флаг
-  - "Looking for members" флаг
-  - Интеграция с задачами
+### РћРЅР±РѕСЂРґРёРЅРі РЅРѕРІС‹С… РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№
+- **РњР°СЂС€СЂСѓС‚:** `/onboarding`
+- **Р¤Р°Р№Р»С‹:** `src/pages/onboarding/OnboardingPage.tsx`, `backend/src/routes/onboardingRoutes.js`, `backend/src/services/onboardingService.js`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **Р¤СѓРЅРєС†РёРё:**
+  - 4-С€Р°РіРѕРІС‹Р№ РїСЂРѕС†РµСЃСЃ РЅР°СЃС‚СЂРѕР№РєРё РїСЂРѕС„РёР»СЏ
+  - РЁР°Рі 1: Р’С‹Р±РѕСЂ РѕСЃРЅРѕРІРЅРѕР№ СЂРѕР»Рё (Developer, Designer, Рё С‚.Рґ.)
+  - РЁР°Рі 2: Р’С‹Р±РѕСЂ РЅР°РІС‹РєРѕРІ (React, Node.js, PostgreSQL, Рё С‚.Рґ.)
+  - РЁР°Рі 3: РЈСЃС‚Р°РЅРѕРІРєР° С†РµР»РµР№ (РќР°Р№С‚Рё РєРѕРјР°РЅРґСѓ, РџРѕРєР°Р·Р°С‚СЊ РїСЂРѕРµРєС‚, Рё С‚.Рґ.)
+  - РЁР°Рі 4: РЎРѕР·РґР°РЅРёРµ РёР»Рё РїСЂРёСЃРѕРµРґРёРЅРµРЅРёРµ Рє workspace
+  - РЎРѕС…СЂР°РЅРµРЅРёРµ С‡РµСЂРЅРѕРІРёРєР° РІ localStorage
+  - РђРІС‚РѕРјР°С‚РёС‡РµСЃРєРѕРµ РІРѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёРµ РїСЂРё РїРµСЂРµР·Р°РіСЂСѓР·РєРµ
+  - РђРЅРёРјРёСЂРѕРІР°РЅРЅС‹Рµ РїРµСЂРµС…РѕРґС‹ РјРµР¶РґСѓ С€Р°РіР°РјРё
 
 ---
 
-## ✅ Tasks
+## рџЏў Workspaces
 
-### Управление задачами в проектах
-- **Файлы:** `backend/src/routes/taskRoutes.js`, `backend/src/services/taskService.js`
-- **Статус:** ✅ Реализовано
-- **Функции:**
-  - Kanban-доска (todo, in_progress, review, done)
-  - Создание задач в проектах
-  - Назначение на участников команды
-  - Приоритеты: low, medium, high, urgent
-  - Комментарии к задачам
-  - Связь с исходными сообщениями
-  - Фильтрация и сортировка
-  - Drag & drop между колонками (UI)
+### Р Р°Р±РѕС‡РёРµ РїСЂРѕСЃС‚СЂР°РЅСЃС‚РІР° РґР»СЏ РєРѕРјР°РЅРґ
+- **РњР°СЂС€СЂСѓС‚С‹:** `/workspaces`, `/workspaces/:slug`
+- **Р¤Р°Р№Р»С‹:** `src/pages/workspaces/WorkspacesPage.tsx`, `src/pages/workspaces/WorkspaceDetailPage.tsx`, `backend/src/routes/workspaceRoutes.js`, `backend/src/services/workspaceService.js`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **Р¤СѓРЅРєС†РёРё:**
+  - РЎРѕР·РґР°РЅРёРµ РїСѓР±Р»РёС‡РЅС‹С…/РїСЂРёРІР°С‚РЅС‹С… workspaces
+  - РЈРїСЂР°РІР»РµРЅРёРµ СѓС‡Р°СЃС‚РЅРёРєР°РјРё СЃ СЂРѕР»СЏРјРё (owner, admin, lead, developer, designer, member, guest)
+  - Р“РµРЅРµСЂР°С†РёСЏ РїСЂРёРіР»Р°СЃРёС‚РµР»СЊРЅС‹С… РєРѕРґРѕРІ
+  - РџСЂРёСЃРѕРµРґРёРЅРµРЅРёРµ С‡РµСЂРµР· invite code
+  - РЎРїРёСЃРѕРє РїСЂРѕРµРєС‚РѕРІ workspace
+  - Р¤РѕРєСѓСЃ-С‚РµРіРё РґР»СЏ РєР°С‚РµРіРѕСЂРёР·Р°С†РёРё
+  - РџРѕРёСЃРє РїСѓР±Р»РёС‡РЅС‹С… workspaces
 
 ---
 
-## 🔧 System Pages
+## рџ“Ѓ Projects
+
+### РЈРїСЂР°РІР»РµРЅРёРµ РїСЂРѕРµРєС‚Р°РјРё
+- **РњР°СЂС€СЂСѓС‚С‹:** `/projects`, `/projects/:slug`
+- **Р¤Р°Р№Р»С‹:** `src/pages/projects/ProjectsPage.tsx`, `src/pages/projects/ProjectDetailPage.tsx`, `backend/src/routes/projectRoutes.js`, `backend/src/services/projectService.js`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **Р¤СѓРЅРєС†РёРё:**
+  - РЎРѕР·РґР°РЅРёРµ РїСЂРѕРµРєС‚РѕРІ (standalone РёР»Рё РІ workspace)
+  - РЎС‚Р°С‚СѓСЃС‹: Planning, Active, On Hold, Completed, Archived
+  - Р’РёРґРёРјРѕСЃС‚СЊ: Public/Private
+  - Tech stack Рё С‚РµРіРё
+  - РЎСЃС‹Р»РєРё РЅР° GitHub Рё demo
+  - РЈРїСЂР°РІР»РµРЅРёРµ РєРѕРјР°РЅРґРѕР№ СЃ СЂРѕР»СЏРјРё
+  - РџРѕРёСЃРє СѓС‡Р°СЃС‚РЅРёРєРѕРІ РєРѕРјР°РЅРґС‹
+  - Open source С„Р»Р°Рі
+  - "Looking for members" С„Р»Р°Рі
+  - РРЅС‚РµРіСЂР°С†РёСЏ СЃ Р·Р°РґР°С‡Р°РјРё
+
+---
+
+## вњ… Tasks
+
+### РЈРїСЂР°РІР»РµРЅРёРµ Р·Р°РґР°С‡Р°РјРё РІ РїСЂРѕРµРєС‚Р°С…
+- **Р¤Р°Р№Р»С‹:** `backend/src/routes/taskRoutes.js`, `backend/src/services/taskService.js`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **Р¤СѓРЅРєС†РёРё:**
+  - Kanban-РґРѕСЃРєР° (todo, in_progress, review, done)
+  - РЎРѕР·РґР°РЅРёРµ Р·Р°РґР°С‡ РІ РїСЂРѕРµРєС‚Р°С…
+  - РќР°Р·РЅР°С‡РµРЅРёРµ РЅР° СѓС‡Р°СЃС‚РЅРёРєРѕРІ РєРѕРјР°РЅРґС‹
+  - РџСЂРёРѕСЂРёС‚РµС‚С‹: low, medium, high, urgent
+  - РљРѕРјРјРµРЅС‚Р°СЂРёРё Рє Р·Р°РґР°С‡Р°Рј
+  - РЎРІСЏР·СЊ СЃ РёСЃС…РѕРґРЅС‹РјРё СЃРѕРѕР±С‰РµРЅРёСЏРјРё
+  - Р¤РёР»СЊС‚СЂР°С†РёСЏ Рё СЃРѕСЂС‚РёСЂРѕРІРєР°
+  - Drag & drop РјРµР¶РґСѓ РєРѕР»РѕРЅРєР°РјРё (UI)
+
+---
+
+## рџ”§ System Pages
 
 ### 404 Not Found
-- **Маршрут:** `*`
-- **Файлы:** `src/pages/NotFound.tsx`
-- **Статус:** ✅ Реализовано
+- **РњР°СЂС€СЂСѓС‚:** `*`
+- **Р¤Р°Р№Р»С‹:** `src/pages/NotFound.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
 
 ### Error Boundary
-- **Файлы:** `src/components/ErrorBoundary.tsx`
-- **Статус:** ✅ Реализовано
-- **Описание:** Перехват ошибок рендеринга
+- **Р¤Р°Р№Р»С‹:** `src/components/ErrorBoundary.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **РћРїРёСЃР°РЅРёРµ:** РџРµСЂРµС…РІР°С‚ РѕС€РёР±РѕРє СЂРµРЅРґРµСЂРёРЅРіР°
 
 ---
 
-## 🌐 Internationalization (i18n)
+## рџЊђ Internationalization (i18n)
 
-### Переводы
-- **Файлы:** `src/i18n/translations.ts`, `src/i18n/locales/ru.json`, `en.json`
-- **Статус:** ✅ Реализовано
-- **Языки:** Русский, English
-- **Объём:** 1000+ строк переводов
-
----
-
-## 🎨 UI Components
-
-### shadcn/ui компоненты (50+)
-- **Файлы:** `src/components/ui/*.tsx`
-- **Статус:** ✅ Реализовано
-- **Примеры:** button, input, dialog, dropdown-menu, toast, skeleton, avatar, badge, card, tabs, switch, slider, progress, table, tooltip, popover, etc.
-
-### Кастомные компоненты
-- **Файлы:** `src/components/*.tsx`
-- **Статус:** ✅ Реализовано
-- **Примеры:**
-  - `Avatar.tsx` — аватар с инициалами
-  - `Presence.tsx` — индикатор онлайн/оффлайн
-  - `LinkPreview.tsx` — Open Graph превью
-  - `NavLink.tsx` — анимированная навигация
-  - `ImageViewer.tsx` — полноэкранный просмотр
-  - `SnowEffect.tsx` — эффект снега
-  - `LogoutModal.tsx` — модальное окно выхода
-  - `CookieBanner.tsx` — баннер согласия на cookies
-
-### Layout компоненты
-- **Файлы:** `src/components/layout/*.tsx`
-- **Статус:** ✅ Реализовано
-- **Примеры:**
-  - `AppLayout.tsx` — основной layout
-  - `SidebarLeft.tsx` — левый сайдбар (260px)
-  - `SidebarRight.tsx` — правый сайдбар (340px)
+### РџРµСЂРµРІРѕРґС‹
+- **Р¤Р°Р№Р»С‹:** `src/i18n/translations.ts`, `src/i18n/locales/ru.json`, `en.json`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **РЇР·С‹РєРё:** Р СѓСЃСЃРєРёР№, English
+- **РћР±СЉС‘Рј:** 1000+ СЃС‚СЂРѕРє РїРµСЂРµРІРѕРґРѕРІ
 
 ---
 
-## 🔌 WebSocket Features
+## рџЋЁ UI Components
 
-### Real-time события
-- **Файл:** `src/services/websocket.ts`
-- **Статус:** ✅ Реализовано
-- **События:**
-  - `new_post` — новый пост
-  - `post_resonance_updated` — обновлён резонанс
-  - `new_comment` — новый комментарий
-  - `new_message` — новое сообщение
-  - `typing:update` — индикатор набора
-  - `chat:read_update` — прочтение чата
-  - `message:deleted` — сообщение удалено
-  - `presence:update` — статус онлайн/оффлайн
+### shadcn/ui РєРѕРјРїРѕРЅРµРЅС‚С‹ (50+)
+- **Р¤Р°Р№Р»С‹:** `src/components/ui/*.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **РџСЂРёРјРµСЂС‹:** button, input, dialog, dropdown-menu, toast, skeleton, avatar, badge, card, tabs, switch, slider, progress, table, tooltip, popover, etc.
+
+### РљР°СЃС‚РѕРјРЅС‹Рµ РєРѕРјРїРѕРЅРµРЅС‚С‹
+- **Р¤Р°Р№Р»С‹:** `src/components/*.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **РџСЂРёРјРµСЂС‹:**
+  - `Avatar.tsx` вЂ” Р°РІР°С‚Р°СЂ СЃ РёРЅРёС†РёР°Р»Р°РјРё
+  - `Presence.tsx` вЂ” РёРЅРґРёРєР°С‚РѕСЂ РѕРЅР»Р°Р№РЅ/РѕС„С„Р»Р°Р№РЅ
+  - `LinkPreview.tsx` вЂ” Open Graph РїСЂРµРІСЊСЋ
+  - `NavLink.tsx` вЂ” Р°РЅРёРјРёСЂРѕРІР°РЅРЅР°СЏ РЅР°РІРёРіР°С†РёСЏ
+  - `ImageViewer.tsx` вЂ” РїРѕР»РЅРѕСЌРєСЂР°РЅРЅС‹Р№ РїСЂРѕСЃРјРѕС‚СЂ
+  - `SnowEffect.tsx` вЂ” СЌС„С„РµРєС‚ СЃРЅРµРіР°
+  - `LogoutModal.tsx` вЂ” РјРѕРґР°Р»СЊРЅРѕРµ РѕРєРЅРѕ РІС‹С…РѕРґР°
+  - `CookieBanner.tsx` вЂ” Р±Р°РЅРЅРµСЂ СЃРѕРіР»Р°СЃРёСЏ РЅР° cookies
+
+### Layout РєРѕРјРїРѕРЅРµРЅС‚С‹
+- **Р¤Р°Р№Р»С‹:** `src/components/layout/*.tsx`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **РџСЂРёРјРµСЂС‹:**
+  - `AppLayout.tsx` вЂ” РѕСЃРЅРѕРІРЅРѕР№ layout
+  - `SidebarLeft.tsx` вЂ” Р»РµРІС‹Р№ СЃР°Р№РґР±Р°СЂ (260px)
+  - `SidebarRight.tsx` вЂ” РїСЂР°РІС‹Р№ СЃР°Р№РґР±Р°СЂ (340px)
+
+---
+
+## рџ”Њ WebSocket Features
+
+### Real-time СЃРѕР±С‹С‚РёСЏ
+- **Р¤Р°Р№Р»:** `src/services/websocket.ts`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **РЎРѕР±С‹С‚РёСЏ:**
+  - `new_post` вЂ” РЅРѕРІС‹Р№ РїРѕСЃС‚
+  - `post_resonance_updated` вЂ” РѕР±РЅРѕРІР»С‘РЅ СЂРµР·РѕРЅР°РЅСЃ
+  - `new_comment` вЂ” РЅРѕРІС‹Р№ РєРѕРјРјРµРЅС‚Р°СЂРёР№
+  - `new_message` вЂ” РЅРѕРІРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ
+  - `typing:update` вЂ” РёРЅРґРёРєР°С‚РѕСЂ РЅР°Р±РѕСЂР°
+  - `chat:read_update` вЂ” РїСЂРѕС‡С‚РµРЅРёРµ С‡Р°С‚Р°
+  - `message:deleted` вЂ” СЃРѕРѕР±С‰РµРЅРёРµ СѓРґР°Р»РµРЅРѕ
+  - `presence:update` вЂ” СЃС‚Р°С‚СѓСЃ РѕРЅР»Р°Р№РЅ/РѕС„С„Р»Р°Р№РЅ
   - `chat:read_update`
-  - `channel:new_message` — сообщение в канале
+  - `channel:new_message` вЂ” СЃРѕРѕР±С‰РµРЅРёРµ РІ РєР°РЅР°Р»Рµ
 
 ---
 
-## 📊 React Query Integration
+## рџ“Љ React Query Integration
 
-### Хуки для чатов
-- **Файлы:** `src/pages/messages/hooks/*`, `src/hooks/chat.ts`
-- **Статус:** ✅ Реализовано
-- **Хуки:** useChats, useChat, useChatMessages, useSendMessage, useEditMessage, useDeleteMessage, useMarkRead, useChatWs
+### РҐСѓРєРё РґР»СЏ С‡Р°С‚РѕРІ
+- **Р¤Р°Р№Р»С‹:** `src/pages/messages/hooks/*`, `src/hooks/chat.ts`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **РҐСѓРєРё:** useChats, useChat, useChatMessages, useSendMessage, useEditMessage, useDeleteMessage, useMarkRead, useChatWs
 
-### Хуки для чатов
-- **Файл:** `src/hooks/chat.ts`
-- **Статус:** ✅ Реализовано
-- **Хуки:** useChats, useChatMessages, useSendMessage, useDeleteMessage, useMarkAsRead, useSendMessageOptimistic
+### РҐСѓРєРё РґР»СЏ С‡Р°С‚РѕРІ
+- **Р¤Р°Р№Р»:** `src/hooks/chat.ts`
+- **РЎС‚Р°С‚СѓСЃ:** вњ… Р РµР°Р»РёР·РѕРІР°РЅРѕ
+- **РҐСѓРєРё:** useChats, useChatMessages, useSendMessage, useDeleteMessage, useMarkAsRead, useSendMessageOptimistic
 
 ---
 
-## 📈 Summary
+## рџ“€ Summary
 
-| Категория | Реализовано | Частично | Placeholder | Всего |
+| РљР°С‚РµРіРѕСЂРёСЏ | Р РµР°Р»РёР·РѕРІР°РЅРѕ | Р§Р°СЃС‚РёС‡РЅРѕ | Placeholder | Р’СЃРµРіРѕ |
 |-----------|-------------|----------|-------------|-------|
-| Страницы | 32 | 0 | 0 | 32 |
-| Компоненты | 65+ | 0 | 0 | 65+ |
+| РЎС‚СЂР°РЅРёС†С‹ | 32 | 0 | 0 | 32 |
+| РљРѕРјРїРѕРЅРµРЅС‚С‹ | 65+ | 0 | 0 | 65+ |
 | API endpoints | 70+ | 0 | 0 | 70+ |
-| WebSocket события | 12+ | 0 | 0 | 12+ |
-| i18n языки | 5 | 0 | 0 | 5 |
+| WebSocket СЃРѕР±С‹С‚РёСЏ | 12+ | 0 | 0 | 12+ |
+| i18n СЏР·С‹РєРё | 5 | 0 | 0 | 5 |
 
-**Общий статус:** ✅ Production-ready
+**РћР±С‰РёР№ СЃС‚Р°С‚СѓСЃ:** вњ… Production-ready
 
-**Новые модули (2026):**
-- ✅ Onboarding - 4-step user setup flow
-- ✅ Workspaces - Team collaboration spaces
-- ✅ Projects - Project management with tasks
-- ✅ Tasks - Kanban-style task tracking
-- ✅ Explore - Enhanced discovery (builders, projects, workspaces)
-
----
-
-## Последние изменения
-
-### Удалено (5 марта 2026 г.)
-- ❌ Страница `/lume` (LumeAI) — удалена
-- ❌ Страница `/music` — удалена
-- ❌ API endpoint `/api/lume/chat` — удалён
-- ❌ Модуль `backend/src/lume/` — удалён
-- ❌ Rate limiter `lumeChatLimiter` — удалён
-
-### Изменено
-- ✅ Обновлены переводы (удалены упоминания LUME/Music)
-- ✅ Обновлён SidebarLeft (удалены кнопки LUME AI, Music)
-- ✅ Обновлён App.tsx (удалены роуты)
+**РќРѕРІС‹Рµ РјРѕРґСѓР»Рё (2026):**
+- вњ… Onboarding - 4-step user setup flow
+- вњ… Workspaces - Team collaboration spaces
+- вњ… Projects - Project management with tasks
+- вњ… Tasks - Kanban-style task tracking
+- вњ… Explore - Enhanced discovery (builders, projects, workspaces)
 
 ---
 
-## Связанные документы
+## РџРѕСЃР»РµРґРЅРёРµ РёР·РјРµРЅРµРЅРёСЏ
+
+### РЈРґР°Р»РµРЅРѕ (5 РјР°СЂС‚Р° 2026 Рі.)
+- вќЊ РЎС‚СЂР°РЅРёС†Р° `/lume` (LumeAI) вЂ” СѓРґР°Р»РµРЅР°
+- вќЊ РЎС‚СЂР°РЅРёС†Р° `/music` вЂ” СѓРґР°Р»РµРЅР°
+- вќЊ API endpoint `/api/lume/chat` вЂ” СѓРґР°Р»С‘РЅ
+- вќЊ РњРѕРґСѓР»СЊ `backend/src/lume/` вЂ” СѓРґР°Р»С‘РЅ
+- вќЊ Rate limiter `lumeChatLimiter` вЂ” СѓРґР°Р»С‘РЅ
+
+### РР·РјРµРЅРµРЅРѕ
+- вњ… РћР±РЅРѕРІР»РµРЅС‹ РїРµСЂРµРІРѕРґС‹ (СѓРґР°Р»РµРЅС‹ СѓРїРѕРјРёРЅР°РЅРёСЏ LUME/Music)
+- вњ… РћР±РЅРѕРІР»С‘РЅ SidebarLeft (СѓРґР°Р»РµРЅС‹ РєРЅРѕРїРєРё LUME AI, Music)
+- вњ… РћР±РЅРѕРІР»С‘РЅ App.tsx (СѓРґР°Р»РµРЅС‹ СЂРѕСѓС‚С‹)
+
+---
+
+## РЎРІСЏР·Р°РЅРЅС‹Рµ РґРѕРєСѓРјРµРЅС‚С‹
 
 - [Error Handling](./ERROR_HANDLING.md)
 - [Groups Module](./GROUPS_MODULE.md)

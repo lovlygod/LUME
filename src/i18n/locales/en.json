@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "loading": "Loading...",
     "error": "Error",
@@ -574,11 +574,11 @@
     "deleteSelectedForAll": "Delete for all",
     "cancelSelection": "Cancel selection",
     "maxSelectionError": "Maximum 100 messages can be selected",
-    "momentSendError": "Failed to send moment",
+    "momentSendError": "Failed to send media",
     "voiceNoChat": "No chat selected",
     "voiceSent": "Voice message sent",
     "voiceSendError": "Failed to send voice message",
-    "momentReplyLabel": "Expiring photo"
+    "momentReplyLabel": "image attachment"
   },
   "voice": {
     "record": "Record voice message",
@@ -1040,7 +1040,7 @@
       },
       "messages": {
         "title": "Messages",
-        "description": "Private chats, replies, attachments, and moments in one place."
+        "description": "Private chats, replies, and attachments in one place."
       },
       "servers": {
         "title": "Servers",
@@ -1088,8 +1088,8 @@
           "content": "The feed offers recommended and following views. Publish signals, attach images, and pin important posts on your profile. Comments and resonance help your content reach more people."
         },
         "section3": {
-          "title": "Messages & Moments",
-          "content": "Chats support attachments, replies, and ephemeral moments. A moment opens once and is then marked as viewed. If uploads fail, check connectivity and file size limits."
+          "title": "Messages",
+          "content": "Chats support attachments and replies. If uploads fail, check connectivity and file size limits."
         }
       }
     },
@@ -1262,8 +1262,8 @@
       },
       "messages": {
         "q1": {
-          "title": "How do I send an expiring photo?",
-          "answer": "In chat, enable Moment mode and add an image.",
+          "title": "How do I send an image attachment?",
+          "answer": "In chat, enable media mode and add an image.",
           "bullet1": "Opens once",
           "bullet2": "No saving",
           "bullet3": "Lives up to 24 hours",
@@ -1527,3 +1527,4 @@
     "unavailable": "Status unavailable"
   }
 }
+

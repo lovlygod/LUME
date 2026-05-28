@@ -1,4 +1,4 @@
-# LUME E2EE Security Updates
+﻿# LUME E2EE Security Updates
 
 English | [Русский](../docs-ru/E2EE_SECURITY_UPDATES.ru.md) | [中文](../docs-cn/E2EE_SECURITY_UPDATES.cn.md)
 
@@ -37,7 +37,7 @@ This document summarizes the implemented security migration work toward a Signal
 When `E2EE_ENFORCE=true`:
 
 - plaintext message body is rejected,
-- plaintext voice/moment body pathways are constrained by enforcement checks where applicable.
+- plaintext voice/media body pathways are constrained by enforcement checks where applicable.
 
 ### Migrations
 
@@ -78,4 +78,5 @@ Message sending now supports:
 - production-grade device key verification UX and trust key continuity workflow,
 - cryptographic provider hardening and secure storage guarantees by platform,
 - comprehensive end-to-end crypto interoperability test matrix.
+
 

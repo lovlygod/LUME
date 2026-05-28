@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const { authenticateToken, generateRefreshToken, verifyRefreshToken, deleteRefreshToken, deleteAllUserRefreshTokens, login, register } = require('./auth');
 const { loginLimiter, registerLimiter } = require('./rateLimiter');
 const {
@@ -371,7 +371,7 @@ const ensureStickerData = async () => {
   }
 };
 
-const momentUpload = uploadMemoryImage;
+const mediaUpload = uploadMemoryImage;
 
 // Test route - самый первый роут
 
@@ -1945,8 +1945,8 @@ router.get('/chats/:chatId/messages', authenticateToken, (req, res) => {
         JOIN users u ON m.sender_id = u.id
         LEFT JOIN stickers s ON s.id = m.sticker_id
         LEFT JOIN message_deletions md ON md.message_id = m.id AND md.user_id = $1
-        LEFT JOIN moments mo ON mo.id = m.moment_id
-        LEFT JOIN moment_views mv ON mv.moment_id = mo.id AND mv.user_id = $2
+        LEFT JOIN media mo ON mo.id = m.media_id
+        LEFT JOIN media_views mv ON mv.media_id = mo.id AND mv.user_id = $2
         WHERE m.chat_id = $3
           AND m.deleted_for_all_at IS NULL
         ORDER BY m.created_at ASC
@@ -2019,8 +2019,8 @@ router.get('/chats/:chatId/messages', authenticateToken, (req, res) => {
                 : `${getPublicBaseUrl(req)}/api/stickers/${msg.sticker_id}`)
               : null,
           } : null,
-          moment: msg.moment_id ? {
-            id: msg.moment_id.toString(),
+          media: msg.media_id ? {
+            id: msg.media_id.toString(),
             thumbDataUrl: msg.thumb_data_url || null,
             ttlSeconds: msg.ttl_seconds || 86400,
             expiresAt: msg.expires_at || null,
@@ -3940,14 +3940,14 @@ router.delete('/users/me/pin', authenticateToken, (req, res) => {
   });
 });
 
-// ==================== MOMENTS (ONE-TIME PHOTO) ====================
+// ==================== MEDIA ====================
 
-router.post('/moments', authenticateToken, momentUpload.single('file'), asyncHandler(async (req, res) => {
+router.post('/media', authenticateToken, mediaUpload.single('file'), asyncHandler(async (req, res) => {
   const senderId = req.user.userId;
   const { chatId, ttlSeconds = 86400 } = req.body;
 
   if (process.env.E2EE_ENFORCE === 'true') {
-    return res.status(400).json({ error: 'Moment plaintext flow is disabled when E2EE_ENFORCE=true' });
+    return res.status(400).json({ error: 'Media plaintext flow is disabled when E2EE_ENFORCE=true' });
   }
 
   if (!chatId) {
@@ -3979,14 +3979,14 @@ router.post('/moments', authenticateToken, momentUpload.single('file'), asyncHan
 
   const mime = req.file.mimetype || '';
   if (!mime.startsWith('image/')) {
-    throw new ValidationError('Only image files are allowed for moments');
+    throw new ValidationError('Only image files are allowed for media');
   }
 
   const cloudinary = require('./config/cloudinary');
   const uploadToCloudinary = () => new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
-        folder: 'lume/moments',
+        folder: 'lume/media',
         resource_type: 'image',
         allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
         transformation: [{ quality: 'auto', fetch_format: 'auto' }],
@@ -4034,7 +4034,7 @@ router.post('/moments', authenticateToken, momentUpload.single('file'), asyncHan
 
   const momentId = await new Promise((resolve, reject) => {
     db.run(
-      `INSERT INTO moments (sender_id, receiver_id, file_path, mime, size, width, height, thumb_data_url, ttl_seconds, expires_at)
+      `INSERT INTO media (sender_id, receiver_id, file_path, mime, size, width, height, thumb_data_url, ttl_seconds, expires_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
       ,
       [senderId, chatId, filePath, mime, size, width, height, thumbDataUrl, ttlValue, expiresAt],
@@ -4045,13 +4045,13 @@ router.post('/moments', authenticateToken, momentUpload.single('file'), asyncHan
     );
   });
 
-  // Insert message referencing moment
+  // Insert message referencing media
   const messageId = await new Promise((resolve, reject) => {
     db.run(
-      `INSERT INTO messages (chat_id, sender_id, text, type, moment_id)
+      `INSERT INTO messages (chat_id, sender_id, text, type, media_id)
        VALUES ($1, $2, $3, $4, $5)`
       ,
-      [chatId, senderId, 'Исчезающее фото', 'moment_image', momentId],
+      [chatId, senderId, 'Медиа', 'media_image', momentId],
       function(err) {
         if (err) reject(err);
         else resolve(this.lastID);
@@ -4065,10 +4065,10 @@ router.post('/moments', authenticateToken, momentUpload.single('file'), asyncHan
       id: messageId,
       chatId: String(chatId),
       senderId: senderId.toString(),
-      text: 'Исчезающее фото',
+      text: 'Медиа',
       timestamp: new Date().toISOString(),
-      type: 'moment_image',
-      moment: {
+      type: 'media_image',
+      media: {
         id: momentId.toString(),
         thumbDataUrl: thumbDataUrl,
         ttlSeconds: ttlValue,
@@ -4081,7 +4081,7 @@ router.post('/moments', authenticateToken, momentUpload.single('file'), asyncHan
   res.json({ messageId, momentId, thumbDataUrl, ttlSeconds: ttlValue, expiresAt });
 }));
 
-router.get('/moments/:id/content', authenticateToken, asyncHandler(async (req, res) => {
+router.get('/media/:id/content', authenticateToken, asyncHandler(async (req, res) => {
   const userId = req.user.userId;
   const momentId = parseInt(req.params.id);
   const token = String(req.headers['authorization']?.replace(/^Bearer\s+/i, '') || req.query.token || '');
@@ -4091,7 +4091,7 @@ router.get('/moments/:id/content', authenticateToken, asyncHandler(async (req, r
   }
 
   const tokenRow = await new Promise((resolve, reject) => {
-    db.get('SELECT * FROM moment_tokens WHERE token = $1 AND moment_id = $2 AND user_id = $3', [token, momentId, userId], (err, row) => {
+    db.get('SELECT * FROM moment_tokens WHERE token = $1 AND media_id = $2 AND user_id = $3', [token, momentId, userId], (err, row) => {
       if (err) reject(err);
       else resolve(row);
     });
@@ -4109,27 +4109,27 @@ router.get('/moments/:id/content', authenticateToken, asyncHandler(async (req, r
     return res.status(403).json({ error: 'Token expired' });
   }
 
-  const moment = await new Promise((resolve, reject) => {
-    db.get('SELECT * FROM moments WHERE id = $1', [momentId], (err, row) => {
+  const media = await new Promise((resolve, reject) => {
+    db.get('SELECT * FROM media WHERE id = $1', [momentId], (err, row) => {
       if (err) reject(err);
       else resolve(row);
     });
   });
 
-  if (!moment) {
-    return res.status(404).json({ error: 'Moment not found' });
+  if (!media) {
+    return res.status(404).json({ error: 'Media not found' });
   }
 
-  if (moment.revoked_at) {
-    return res.status(410).json({ error: 'Moment revoked' });
+  if (media.revoked_at) {
+    return res.status(410).json({ error: 'Media revoked' });
   }
 
-  if (!moment.receiver_id) {
+  if (!media.receiver_id) {
     return res.status(403).json({ error: 'Access denied' });
   }
 
   const memberRow = await new Promise((resolve) => {
-    db.get('SELECT 1 FROM chat_members WHERE chat_id = $1 AND user_id = $2', [moment.receiver_id, userId], (err, row) => {
+    db.get('SELECT 1 FROM chat_members WHERE chat_id = $1 AND user_id = $2', [media.receiver_id, userId], (err, row) => {
       if (err) return resolve(null);
       resolve(row || null);
     });
@@ -4139,8 +4139,8 @@ router.get('/moments/:id/content', authenticateToken, asyncHandler(async (req, r
     return res.status(403).json({ error: 'Access denied' });
   }
 
-  if (moment.expires_at && new Date(moment.expires_at).getTime() < Date.now()) {
-    return res.status(410).json({ error: 'Moment expired' });
+  if (media.expires_at && new Date(media.expires_at).getTime() < Date.now()) {
+    return res.status(410).json({ error: 'Media expired' });
   }
 
   await new Promise((resolve, reject) => {
@@ -4151,40 +4151,40 @@ router.get('/moments/:id/content', authenticateToken, asyncHandler(async (req, r
   });
 
   await new Promise((resolve, reject) => {
-    db.run('INSERT INTO moment_views (moment_id, user_id) VALUES ($1, $2) ON CONFLICT (moment_id, user_id) DO NOTHING', [momentId, userId], (err) => {
+    db.run('INSERT INTO media_views (media_id, user_id) VALUES ($1, $2) ON CONFLICT (media_id, user_id) DO NOTHING', [momentId, userId], (err) => {
       if (err) reject(err);
       else resolve();
     });
   });
 
   res.json({
-    url: moment.file_path,
-    mime: moment.mime || 'image/jpeg',
-    expiresAt: moment.expires_at || null
+    url: media.file_path,
+    mime: media.mime || 'image/jpeg',
+    expiresAt: media.expires_at || null
   });
 }));
 
-router.post('/moments/:id/viewed', authenticateToken, asyncHandler(async (req, res) => {
+router.post('/media/:id/viewed', authenticateToken, asyncHandler(async (req, res) => {
   const userId = req.user.userId;
   const momentId = parseInt(req.params.id);
 
-  const moment = await new Promise((resolve, reject) => {
-    db.get('SELECT * FROM moments WHERE id = $1', [momentId], (err, row) => {
+  const media = await new Promise((resolve, reject) => {
+    db.get('SELECT * FROM media WHERE id = $1', [momentId], (err, row) => {
       if (err) reject(err);
       else resolve(row);
     });
   });
 
-  if (!moment) {
-    return res.status(404).json({ error: 'Moment not found' });
+  if (!media) {
+    return res.status(404).json({ error: 'Media not found' });
   }
 
-  if (!moment.receiver_id) {
+  if (!media.receiver_id) {
     return res.status(403).json({ error: 'Access denied' });
   }
 
   const memberRow = await new Promise((resolve) => {
-    db.get('SELECT 1 FROM chat_members WHERE chat_id = $1 AND user_id = $2', [moment.receiver_id, userId], (err, row) => {
+    db.get('SELECT 1 FROM chat_members WHERE chat_id = $1 AND user_id = $2', [media.receiver_id, userId], (err, row) => {
       if (err) return resolve(null);
       resolve(row || null);
     });
@@ -4195,7 +4195,7 @@ router.post('/moments/:id/viewed', authenticateToken, asyncHandler(async (req, r
   }
 
   await new Promise((resolve, reject) => {
-    db.run('INSERT INTO moment_views (moment_id, user_id) VALUES ($1, $2) ON CONFLICT (moment_id, user_id) DO NOTHING', [momentId, userId], (err) => {
+    db.run('INSERT INTO media_views (media_id, user_id) VALUES ($1, $2) ON CONFLICT (media_id, user_id) DO NOTHING', [momentId, userId], (err) => {
       if (err) reject(err);
       else resolve();
     });
@@ -4255,3 +4255,5 @@ router.post('/link-preview', authenticateToken, asyncHandler(async (req, res) =>
 
 module.exports = router;
 module.exports.ensureStickerData = ensureStickerData;
+
+

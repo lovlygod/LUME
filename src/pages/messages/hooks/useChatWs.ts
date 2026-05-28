@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+﻿import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Attachment, Chat, Message } from "@/types/messages";
 import { wsService } from "@/services/websocket";
@@ -11,8 +11,8 @@ const ensureMessageShape = (data: {
   chatId: string | number;
   text: string;
   timestamp: string;
-  type?: "text" | "moment_image" | "sticker";
-  moment?: Message["moment"];
+  type?: "text" | "media_image" | "sticker";
+  media?: Message["media"];
   attachments?: Attachment[];
   replyToMessageId?: string | null;
   sticker?: Message["sticker"] | null;
@@ -24,7 +24,7 @@ const ensureMessageShape = (data: {
   sender: data.sender || null,
   text: data.text,
   type: data.type || "text",
-  moment: data.moment || null,
+  media: data.media || null,
   sticker: data.sticker || null,
   timestamp: data.timestamp,
   own: false,
@@ -57,8 +57,8 @@ export const useChatWs = (params: {
         chatId: string | number;
         text: string;
         timestamp: string;
-        type?: "text" | "moment_image" | "sticker";
-        moment?: Message["moment"];
+        type?: "text" | "media_image" | "sticker";
+        media?: Message["media"];
         attachments?: Attachment[];
         replyToMessageId?: string | null;
         sticker?: Message["sticker"] | null;
@@ -208,3 +208,4 @@ export const useChatWs = (params: {
     queryClient,
   ]);
 };
+

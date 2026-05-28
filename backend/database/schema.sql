@@ -1,4 +1,4 @@
--- LUME PostgreSQL schema
+﻿-- LUME PostgreSQL schema
 
 CREATE TABLE IF NOT EXISTS users (
   id BIGSERIAL PRIMARY KEY,
@@ -247,7 +247,7 @@ CREATE TABLE IF NOT EXISTS link_previews (
   fetched_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS moments (
+CREATE TABLE IF NOT EXISTS media (
   id BIGSERIAL PRIMARY KEY,
   sender_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   receiver_id BIGINT NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
@@ -265,18 +265,18 @@ CREATE TABLE IF NOT EXISTS moments (
 
 CREATE TABLE IF NOT EXISTS moment_tokens (
   id BIGSERIAL PRIMARY KEY,
-  moment_id BIGINT NOT NULL REFERENCES moments(id) ON DELETE CASCADE,
+  media_id BIGINT NOT NULL REFERENCES media(id) ON DELETE CASCADE,
   user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   token TEXT NOT NULL,
   expires_at TIMESTAMPTZ NOT NULL,
   used_at TIMESTAMPTZ
 );
 
-CREATE TABLE IF NOT EXISTS moment_views (
-  moment_id BIGINT NOT NULL REFERENCES moments(id) ON DELETE CASCADE,
+CREATE TABLE IF NOT EXISTS media_views (
+  media_id BIGINT NOT NULL REFERENCES media(id) ON DELETE CASCADE,
   user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   viewed_at TIMESTAMPTZ DEFAULT NOW(),
-  PRIMARY KEY (moment_id, user_id)
+  PRIMARY KEY (media_id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS chat_reads (
@@ -418,3 +418,4 @@ CREATE INDEX IF NOT EXISTS idx_developer_apps_user_id ON developer_apps(user_id)
 CREATE INDEX IF NOT EXISTS idx_developer_api_keys_app_id ON developer_api_keys(app_id);
 CREATE INDEX IF NOT EXISTS idx_developer_api_usage_app_id ON developer_api_usage(app_id);
 CREATE INDEX IF NOT EXISTS idx_developer_api_usage_timestamp ON developer_api_usage(timestamp);
+

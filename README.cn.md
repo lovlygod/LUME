@@ -1,601 +1,601 @@
-# LUME — 全功能社交网络与即时消息平台
+﻿# LUME вЂ” е…ЁеЉџиѓЅз¤ѕдє¤зЅ‘з»њдёЋеЌіж—¶ж¶€жЃЇе№іеЏ°
 
-中文 | [English](./README.md) | [Русский](./README.ru.md)
+дё­ж–‡ | [English](./README.md) | [Р СѓСЃСЃРєРёР№](./README.ru.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/Node.js-latest-green.svg)](https://nodejs.org/)
 [![React](https://img.shields.io/badge/React-18.3.1-blue.svg)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-blue.svg)](https://www.typescriptlang.org/)
 
-**LUME** 是一款基于 Node.js + React 技术栈构建的现代社交网络，集成了动态信息流、私信系统、用户认证、管理面板、内容审核与 **群组/频道聊天**（Messages）等功能。
+**LUME** жЇдёЂж¬ѕеџєдєЋ Node.js + React жЉЂжњЇж €жћ„е»єзљ„зЋ°д»Јз¤ѕдє¤зЅ‘з»њпјЊй›†ж€ђдє†еЉЁжЂЃдїЎжЃЇжµЃгЂЃз§ЃдїЎзі»з»џгЂЃз”Ёж€·и®¤иЇЃгЂЃз®Ўзђ†йќўжќїгЂЃе†…е®№е®Ўж ёдёЋ **зѕ¤з»„/йў‘йЃ“иЃЉе¤©**пј€Messagesпј‰з­‰еЉџиѓЅгЂ‚
 
 ---
 
-## 📋 目录
+## рџ“‹ з›®еЅ•
 
-- [项目概览](#项目概览)
-- [技术栈](#技术栈)
-- [项目架构](#项目架构)
-- [功能特性](#功能特性)
-- [数据库结构](#数据库结构)
-- [API 文档](#api-文档)
-- [WebSocket 事件](#websocket-事件)
-- [安全](#安全)
-- [安装与运行](#安装与运行)
-- [项目结构](#项目结构)
-- [配置](#配置)
-- [许可证](#许可证)
-
----
-
-## 📖 项目概览
-
-### 核心亮点：
-- 🔄 **实时动态信息流**（WebSocket 实时更新）
-- 💬 **私信聊天**（一对一消息系统）
-- 👥 **群组与频道**（聊天类型：`group`、`channel`）
-- 👤 **用户资料**（头像、横幅）
-- ✅ **用户认证**（TikTok 视频验证）
-- 🛡️ **内容审核**（举报系统）
-- 👑 **管理面板**（用户与内容管理）
-- ⚡ **实时通知**（WebSocket）
-- 🔒 **安全机制**：httpOnly Cookies、限流、CSP
-- 🌐 **i18n**：支持俄语、英语、中文、西班牙语、葡萄牙语（巴西）（UI）
+- [йЎ№з›®ж¦‚и§€](#йЎ№з›®ж¦‚и§€)
+- [жЉЂжњЇж €](#жЉЂжњЇж €)
+- [йЎ№з›®жћ¶жћ„](#йЎ№з›®жћ¶жћ„)
+- [еЉџиѓЅз‰№жЂ§](#еЉџиѓЅз‰№жЂ§)
+- [ж•°жЌ®еє“з»“жћ„](#ж•°жЌ®еє“з»“жћ„)
+- [API ж–‡жЎЈ](#api-ж–‡жЎЈ)
+- [WebSocket дє‹д»¶](#websocket-дє‹д»¶)
+- [е®‰е…Ё](#е®‰е…Ё)
+- [е®‰иЈ…дёЋиїђиЎЊ](#е®‰иЈ…дёЋиїђиЎЊ)
+- [йЎ№з›®з»“жћ„](#йЎ№з›®з»“жћ„)
+- [й…ЌзЅ®](#й…ЌзЅ®)
+- [и®ёеЏЇиЇЃ](#и®ёеЏЇиЇЃ)
 
 ---
 
-## 🛠️ 技术栈
+## рџ“– йЎ№з›®ж¦‚и§€
 
-### 前端
-| 技术 | 版本 | 用途 |
+### ж ёеїѓдє®з‚№пјљ
+- рџ”„ **е®ћж—¶еЉЁжЂЃдїЎжЃЇжµЃ**пј€WebSocket е®ћж—¶ж›ґж–°пј‰
+- рџ’¬ **з§ЃдїЎиЃЉе¤©**пј€дёЂеЇ№дёЂж¶€жЃЇзі»з»џпј‰
+- рџ‘Ґ **зѕ¤з»„дёЋйў‘йЃ“**пј€иЃЉе¤©з±»ећ‹пјљ`group`гЂЃ`channel`пј‰
+- рџ‘¤ **з”Ёж€·иµ„ж–™**пј€е¤ґеѓЏгЂЃжЁЄе№…пј‰
+- вњ… **з”Ёж€·и®¤иЇЃ**пј€TikTok и§†йў‘йЄЊиЇЃпј‰
+- рџ›ЎпёЏ **е†…е®№е®Ўж ё**пј€дёѕжЉҐзі»з»џпј‰
+- рџ‘‘ **з®Ўзђ†йќўжќї**пј€з”Ёж€·дёЋе†…е®№з®Ўзђ†пј‰
+- вљЎ **е®ћж—¶йЂљзџҐ**пј€WebSocketпј‰
+- рџ”’ **е®‰е…Ёжњєе€¶**пјљhttpOnly CookiesгЂЃй™ђжµЃгЂЃCSP
+- рџЊђ **i18n**пјљж”ЇжЊЃдї„иЇ­гЂЃи‹±иЇ­гЂЃдё­ж–‡гЂЃиҐїзЏ­з‰™иЇ­гЂЃи‘Ўиђ„з‰™иЇ­пј€е·ґиҐїпј‰пј€UIпј‰
+
+---
+
+## рџ› пёЏ жЉЂжњЇж €
+
+### е‰Ќз«Ї
+| жЉЂжњЇ | з‰€жњ¬ | з”ЁйЂ” |
 |------|------|------|
-| React | 18.3.1 | UI 库 |
-| TypeScript | 5.8.3 | 类型系统 |
-| React Router | 6.30.1 | 路由 |
-| Framer Motion | 12.34.0 | 动画 |
-| Tailwind CSS | 3.4.17 | 样式 |
-| Radix UI | various | UI 原语 |
-| shadcn/ui | latest | UI 组件 |
-| TanStack Query | 5.90.21 | 服务器状态管理 |
-| Emoji Picker React | 4.18.0 | 表情选择器 |
-| Sonner | 1.7.4 | Toast 通知 |
-| Zod | 3.25.76 | 表单校验 |
-| React Hook Form | 7.61.1 | 表单管理 |
-| Lucide React | 0.462.0 | 图标 |
+| React | 18.3.1 | UI еє“ |
+| TypeScript | 5.8.3 | з±»ећ‹зі»з»џ |
+| React Router | 6.30.1 | и·Їз”± |
+| Framer Motion | 12.34.0 | еЉЁз”» |
+| Tailwind CSS | 3.4.17 | ж ·ејЏ |
+| Radix UI | various | UI еЋџиЇ­ |
+| shadcn/ui | latest | UI з»„д»¶ |
+| TanStack Query | 5.90.21 | жњЌеЉЎе™ЁзЉ¶жЂЃз®Ўзђ† |
+| Emoji Picker React | 4.18.0 | иЎЁжѓ…йЂ‰ж‹©е™Ё |
+| Sonner | 1.7.4 | Toast йЂљзџҐ |
+| Zod | 3.25.76 | иЎЁеЌ•ж ЎйЄЊ |
+| React Hook Form | 7.61.1 | иЎЁеЌ•з®Ўзђ† |
+| Lucide React | 0.462.0 | е›ѕж ‡ |
 
-### 后端
-| 技术 | 版本 | 用途 |
+### еђЋз«Ї
+| жЉЂжњЇ | з‰€жњ¬ | з”ЁйЂ” |
 |------|------|------|
-| Node.js | latest | 运行时 |
-| Express | 4.18.2 | Web 框架 |
-| PostgreSQL | 16+ | 数据库 |
-| WebSocket (ws) | 8.19.0 | 实时通信 |
-| JWT (jsonwebtoken) | 9.0.2 | 认证 |
-| Bcryptjs | 2.4.3 | 密码哈希 |
-| Multer | 1.4.5-lts.1 | 文件上传 |
-| Cors | 2.8.5 | CORS 中间件 |
-| **Zod** | 4.3.6 | 数据校验 |
-| **Cookie-parser** | 1.4.7 | Cookies 处理 |
+| Node.js | latest | иїђиЎЊж—¶ |
+| Express | 4.18.2 | Web жЎ†жћ¶ |
+| PostgreSQL | 16+ | ж•°жЌ®еє“ |
+| WebSocket (ws) | 8.19.0 | е®ћж—¶йЂљдїЎ |
+| JWT (jsonwebtoken) | 9.0.2 | и®¤иЇЃ |
+| Bcryptjs | 2.4.3 | еЇ†з Ѓе“€еёЊ |
+| Multer | 1.4.5-lts.1 | ж–‡д»¶дёЉдј  |
+| Cors | 2.8.5 | CORS дё­й—ґд»¶ |
+| **Zod** | 4.3.6 | ж•°жЌ®ж ЎйЄЊ |
+| **Cookie-parser** | 1.4.7 | Cookies е¤„зђ† |
 
 ---
 
-## 🏗️ 项目架构
+## рџЏ—пёЏ йЎ№з›®жћ¶жћ„
 
 ```
 LUME/
-├── Frontend (Vite + React + TypeScript)
-│   ├── src/
-│   │   ├── components/     # UI 组件
-│   │   │   ├── ui/         # shadcn/ui 组件
-│   │   │   ├── groups/     # (legacy) 群组组件
-│   │   │   ├── feed/       # 动态组件
-│   │   │   ├── post/       # 帖子组件
-│   │   │   ├── chat/       # 聊天组件
-│   │   │   ├── media/      # 媒体组件
-│   │   │   ├── profile/    # 个人资料组件
-│   │   │   ├── verification/ # 认证组件
-│   │   │   ├── help/       # Help shell
-│   │   │   └── layout/     # Layout 组件
-│   │   ├── pages/          # 页面
-│   │   │   ├── auth/       # 认证页面
-│   │   │   ├── messages/   # 消息页面
-│   │   │   └── group/      # (legacy) 群组页面
-│   │   ├── services/       # API 客户端、errorHandler、websocket
-│   │   ├── contexts/       # React 上下文 (Auth, Language, Theme, Server)
-│   │   ├── hooks/          # 自定义 hooks (React Query)
-│   │   ├── i18n/           # 本地化
-│   │   ├── lib/            # 工具库 (queryClient, config, utils)
-│   │   ├── types/          # TypeScript 类型
-│   │   └── test/           # 测试
-│   └── public/             # 静态文件
-│
-└── Backend (Express + PostgreSQL)
-    ├── src/
-    │   ├── server.js       # 入口与 WebSocket
-    │   ├── api.js          # API 路由 (Auth, Posts, Chats, Messages, Profile)
-    │   ├── auth.js         # 认证 (JWT, refresh tokens, cookies)
-    │   ├── profile.js      # 用户资料
-    │   ├── uploads.js      # 文件上传（Cloudinary）
-    │   ├── validation.js   # Zod 校验
-    │   ├── permissions.js  # 权限系统
-    │   ├── rateLimiter.js  # 限流中间件
-    │   ├── errors.js       # 错误处理
-    │   ├── logger.js       # 日志
-    │   ├── audit.js        # 审计
-    │   ├── csrf.js         # CSRF 保护
-    │   ├── linkPreview.js  # Open Graph 预览
-    │   ├── serializers.js  # 数据序列化
-    │   └── db.js           # PostgreSQL
-    │
-    ├── uploads/            # （已移除）本地上传目录
-    ├── migrate.js          # 主要迁移
-    ├── migrate-rate-limit.js # 限流迁移
-    ├── migrate-communities.js # 群组迁移
-    ├── migrate-audit.js    # 审计迁移
-    └── package.json
+в”њв”Ђв”Ђ Frontend (Vite + React + TypeScript)
+в”‚   в”њв”Ђв”Ђ src/
+в”‚   в”‚   в”њв”Ђв”Ђ components/     # UI з»„д»¶
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ ui/         # shadcn/ui з»„д»¶
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ groups/     # (legacy) зѕ¤з»„з»„д»¶
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ feed/       # еЉЁжЂЃз»„д»¶
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ post/       # её–е­ђз»„д»¶
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ chat/       # иЃЉе¤©з»„д»¶
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ media/      # еЄ’дЅ“з»„д»¶
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ profile/    # дёЄдєєиµ„ж–™з»„д»¶
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ verification/ # и®¤иЇЃз»„д»¶
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ help/       # Help shell
+в”‚   в”‚   в”‚   в””в”Ђв”Ђ layout/     # Layout з»„д»¶
+в”‚   в”‚   в”њв”Ђв”Ђ pages/          # йЎµйќў
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ auth/       # и®¤иЇЃйЎµйќў
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ messages/   # ж¶€жЃЇйЎµйќў
+в”‚   в”‚   в”‚   в””в”Ђв”Ђ group/      # (legacy) зѕ¤з»„йЎµйќў
+в”‚   в”‚   в”њв”Ђв”Ђ services/       # API е®ўж€·з«ЇгЂЃerrorHandlerгЂЃwebsocket
+в”‚   в”‚   в”њв”Ђв”Ђ contexts/       # React дёЉдё‹ж–‡ (Auth, Language, Theme, Server)
+в”‚   в”‚   в”њв”Ђв”Ђ hooks/          # и‡Єе®љд№‰ hooks (React Query)
+в”‚   в”‚   в”њв”Ђв”Ђ i18n/           # жњ¬ењ°еЊ–
+в”‚   в”‚   в”њв”Ђв”Ђ lib/            # е·Ґе…·еє“ (queryClient, config, utils)
+в”‚   в”‚   в”њв”Ђв”Ђ types/          # TypeScript з±»ећ‹
+в”‚   в”‚   в””в”Ђв”Ђ test/           # жµ‹иЇ•
+в”‚   в””в”Ђв”Ђ public/             # йќ™жЂЃж–‡д»¶
+в”‚
+в””в”Ђв”Ђ Backend (Express + PostgreSQL)
+    в”њв”Ђв”Ђ src/
+    в”‚   в”њв”Ђв”Ђ server.js       # е…ҐеЏЈдёЋ WebSocket
+    в”‚   в”њв”Ђв”Ђ api.js          # API и·Їз”± (Auth, Posts, Chats, Messages, Profile)
+    в”‚   в”њв”Ђв”Ђ auth.js         # и®¤иЇЃ (JWT, refresh tokens, cookies)
+    в”‚   в”њв”Ђв”Ђ profile.js      # з”Ёж€·иµ„ж–™
+    в”‚   в”њв”Ђв”Ђ uploads.js      # ж–‡д»¶дёЉдј пј€Cloudinaryпј‰
+    в”‚   в”њв”Ђв”Ђ validation.js   # Zod ж ЎйЄЊ
+    в”‚   в”њв”Ђв”Ђ permissions.js  # жќѓй™ђзі»з»џ
+    в”‚   в”њв”Ђв”Ђ rateLimiter.js  # й™ђжµЃдё­й—ґд»¶
+    в”‚   в”њв”Ђв”Ђ errors.js       # й”™иЇЇе¤„зђ†
+    в”‚   в”њв”Ђв”Ђ logger.js       # ж—Ґеї—
+    в”‚   в”њв”Ђв”Ђ audit.js        # е®Ўи®Ў
+    в”‚   в”њв”Ђв”Ђ csrf.js         # CSRF дїќжЉ¤
+    в”‚   в”њв”Ђв”Ђ linkPreview.js  # Open Graph йў„и§€
+    в”‚   в”њв”Ђв”Ђ serializers.js  # ж•°жЌ®еєЏе€—еЊ–
+    в”‚   в””в”Ђв”Ђ db.js           # PostgreSQL
+    в”‚
+    в”њв”Ђв”Ђ uploads/            # пј€е·Із§»й™¤пј‰жњ¬ењ°дёЉдј з›®еЅ•
+    в”њв”Ђв”Ђ migrate.js          # дё»и¦ЃиїЃз§»
+    в”њв”Ђв”Ђ migrate-rate-limit.js # й™ђжµЃиїЃз§»
+    в”њв”Ђв”Ђ migrate-communities.js # зѕ¤з»„иїЃз§»
+    в”њв”Ђв”Ђ migrate-audit.js    # е®Ўи®ЎиїЃз§»
+    в””в”Ђв”Ђ package.json
 ```
 
 ---
 
-## ⚙️ 功能特性
+## вљ™пёЏ еЉџиѓЅз‰№жЂ§
 
-### 1. 群组与频道（Chats）
+### 1. зѕ¤з»„дёЋйў‘йЃ“пј€Chatsпј‰
 
-**功能：**
-- 聊天类型：`group`、`channel`、`private`
-- 创建群组/频道聊天
-- 加入申请（公开频道）
-- 成员与角色管理
-- 实时聊天消息
-- 消息附件上传
+**еЉџиѓЅпјљ**
+- иЃЉе¤©з±»ећ‹пјљ`group`гЂЃ`channel`гЂЃ`private`
+- е€›е»єзѕ¤з»„/йў‘йЃ“иЃЉе¤©
+- еЉ е…Ґз”іиЇ·пј€е…¬ејЂйў‘йЃ“пј‰
+- ж€ђе‘дёЋи§’и‰Із®Ўзђ†
+- е®ћж—¶иЃЉе¤©ж¶€жЃЇ
+- ж¶€жЃЇй™„д»¶дёЉдј 
 
-**URL 导航：**
+**URL еЇји€Єпјљ**
 - `/messages`
 - `/messages/:chatId`
 
-### 2. 动态信息流（Feed）
+### 2. еЉЁжЂЃдїЎжЃЇжµЃпј€Feedпј‰
 
-**功能：**
-- 按时间顺序浏览动态
-- 创建帖子（文本 ≤420 字）与图片
-- “Resonance” 反应（点赞）
-- 表情评论
-- 转发帖子
-- WebSocket 实时更新
-- 置顶帖子
+**еЉџиѓЅпјљ**
+- жЊ‰ж—¶й—ґйЎєеєЏжµЏи§€еЉЁжЂЃ
+- е€›е»єеё–е­ђпј€ж–‡жњ¬ в‰¤420 е­—пј‰дёЋе›ѕз‰‡
+- вЂњResonanceвЂќ еЏЌеє”пј€з‚№иµћпј‰
+- иЎЁжѓ…иЇ„и®є
+- иЅ¬еЏ‘её–е­ђ
+- WebSocket е®ћж—¶ж›ґж–°
+- зЅ®йЎ¶её–е­ђ
 
-### 3. 消息系统（Messenger）
+### 3. ж¶€жЃЇзі»з»џпј€Messengerпј‰
 
-**功能：**
-- 一对一私信
-- 聊天列表与最后一条消息
-- 未读计数
-- WebSocket 实时送达
-- 删除消息（仅自己 / 双方）
-- 文件与图片附件
-- 已读状态
-- 语音消息
-- 消失的瞬间（moments）
+**еЉџиѓЅпјљ**
+- дёЂеЇ№дёЂз§ЃдїЎ
+- иЃЉе¤©е€—иЎЁдёЋжњЂеђЋдёЂжќЎж¶€жЃЇ
+- жњЄиЇ»и®Ўж•°
+- WebSocket е®ћж—¶йЂЃиѕѕ
+- е€ й™¤ж¶€жЃЇпј€д»…и‡Єе·± / еЏЊж–№пј‰
+- ж–‡д»¶дёЋе›ѕз‰‡й™„д»¶
+- е·ІиЇ»зЉ¶жЂЃ
+- иЇ­йџіж¶€жЃЇ
+- ж¶€е¤±зљ„зћ¬й—ґпј€mediaпј‰
 
-### 4. 用户资料
+### 4. з”Ёж€·иµ„ж–™
 
-**功能：**
-- 查看他人资料
-- 编辑自己的资料
-- 头像与横幅
-- 统计：关注、粉丝、帖子
-- 关注系统
-- 置顶帖子
+**еЉџиѓЅпјљ**
+- жџҐзњ‹д»–дєєиµ„ж–™
+- зј–иѕ‘и‡Єе·±зљ„иµ„ж–™
+- е¤ґеѓЏдёЋжЁЄе№…
+- з»џи®Ўпјље…іжіЁгЂЃзІ‰дёќгЂЃеё–е­ђ
+- е…іжіЁзі»з»џ
+- зЅ®йЎ¶её–е­ђ
 
-### 5. 认证系统
+### 5. и®¤иЇЃзі»з»џ
 
-**流程：**
-1. 提交申请（注册 ≥7 天）
-2. 管理员审核
-3. 通过后 1 个月有效
+**жµЃзЁ‹пјљ**
+1. жЏђдє¤з”іиЇ·пј€жіЁе†Њ в‰Ґ7 е¤©пј‰
+2. з®Ўзђ†е‘е®Ўж ё
+3. йЂљиї‡еђЋ 1 дёЄжњ€жњ‰ж•€
 
-**徽章：**Verified、Developer、CEO
+**еѕЅз« пјљ**VerifiedгЂЃDeveloperгЂЃCEO
 
-### 6. 安全 🔒
+### 6. е®‰е…Ё рџ”’
 
-- **httpOnly Cookies**：令牌不可被 JS 访问
-- **Rate Limiting**：防止暴力破解
-- **CSP 头**：防 XSS
-- **Zod 校验**：严格验证
-- **集中式错误处理**
-- **权限系统**：聊天角色与权限
+- **httpOnly Cookies**пјљд»¤з‰ЊдёЌеЏЇиў« JS и®їй—®
+- **Rate Limiting**пјљйІж­ўжљґеЉ›з ґи§Ј
+- **CSP е¤ґ**пјљйІ XSS
+- **Zod ж ЎйЄЊ**пјљдёҐж јйЄЊиЇЃ
+- **й›†дё­ејЏй”™иЇЇе¤„зђ†**
+- **жќѓй™ђзі»з»џ**пјљиЃЉе¤©и§’и‰ІдёЋжќѓй™ђ
 
-### 7. 权限系统（Permissions）
+### 7. жќѓй™ђзі»з»џпј€Permissionsпј‰
 
-**聊天角色：**
-- **Owner (100)**：最高权限，可删除聊天
-- **Admin (80)**：管理成员与设置
-- **Moderator (50)**：管理消息
-- **Member (10)**：发送与阅读
+**иЃЉе¤©и§’и‰Іпјљ**
+- **Owner (100)**пјљжњЂй«жќѓй™ђпјЊеЏЇе€ й™¤иЃЉе¤©
+- **Admin (80)**пјљз®Ўзђ†ж€ђе‘дёЋи®ѕзЅ®
+- **Moderator (50)**пјљз®Ўзђ†ж¶€жЃЇ
+- **Member (10)**пјљеЏ‘йЂЃдёЋй…иЇ»
 
-**规则：**
-- 不能管理同级或更高角色
-- Owner 不可被踢出或降级
+**и§„е€™пјљ**
+- дёЌиѓЅз®Ўзђ†еђЊзє§ж€–ж›ґй«и§’и‰І
+- Owner дёЌеЏЇиў«иёўе‡єж€–й™Ќзє§
 
-### 8. 审计与日志
+### 8. е®Ўи®ЎдёЋж—Ґеї—
 
-**审计事件：**
-- 用户登录/退出
-- 删除帖子、消息、群组
-- 成员角色变更
-- 踢人/封禁
-- 认证请求
-- 管理员操作
+**е®Ўи®Ўдє‹д»¶пјљ**
+- з”Ёж€·з™»еЅ•/йЂЂе‡є
+- е€ й™¤её–е­ђгЂЃж¶€жЃЇгЂЃзѕ¤з»„
+- ж€ђе‘и§’и‰ІеЏж›ґ
+- иёўдєє/е°Ѓз¦Ѓ
+- и®¤иЇЃиЇ·ж±‚
+- з®Ўзђ†е‘ж“ЌдЅњ
 
-**存储：**
-- Audit 日志保存在 `audit_logs`
-- 自动清理（90 天）
-- IP、User Agent 与操作详情
+**е­е‚Ёпјљ**
+- Audit ж—Ґеї—дїќе­ењЁ `audit_logs`
+- и‡ЄеЉЁжё…зђ†пј€90 е¤©пј‰
+- IPгЂЃUser Agent дёЋж“ЌдЅњиЇ¦жѓ…
 
 ---
 
-## 🗄️ 数据库结构
+## рџ—„пёЏ ж•°жЌ®еє“з»“жћ„
 
-### 主要表
+### дё»и¦ЃиЎЁ
 
 #### `users`
-| 字段 | 类型 | 说明 |
+| е­—ж®µ | з±»ећ‹ | иЇґжЋ |
 |------|------|------|
-| id | INTEGER | 主键 |
-| email | TEXT | 邮箱（唯一） |
-| password_hash | TEXT | 密码哈希 |
-| name | TEXT | 名称 |
-| username | TEXT | 用户名（唯一） |
-| bio | TEXT | 简介 |
-| avatar | TEXT | 头像 URL |
-| banner | TEXT | 横幅 URL |
-| city | TEXT | 城市 |
-| website | TEXT | 站点 |
-| verified | BOOLEAN | 认证状态 |
-| followers_count | INTEGER | 粉丝数 |
-| join_date | DATETIME | 注册时间 |
-| last_seen_at | DATETIME | 最近在线 |
+| id | INTEGER | дё»й”® |
+| email | TEXT | й‚®з®±пј€е”ЇдёЂпј‰ |
+| password_hash | TEXT | еЇ†з Ѓе“€еёЊ |
+| name | TEXT | еђЌз§° |
+| username | TEXT | з”Ёж€·еђЌпј€е”ЇдёЂпј‰ |
+| bio | TEXT | з®Ђд»‹ |
+| avatar | TEXT | е¤ґеѓЏ URL |
+| banner | TEXT | жЁЄе№… URL |
+| city | TEXT | еџЋеё‚ |
+| website | TEXT | з«™з‚№ |
+| verified | BOOLEAN | и®¤иЇЃзЉ¶жЂЃ |
+| followers_count | INTEGER | зІ‰дёќж•° |
+| join_date | DATETIME | жіЁе†Њж—¶й—ґ |
+| last_seen_at | DATETIME | жњЂиї‘ењЁзєї |
 
 #### `posts`
-| 字段 | 类型 | 说明 |
+| е­—ж®µ | з±»ећ‹ | иЇґжЋ |
 |------|------|------|
-| id | INTEGER | 主键 |
-| user_id | INTEGER | 作者 |
-| text | TEXT | 内容（max 420） |
-| image_url | TEXT | 图片 URL |
-| timestamp | DATETIME | 创建时间 |
-| replies_count | INTEGER | 评论数 |
-| reposts_count | INTEGER | 转发数 |
-| resonance_count | INTEGER | 点赞数 |
+| id | INTEGER | дё»й”® |
+| user_id | INTEGER | дЅњиЂ… |
+| text | TEXT | е†…е®№пј€max 420пј‰ |
+| image_url | TEXT | е›ѕз‰‡ URL |
+| timestamp | DATETIME | е€›е»єж—¶й—ґ |
+| replies_count | INTEGER | иЇ„и®єж•° |
+| reposts_count | INTEGER | иЅ¬еЏ‘ж•° |
+| resonance_count | INTEGER | з‚№иµћж•° |
 
 #### `chats` / `messages`
-| 字段 | 类型 | 说明 |
+| е­—ж®µ | з±»ећ‹ | иЇґжЋ |
 |------|------|------|
-| id | INTEGER | 主键 |
-| sender_id | INTEGER | 发送者 |
-| receiver_id | INTEGER | 接收者 |
-| text | TEXT | 文本 |
-| created_at | DATETIME | 时间 |
-| deleted_for_all | BOOLEAN | 双方删除标记 |
-| moment_id | INTEGER | 对应 moment |
+| id | INTEGER | дё»й”® |
+| sender_id | INTEGER | еЏ‘йЂЃиЂ… |
+| receiver_id | INTEGER | жЋҐж”¶иЂ… |
+| text | TEXT | ж–‡жњ¬ |
+| created_at | DATETIME | ж—¶й—ґ |
+| deleted_for_all | BOOLEAN | еЏЊж–№е€ й™¤ж ‡и®° |
+| media_id | INTEGER | еЇ№еє” media |
 
-#### `moments`
-| 字段 | 类型 | 说明 |
+#### `media`
+| е­—ж®µ | з±»ећ‹ | иЇґжЋ |
 |------|------|------|
-| id | INTEGER | 主键 |
-| sender_id | INTEGER | 发送者 |
-| receiver_id | INTEGER | 接收者 |
-| thumb_data_url | TEXT | 预览缩略图 |
-| ttl_seconds | INTEGER | 有效期 |
-| expires_at | DATETIME | 过期时间 |
+| id | INTEGER | дё»й”® |
+| sender_id | INTEGER | еЏ‘йЂЃиЂ… |
+| receiver_id | INTEGER | жЋҐж”¶иЂ… |
+| thumb_data_url | TEXT | йў„и§€зј©з•Ґе›ѕ |
+| ttl_seconds | INTEGER | жњ‰ж•€жњџ |
+| expires_at | DATETIME | иї‡жњџж—¶й—ґ |
 
-### 聊天相关表
+### иЃЉе¤©з›ёе…іиЎЁ
 
 #### `chats`
-| 字段 | 类型 | 说明 |
+| е­—ж®µ | з±»ећ‹ | иЇґжЋ |
 |------|------|------|
-| id | INTEGER | 主键 |
-| username | TEXT | 公共 username（唯一） |
-| name | TEXT | 聊天名称 |
-| description | TEXT | 描述 |
-| avatar | TEXT | 头像 URL |
+| id | INTEGER | дё»й”® |
+| username | TEXT | е…¬е…± usernameпј€е”ЇдёЂпј‰ |
+| name | TEXT | иЃЉе¤©еђЌз§° |
+| description | TEXT | жЏЏиї° |
+| avatar | TEXT | е¤ґеѓЏ URL |
 | type | TEXT | private/group/channel |
-| owner_id | INTEGER | 拥有者 |
-| created_at | DATETIME | 创建时间 |
+| owner_id | INTEGER | ж‹Ґжњ‰иЂ… |
+| created_at | DATETIME | е€›е»єж—¶й—ґ |
 
 #### `chat_members`
-| 字段 | 类型 | 说明 |
+| е­—ж®µ | з±»ећ‹ | иЇґжЋ |
 |------|------|------|
-| chat_id | INTEGER | 聊天 |
-| user_id | INTEGER | 成员 |
-| role_id | INTEGER | 角色 |
-| joined_at | DATETIME | 加入时间 |
+| chat_id | INTEGER | иЃЉе¤© |
+| user_id | INTEGER | ж€ђе‘ |
+| role_id | INTEGER | и§’и‰І |
+| joined_at | DATETIME | еЉ е…Ґж—¶й—ґ |
 
 #### `chat_roles`
-| 字段 | 类型 | 说明 |
+| е­—ж®µ | з±»ећ‹ | иЇґжЋ |
 |------|------|------|
-| id | INTEGER | 主键 |
-| chat_id | INTEGER | 聊天 |
-| name | TEXT | 角色名称 |
-| rank | INTEGER | 排名（优先级） |
-| permissions_json | TEXT | 权限 JSON |
-| is_system | BOOLEAN | 系统角色 |
+| id | INTEGER | дё»й”® |
+| chat_id | INTEGER | иЃЉе¤© |
+| name | TEXT | и§’и‰ІеђЌз§° |
+| rank | INTEGER | жЋ’еђЌпј€дје…€зє§пј‰ |
+| permissions_json | TEXT | жќѓй™ђ JSON |
+| is_system | BOOLEAN | зі»з»џи§’и‰І |
 
 #### `messages`
-| 字段 | 类型 | 说明 |
+| е­—ж®µ | з±»ећ‹ | иЇґжЋ |
 |------|------|------|
-| id | INTEGER | 主键 |
-| chat_id | INTEGER | 聊天 |
-| user_id | INTEGER | 作者 |
-| text | TEXT | 文本 |
-| created_at | DATETIME | 时间 |
+| id | INTEGER | дё»й”® |
+| chat_id | INTEGER | иЃЉе¤© |
+| user_id | INTEGER | дЅњиЂ… |
+| text | TEXT | ж–‡жњ¬ |
+| created_at | DATETIME | ж—¶й—ґ |
 
 #### `chat_join_requests`
-| 字段 | 类型 | 说明 |
+| е­—ж®µ | з±»ећ‹ | иЇґжЋ |
 |------|------|------|
-| id | INTEGER | 主键 |
-| chat_id | INTEGER | 聊天 |
-| user_id | INTEGER | 申请人 |
+| id | INTEGER | дё»й”® |
+| chat_id | INTEGER | иЃЉе¤© |
+| user_id | INTEGER | з”іиЇ·дєє |
 | status | TEXT | pending/approved/rejected |
-| created_at | DATETIME | 时间 |
+| created_at | DATETIME | ж—¶й—ґ |
 
-### 系统表
+### зі»з»џиЎЁ
 
 #### `rate_limits`
-| 字段 | 类型 | 说明 |
+| е­—ж®µ | з±»ећ‹ | иЇґжЋ |
 |------|------|------|
-| id | INTEGER | 主键 |
-| ip | TEXT | IP 地址 |
+| id | INTEGER | дё»й”® |
+| ip | TEXT | IP ењ°еќЂ |
 | action | TEXT | login/register/forgot_password |
-| attempts | INTEGER | 尝试次数 |
-| blocked_until | DATETIME | 封禁到期 |
+| attempts | INTEGER | е°ќиЇ•ж¬Ўж•° |
+| blocked_until | DATETIME | е°Ѓз¦Ѓе€°жњџ |
 
 #### `audit_logs`
-| 字段 | 类型 | 说明 |
+| е­—ж®µ | з±»ећ‹ | иЇґжЋ |
 |------|------|------|
-| id | INTEGER | 主键 |
-| event_type | TEXT | 事件类型 |
-| user_id | INTEGER | 操作者 |
-| target_id | INTEGER | 目标 ID |
-| ip_address | TEXT | IP 地址 |
+| id | INTEGER | дё»й”® |
+| event_type | TEXT | дє‹д»¶з±»ећ‹ |
+| user_id | INTEGER | ж“ЌдЅњиЂ… |
+| target_id | INTEGER | з›®ж ‡ ID |
+| ip_address | TEXT | IP ењ°еќЂ |
 | user_agent | TEXT | UA |
-| details | TEXT | 详情 JSON |
-| created_at | DATETIME | 时间 |
+| details | TEXT | иЇ¦жѓ… JSON |
+| created_at | DATETIME | ж—¶й—ґ |
 
 ---
 
-## 🔧 Onboarding（引导）
+## рџ”§ Onboardingпј€еј•еЇјпј‰
 
-**流程：**
-1. 新用户通过 4 步引导流程
-2. 步骤 1：选择主要角色（开发者、设计师等）
-3. 步骤 2：选择技能（React、Node.js、PostgreSQL 等）
-4. 步骤 3：设定目标（寻找团队、展示项目等）
-5. 步骤 4：创建或加入 workspace
+**жµЃзЁ‹пјљ**
+1. ж–°з”Ёж€·йЂљиї‡ 4 ж­Ґеј•еЇјжµЃзЁ‹
+2. ж­ҐйЄ¤ 1пјљйЂ‰ж‹©дё»и¦Ѓи§’и‰Іпј€ејЂеЏ‘иЂ…гЂЃи®ѕи®Ўеё€з­‰пј‰
+3. ж­ҐйЄ¤ 2пјљйЂ‰ж‹©жЉЂиѓЅпј€ReactгЂЃNode.jsгЂЃPostgreSQL з­‰пј‰
+4. ж­ҐйЄ¤ 3пјљи®ѕе®љз›®ж ‡пј€еЇ»ж‰ѕе›ўйџгЂЃе±•з¤єйЎ№з›®з­‰пј‰
+5. ж­ҐйЄ¤ 4пјље€›е»єж€–еЉ е…Ґ workspace
 
-**存储的数据：** `primary_role`、`skills`、`goals`、`onboarding_completed`
-
----
-
-## 📁 Workspaces 与 Projects
-
-**Workspaces：**
-- 创建公共/私有 workspaces
-- 通过代码邀请成员
-- 管理角色：owner、admin、lead、developer、designer、member、guest
-
-**Projects：**
-- 在 workspaces 内或独立创建项目
-- 使用 Kanban 看板跟踪任务（todo、in_progress、review、done）
-- 基于角色的权限邀请协作者
-- 链接 GitHub 仓库和 demo URL
-- 寻找成员（looking for members）
-- 链接群组聊天进行沟通
-
-**项目状态：** idea、building、testing、launched、paused、archived
+**е­е‚Ёзљ„ж•°жЌ®пјљ** `primary_role`гЂЃ`skills`гЂЃ`goals`гЂЃ`onboarding_completed`
 
 ---
 
-## ✅ Tasks（任务）
+## рџ“Ѓ Workspaces дёЋ Projects
 
-**功能：**
-- 在项目中创建任务（admin/lead/manager/owner）
-- 分配给团队成员
-- 优先级：low、medium、high、urgent
-- 状态流程：todo → in_progress → review → done
-- 任务评论
-- 消息链接（从消息创建任务）
+**Workspacesпјљ**
+- е€›е»єе…¬е…±/з§Ѓжњ‰ workspaces
+- йЂљиї‡д»Јз Ѓй‚ЂиЇ·ж€ђе‘
+- з®Ўзђ†и§’и‰ІпјљownerгЂЃadminгЂЃleadгЂЃdeveloperгЂЃdesignerгЂЃmemberгЂЃguest
+
+**Projectsпјљ**
+- ењЁ workspaces е†…ж€–з‹¬з«‹е€›е»єйЎ№з›®
+- дЅїз”Ё Kanban зњ‹жќїи·џиёЄд»»еЉЎпј€todoгЂЃin_progressгЂЃreviewгЂЃdoneпј‰
+- еџєдєЋи§’и‰Ізљ„жќѓй™ђй‚ЂиЇ·еЌЏдЅњиЂ…
+- й“ѕжЋҐ GitHub д»“еє“е’Њ demo URL
+- еЇ»ж‰ѕж€ђе‘пј€looking for membersпј‰
+- й“ѕжЋҐзѕ¤з»„иЃЉе¤©иї›иЎЊжІџйЂљ
+
+**йЎ№з›®зЉ¶жЂЃпјљ** ideaгЂЃbuildingгЂЃtestingгЂЃlaunchedгЂЃpausedгЂЃarchived
 
 ---
 
-## 📡 API 文档
+## вњ… Tasksпј€д»»еЉЎпј‰
 
-完整 API 文档见 [backend/API.md](./backend/API.md)。
+**еЉџиѓЅпјљ**
+- ењЁйЎ№з›®дё­е€›е»єд»»еЉЎпј€admin/lead/manager/ownerпј‰
+- е€†й…Ќз»™е›ўйџж€ђе‘
+- дје…€зє§пјљlowгЂЃmediumгЂЃhighгЂЃurgent
+- зЉ¶жЂЃжµЃзЁ‹пјљtodo в†’ in_progress в†’ review в†’ done
+- д»»еЉЎиЇ„и®є
+- ж¶€жЃЇй“ѕжЋҐпј€д»Ћж¶€жЃЇе€›е»єд»»еЉЎпј‰
 
-### 基础 URL
+---
+
+## рџ“Ў API ж–‡жЎЈ
+
+е®Њж•ґ API ж–‡жЎЈи§Ѓ [backend/API.md](./backend/API.md)гЂ‚
+
+### еџєзЎЂ URL
 ```
 http://150.241.85.189:5000/api
 ```
 
-### 主要 endpoints
+### дё»и¦Ѓ endpoints
 
 #### Auth
-- `POST /register` — 注册
-- `POST /login` — 登录
-- `POST /refresh` — 刷新令牌
-- `POST /logout` — 登出
+- `POST /register` вЂ” жіЁе†Њ
+- `POST /login` вЂ” з™»еЅ•
+- `POST /refresh` вЂ” е€·ж–°д»¤з‰Њ
+- `POST /logout` вЂ” з™»е‡є
 
 #### Profile
-- `GET /profile` — 我的资料
-- `GET /profile/:userId` — 用户资料
-- `PUT /profile` — 更新资料
-- `POST /profile/avatar` — 上传头像
-- `POST /profile/banner` — 上传横幅
-- `DELETE /profile` — 删除账号
+- `GET /profile` вЂ” ж€‘зљ„иµ„ж–™
+- `GET /profile/:userId` вЂ” з”Ёж€·иµ„ж–™
+- `PUT /profile` вЂ” ж›ґж–°иµ„ж–™
+- `POST /profile/avatar` вЂ” дёЉдј е¤ґеѓЏ
+- `POST /profile/banner` вЂ” дёЉдј жЁЄе№…
+- `DELETE /profile` вЂ” е€ й™¤иґ¦еЏ·
 
 #### Posts
-- `GET /posts` — 动态
-- `GET /posts/recommended` — 推荐
-- `GET /posts/following` — 关注
-- `POST /posts` — 创建帖子
-- `DELETE /posts/:postId` — 删除帖子
-- `POST /posts/:postId/resonance` — 点赞
+- `GET /posts` вЂ” еЉЁжЂЃ
+- `GET /posts/recommended` вЂ” жЋЁиЌђ
+- `GET /posts/following` вЂ” е…іжіЁ
+- `POST /posts` вЂ” е€›е»єеё–е­ђ
+- `DELETE /posts/:postId` вЂ” е€ й™¤её–е­ђ
+- `POST /posts/:postId/resonance` вЂ” з‚№иµћ
 
 #### Chats
-- `GET /chats` — 聊天列表
-- `POST /chats` — 创建聊天
-- `PUT /chats/:chatId` — 更新聊天
-- `POST /chats/:chatId/members` — 添加成员
-- `DELETE /chats/:chatId/members/:userId` — 移除成员
-- `GET /chats/public?query=...` — 公开频道
-- `POST /chats/:chatId/subscribe` — 加入公开频道
-- `GET /chats/:chatId/join-requests` — 加入申请
-- `POST /chats/:chatId/join-requests/:requestId/review` — Approve/reject
+- `GET /chats` вЂ” иЃЉе¤©е€—иЎЁ
+- `POST /chats` вЂ” е€›е»єиЃЉе¤©
+- `PUT /chats/:chatId` вЂ” ж›ґж–°иЃЉе¤©
+- `POST /chats/:chatId/members` вЂ” ж·»еЉ ж€ђе‘
+- `DELETE /chats/:chatId/members/:userId` вЂ” з§»й™¤ж€ђе‘
+- `GET /chats/public?query=...` вЂ” е…¬ејЂйў‘йЃ“
+- `POST /chats/:chatId/subscribe` вЂ” еЉ е…Ґе…¬ејЂйў‘йЃ“
+- `GET /chats/:chatId/join-requests` вЂ” еЉ е…Ґз”іиЇ·
+- `POST /chats/:chatId/join-requests/:requestId/review` вЂ” Approve/reject
 
 #### Messages
-- `GET /messages?chatId=...` — 聊天记录
-- `POST /messages` — 发送消息
-- `DELETE /messages/:messageId` — 删除消息
+- `GET /messages?chatId=...` вЂ” иЃЉе¤©и®°еЅ•
+- `POST /messages` вЂ” еЏ‘йЂЃж¶€жЃЇ
+- `DELETE /messages/:messageId` вЂ” е€ й™¤ж¶€жЃЇ
 
 #### Onboarding
-- `GET /onboarding/status` — 获取 onboarding 状态
-- `POST /onboarding/profile` — 保存个人资料步骤
-- `POST /onboarding/skills` — 保存技能步骤
-- `POST /onboarding/goals` — 保存目标步骤
-- `POST /onboarding/workspace` — 保存 workspace 步骤
-- `POST /onboarding/complete` — 完成 onboarding
+- `GET /onboarding/status` вЂ” иЋ·еЏ– onboarding зЉ¶жЂЃ
+- `POST /onboarding/profile` вЂ” дїќе­дёЄдєєиµ„ж–™ж­ҐйЄ¤
+- `POST /onboarding/skills` вЂ” дїќе­жЉЂиѓЅж­ҐйЄ¤
+- `POST /onboarding/goals` вЂ” дїќе­з›®ж ‡ж­ҐйЄ¤
+- `POST /onboarding/workspace` вЂ” дїќе­ workspace ж­ҐйЄ¤
+- `POST /onboarding/complete` вЂ” е®Њж€ђ onboarding
 
 #### Workspaces
-- `POST /workspaces` — 创建 workspace
-- `GET /workspaces/my` — 我的 workspaces
-- `GET /workspaces/public` — 公共 workspaces
-- `GET /workspaces/:slug` — 按 slug 获取 workspace
-- `PATCH /workspaces/:id` — 更新 workspace
-- `DELETE /workspaces/:id` — 删除 workspace
-- `POST /workspaces/:id/members` — 添加成员
-- `PATCH /workspaces/:id/members/:userId` — 更新成员角色
-- `DELETE /workspaces/:id/members/:userId` — 移除成员
-- `POST /workspaces/:id/invites` — 创建邀请
-- `POST /workspaces/join/:inviteCode` — 通过邀请码加入
-- `GET /workspaces/:id/members` — 列出成员
+- `POST /workspaces` вЂ” е€›е»є workspace
+- `GET /workspaces/my` вЂ” ж€‘зљ„ workspaces
+- `GET /workspaces/public` вЂ” е…¬е…± workspaces
+- `GET /workspaces/:slug` вЂ” жЊ‰ slug иЋ·еЏ– workspace
+- `PATCH /workspaces/:id` вЂ” ж›ґж–° workspace
+- `DELETE /workspaces/:id` вЂ” е€ й™¤ workspace
+- `POST /workspaces/:id/members` вЂ” ж·»еЉ ж€ђе‘
+- `PATCH /workspaces/:id/members/:userId` вЂ” ж›ґж–°ж€ђе‘и§’и‰І
+- `DELETE /workspaces/:id/members/:userId` вЂ” з§»й™¤ж€ђе‘
+- `POST /workspaces/:id/invites` вЂ” е€›е»єй‚ЂиЇ·
+- `POST /workspaces/join/:inviteCode` вЂ” йЂљиї‡й‚ЂиЇ·з ЃеЉ е…Ґ
+- `GET /workspaces/:id/members` вЂ” е€—е‡єж€ђе‘
 
 #### Projects
-- `POST /projects` — 创建项目
-- `GET /projects/my` — 我的项目
-- `GET /projects/public` — 公共项目
-- `GET /projects/:slug` — 按 slug 获取项目
-- `PATCH /projects/:id` — 更新项目
-- `POST /projects/:id/logo` — 上传 logo
-- `DELETE /projects/:id` — 删除项目
-- `POST /projects/:id/members` — 添加成员
-- `DELETE /projects/:id/members/:userId` — 移除成员
-- `POST /projects/:id/leave` — 离开项目
-- `POST /projects/:id/invite` — 创建邀请
-- `POST /projects/:id/join` — 加入项目
-- `POST /projects/:id/chat` — 链接聊天
-- `DELETE /projects/:id/chat` — 取消链接聊天
-- `GET /projects/:id/search-users` — 搜索用户
-- `GET /projects/:id/members` — 列出成员
+- `POST /projects` вЂ” е€›е»єйЎ№з›®
+- `GET /projects/my` вЂ” ж€‘зљ„йЎ№з›®
+- `GET /projects/public` вЂ” е…¬е…±йЎ№з›®
+- `GET /projects/:slug` вЂ” жЊ‰ slug иЋ·еЏ–йЎ№з›®
+- `PATCH /projects/:id` вЂ” ж›ґж–°йЎ№з›®
+- `POST /projects/:id/logo` вЂ” дёЉдј  logo
+- `DELETE /projects/:id` вЂ” е€ й™¤йЎ№з›®
+- `POST /projects/:id/members` вЂ” ж·»еЉ ж€ђе‘
+- `DELETE /projects/:id/members/:userId` вЂ” з§»й™¤ж€ђе‘
+- `POST /projects/:id/leave` вЂ” з¦»ејЂйЎ№з›®
+- `POST /projects/:id/invite` вЂ” е€›е»єй‚ЂиЇ·
+- `POST /projects/:id/join` вЂ” еЉ е…ҐйЎ№з›®
+- `POST /projects/:id/chat` вЂ” й“ѕжЋҐиЃЉе¤©
+- `DELETE /projects/:id/chat` вЂ” еЏ–ж¶€й“ѕжЋҐиЃЉе¤©
+- `GET /projects/:id/search-users` вЂ” жђњзґўз”Ёж€·
+- `GET /projects/:id/members` вЂ” е€—е‡єж€ђе‘
 
 #### Tasks
-- `POST /projects/:projectId/tasks` — 创建任务
-- `GET /projects/:projectId/tasks` — 项目任务
-- `PATCH /tasks/:taskId` — 更新任务
-- `DELETE /tasks/:taskId` — 删除任务
-- `POST /tasks/:taskId/comments` — 添加评论
+- `POST /projects/:projectId/tasks` вЂ” е€›е»єд»»еЉЎ
+- `GET /projects/:projectId/tasks` вЂ” йЎ№з›®д»»еЉЎ
+- `PATCH /tasks/:taskId` вЂ” ж›ґж–°д»»еЉЎ
+- `DELETE /tasks/:taskId` вЂ” е€ й™¤д»»еЉЎ
+- `POST /tasks/:taskId/comments` вЂ” ж·»еЉ иЇ„и®є
 
 ---
 
-## 🔌 WebSocket 事件
+## рџ”Њ WebSocket дє‹д»¶
 
-### 连接
+### иїћжЋҐ
 ```
 ws://150.241.85.189:5000/ws
 ```
 
-### 事件
+### дє‹д»¶
 
-**客户端 → 服务器：**
-- `register` — 注册用户
-- `ping` — 心跳
-- `typing:start` / `typing:stop` — 输入指示
-- `chat:read` — 标记已读
-- `message:delivered` — 消息送达
-- `chat:subscribe` / `chat:unsubscribe` — 订阅聊天
+**е®ўж€·з«Ї в†’ жњЌеЉЎе™Ёпјљ**
+- `register` вЂ” жіЁе†Њз”Ёж€·
+- `ping` вЂ” еїѓи·і
+- `typing:start` / `typing:stop` вЂ” иѕ“е…ҐжЊ‡з¤є
+- `chat:read` вЂ” ж ‡и®°е·ІиЇ»
+- `message:delivered` вЂ” ж¶€жЃЇйЂЃиѕѕ
+- `chat:subscribe` / `chat:unsubscribe` вЂ” и®ўй…иЃЉе¤©
 
-**服务器 → 客户端：**
-- `new_post` — 新帖子
-- `new_message` — 新消息
-- `typing:update` — 输入状态
-- `chat:read_update` — 已读更新
-- `presence:update` — 在线状态
-- `channel:new_message` — 频道消息
-- `chat:read_update` — 已读更新
+**жњЌеЉЎе™Ё в†’ е®ўж€·з«Їпјљ**
+- `new_post` вЂ” ж–°её–е­ђ
+- `new_message` вЂ” ж–°ж¶€жЃЇ
+- `typing:update` вЂ” иѕ“е…ҐзЉ¶жЂЃ
+- `chat:read_update` вЂ” е·ІиЇ»ж›ґж–°
+- `presence:update` вЂ” ењЁзєїзЉ¶жЂЃ
+- `channel:new_message` вЂ” йў‘йЃ“ж¶€жЃЇ
+- `chat:read_update` вЂ” е·ІиЇ»ж›ґж–°
 
 ---
 
-## 🛡️ 安全
+## рџ›ЎпёЏ е®‰е…Ё
 
 ### 1. httpOnly Cookies
-令牌保存在 httpOnly cookies，无法通过 JS 读取。
+д»¤з‰Њдїќе­ењЁ httpOnly cookiesпјЊж— жі•йЂљиї‡ JS иЇ»еЏ–гЂ‚
 
 ### 2. Rate Limiting
-- Login: 5 次 / 15 分钟
-- Register: 3 次 / 1 小时
+- Login: 5 ж¬Ў / 15 е€†й’џ
+- Register: 3 ж¬Ў / 1 е°Џж—¶
 
 ### 3. Content Security Policy
-严格 CSP 头防止 XSS。
+дёҐж ј CSP е¤ґйІж­ў XSSгЂ‚
 
-### 4. Zod 校验
-所有输入均进行严格校验。
+### 4. Zod ж ЎйЄЊ
+ж‰Ђжњ‰иѕ“е…Ґеќ‡иї›иЎЊдёҐж јж ЎйЄЊгЂ‚
 
-### 5. 统一错误处理
-API 统一错误格式。
+### 5. з»џдёЂй”™иЇЇе¤„зђ†
+API з»џдёЂй”™иЇЇж јејЏгЂ‚
 
-### 6. 权限控制
-聊天权限系统与角色管理。
+### 6. жќѓй™ђжЋ§е€¶
+иЃЉе¤©жќѓй™ђзі»з»џдёЋи§’и‰Із®Ўзђ†гЂ‚
 
 ---
 
-## 🚀 安装与运行
+## рџљЂ е®‰иЈ…дёЋиїђиЎЊ
 
-### 1. 克隆
+### 1. е…‹йљ†
 ```bash
 git clone <repository-url>
 cd LUME
 ```
 
-### 2. 后端
+### 2. еђЋз«Ї
 ```bash
 cd backend
 npm install
 
-# 数据库迁移
-node migrate.js                    # 主表
-node migrate-rate-limit.js         # 限流
-node migrate-audit.js              # 审计
-node migrate-communities.js        # 群组
+# ж•°жЌ®еє“иїЃз§»
+node migrate.js                    # дё»иЎЁ
+node migrate-rate-limit.js         # й™ђжµЃ
+node migrate-audit.js              # е®Ўи®Ў
+node migrate-communities.js        # зѕ¤з»„
 
-# 启动
+# еђЇеЉЁ
 npm run dev
 ```
 
-### 3. 前端
+### 3. е‰Ќз«Ї
 ```bash
 npm install
 npm run dev
 ```
 
-### 4. 访问
-- 前端：`http://localhost:8080`
-- 后端 API：`http://150.241.85.189:5000/api`
-- 健康检查：`http://150.241.85.189:5000/health`
+### 4. и®їй—®
+- е‰Ќз«Їпјљ`http://localhost:8080`
+- еђЋз«Ї APIпјљ`http://150.241.85.189:5000/api`
+- еЃҐеє·жЈЂжџҐпјљ`http://150.241.85.189:5000/health`
 
 ---
 
-## ⚙️ 配置
+## вљ™пёЏ й…ЌзЅ®
 
-### 后端 (.env)
+### еђЋз«Ї (.env)
 ```env
 PORT=5000
 JWT_SECRET=your-super-secret-key-change-in-production
@@ -603,28 +603,30 @@ NODE_ENV=development
 LOG_LEVEL=info  # error | warn | info | debug
 ```
 
-### 前端
-无需环境变量。
-API URL：`http://150.241.85.189:5000/api`
+### е‰Ќз«Ї
+ж— йњЂзЋЇеўѓеЏй‡ЏгЂ‚
+API URLпјљ`http://150.241.85.189:5000/api`
 
 ---
 
-## 📄 许可证
+## рџ“„ и®ёеЏЇиЇЃ
 
 MIT License
 
 ---
 
-## 👥 作者
+## рџ‘Ґ дЅњиЂ…
 
-- **zxclovly** — Owner & Admin
+- **zxclovly** вЂ” Owner & Admin
 
 ---
 
-## 📚 其他文档
+## рџ“љ е…¶д»–ж–‡жЎЈ
 
-- [Features Inventory](./docs-cn/FEATURES_INVENTORY.cn.md) — 功能清单
-- [Error Handling](./docs-cn/ERROR_HANDLING.cn.md) — 错误处理
-- [Groups Module](./docs-cn/GROUPS_MODULE.cn.md) — 群组模块
-- [Project UI](./docs-cn/PROJECT_UI/) — UI/UX 文档
-- [API Documentation](./backend/API.md) — API endpoints
+- [Features Inventory](./docs-cn/FEATURES_INVENTORY.cn.md) вЂ” еЉџиѓЅжё…еЌ•
+- [Error Handling](./docs-cn/ERROR_HANDLING.cn.md) вЂ” й”™иЇЇе¤„зђ†
+- [Groups Module](./docs-cn/GROUPS_MODULE.cn.md) вЂ” зѕ¤з»„жЁЎеќ—
+- [Project UI](./docs-cn/PROJECT_UI/) вЂ” UI/UX ж–‡жЎЈ
+- [API Documentation](./backend/API.md) вЂ” API endpoints
+
+

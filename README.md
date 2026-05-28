@@ -1,6 +1,6 @@
-# LUME — Full-featured social network with messenger
+﻿# LUME вЂ” Full-featured social network with messenger
 
-English | [Русский](./README.ru.md) | [中文](./README.cn.md)
+English | [Р СѓСЃСЃРєРёР№](./README.ru.md) | [дё­ж–‡](./README.cn.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/Node.js-latest-green.svg)](https://nodejs.org/)
@@ -11,7 +11,7 @@ English | [Русский](./README.ru.md) | [中文](./README.cn.md)
 
 ---
 
-## 📋 Table of Contents
+## рџ“‹ Table of Contents
 
 - [Project overview](#project-overview)
 - [Tech stack](#tech-stack)
@@ -29,23 +29,23 @@ English | [Русский](./README.ru.md) | [中文](./README.cn.md)
 
 ---
 
-## 📖 Project overview
+## рџ“– Project overview
 
 ### Highlights:
-- 🔄 **Real-time feed** with WebSocket updates
-- 💬 **Messenger** for 1:1 private chats
-- 👥 **Groups & Channels** managed as chat types (`group`, `channel`)
-- 👤 **User profiles** with avatars and banners
-- ✅ **Verification system** via TikTok video
-- 🛡️ **Content moderation** with reports
-- 👑 **Admin panel** for user/content management
-- ⚡ **Real-time notifications** via WebSocket
-- 🔒 **Security**: httpOnly cookies, rate limiting, CSP headers
-- 🌐 **i18n**: Russian, English, Chinese, Spanish, Portuguese (Brazil) UI
+- рџ”„ **Real-time feed** with WebSocket updates
+- рџ’¬ **Messenger** for 1:1 private chats
+- рџ‘Ґ **Groups & Channels** managed as chat types (`group`, `channel`)
+- рџ‘¤ **User profiles** with avatars and banners
+- вњ… **Verification system** via TikTok video
+- рџ›ЎпёЏ **Content moderation** with reports
+- рџ‘‘ **Admin panel** for user/content management
+- вљЎ **Real-time notifications** via WebSocket
+- рџ”’ **Security**: httpOnly cookies, rate limiting, CSP headers
+- рџЊђ **i18n**: Russian, English, Chinese, Spanish, Portuguese (Brazil) UI
 
 ---
 
-## 🛠️ Tech stack
+## рџ› пёЏ Tech stack
 
 ### Frontend
 | Technology | Version | Purpose |
@@ -80,100 +80,100 @@ English | [Русский](./README.ru.md) | [中文](./README.cn.md)
 
 ---
 
-## 🏗️ Project architecture
+## рџЏ—пёЏ Project architecture
 
 ```
 LUME/
-├── Frontend (Vite + React + TypeScript)
-│   ├── src/
-│   │   ├── components/     # UI components
-│   │   │   ├── ui/         # shadcn/ui components
-│   │   │   ├── groups/     # (legacy) Group components
-│   │   │   ├── feed/       # Feed components
-│   │   │   ├── post/       # Post components
-│   │   │   ├── chat/       # Chat components
-│   │   │   ├── media/      # Media components
-│   │   │   ├── profile/    # Profile components
-│   │   │   ├── verification/ # Verification components
-│   │   │   ├── help/       # Help shell
-│   │   │   └── layout/     # Layout components
-│   │   ├── pages/          # App pages
-│   │   │   ├── auth/       # Auth pages
-│   │   │   ├── messages/   # Messages pages
-│   │   │   ├── group/      # (legacy) Group pages
-│   │   │   ├── onboarding/ # Onboarding flow
-│   │   │   ├── projects/   # Projects pages
-│   │   │   ├── workspaces/ # Workspaces pages
-│   │   │   └── stickers/   # Sticker pages
-│   │   ├── services/       # API client, errorHandler, websocket, e2ee
-│   │   ├── contexts/       # React contexts (Auth, Language, Theme, Server)
-│   │   ├── hooks/          # Custom hooks (React Query)
-│   │   ├── i18n/           # Localization
-│   │   ├── lib/            # Utilities (queryClient, config, utils)
-│   │   ├── types/          # TypeScript types
-│   │   └── test/           # Tests
-│   └── public/             # Static assets
-│
-└── Backend (Express + PostgreSQL)
-     ├── src/
-     │   ├── server.js         # Entry point + WebSocket server
-     │   ├── api.js            # API routes (Auth, Posts, Chats, Messages, Profile)
-     │   ├── auth.js           # Authentication (JWT, refresh tokens, cookies)
-     │   ├── profile.js        # User profile
-     │   ├── uploads.js        # File uploads (Cloudinary)
-     │   ├── validation.js     # Zod validation
-     │   ├── permissions.js    # Access control
-     │   ├── rateLimiter.js    # Rate limiting middleware
-     │   ├── errors.js         # Error handling
-     │   ├── logger.js         # Logging
-     │   ├── audit.js          # Audit logging
-     │   ├── csrf.js           # CSRF protection
-     │   ├── linkPreview.js    # Open Graph preview
-     │   ├── serializers.js    # Data serialization
-     │   ├── db.js             # PostgreSQL database
-     │   ├── routes/
-     │   │   ├── chatRoutes.js       # Chats (groups/channels)
-     │   │   ├── socialRoutes.js     # Social (posts, comments, likes, follows, reports)
-     │   │   ├── e2eeRoutes.js       # End-to-end encryption
-     │   │   ├── stickerRoutes.js    # Stickers
-     │   │   ├── messengerRoutes.js  # Messenger (chats list, notifications, read status, reactions)
-     │   │   ├── exploreRoutes.js    # Explore (builders, projects, workspaces)
-     │   │   ├── onboardingRoutes.js # Onboarding flow
-     │   │   ├── projectRoutes.js    # Projects CRUD
-     │   │   ├── workspaceRoutes.js  # Workspaces CRUD
-     │   │   └── taskRoutes.js       # Tasks within projects
-     │   ├── services/
-     │   │   ├── exploreService.js   # Explore search services
-     │   │   ├── onboardingService.js # Onboarding steps
-     │   │   ├── projectService.js   # Project operations
-     │   │   ├── taskService.js      # Task operations
-     │   │   └── workspaceService.js  # Workspace operations
-     │   ├── validators/
-     │   │   ├── onboardingSchemas.js # Onboarding validation
-     │   │   ├── projectSchemas.js    # Project validation
-     │   │   ├── taskSchemas.js       # Task validation
-     │   │   └── workspaceSchemas.js  # Workspace validation
-     │   ├── search/
-     │   │   └── messagesSearch.js    # Full-text search (Meilisearch)
-     │   └── middleware/
-     │       └── sanitize.js          # Input sanitization
-     │
-     ├── database/
-     │   ├── schema.sql                            # Base schema
-     │   ├── migrate.js                             # Core migrations
-     │   ├── migrate-rate-limit.js                  # Rate limiting migration
-     │   ├── migrate-communities.js                 # Groups migration
-     │   ├── migrate-audit.js                       # Audit migration
-     │   └── 013_workspace_builder_core.sql         # Workspaces/projects/tasks migration
-     ├── scripts/
-     │   ├── db-init.js               # Database initialization
-     │   └── stickers-sync.js         # Sticker sync helper
-     └── package.json
+в”њв”Ђв”Ђ Frontend (Vite + React + TypeScript)
+в”‚   в”њв”Ђв”Ђ src/
+в”‚   в”‚   в”њв”Ђв”Ђ components/     # UI components
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ ui/         # shadcn/ui components
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ groups/     # (legacy) Group components
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ feed/       # Feed components
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ post/       # Post components
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ chat/       # Chat components
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ media/      # Media components
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ profile/    # Profile components
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ verification/ # Verification components
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ help/       # Help shell
+в”‚   в”‚   в”‚   в””в”Ђв”Ђ layout/     # Layout components
+в”‚   в”‚   в”њв”Ђв”Ђ pages/          # App pages
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ auth/       # Auth pages
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ messages/   # Messages pages
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ group/      # (legacy) Group pages
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ onboarding/ # Onboarding flow
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ projects/   # Projects pages
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ workspaces/ # Workspaces pages
+в”‚   в”‚   в”‚   в””в”Ђв”Ђ stickers/   # Sticker pages
+в”‚   в”‚   в”њв”Ђв”Ђ services/       # API client, errorHandler, websocket, e2ee
+в”‚   в”‚   в”њв”Ђв”Ђ contexts/       # React contexts (Auth, Language, Theme, Server)
+в”‚   в”‚   в”њв”Ђв”Ђ hooks/          # Custom hooks (React Query)
+в”‚   в”‚   в”њв”Ђв”Ђ i18n/           # Localization
+в”‚   в”‚   в”њв”Ђв”Ђ lib/            # Utilities (queryClient, config, utils)
+в”‚   в”‚   в”њв”Ђв”Ђ types/          # TypeScript types
+в”‚   в”‚   в””в”Ђв”Ђ test/           # Tests
+в”‚   в””в”Ђв”Ђ public/             # Static assets
+в”‚
+в””в”Ђв”Ђ Backend (Express + PostgreSQL)
+     в”њв”Ђв”Ђ src/
+     в”‚   в”њв”Ђв”Ђ server.js         # Entry point + WebSocket server
+     в”‚   в”њв”Ђв”Ђ api.js            # API routes (Auth, Posts, Chats, Messages, Profile)
+     в”‚   в”њв”Ђв”Ђ auth.js           # Authentication (JWT, refresh tokens, cookies)
+     в”‚   в”њв”Ђв”Ђ profile.js        # User profile
+     в”‚   в”њв”Ђв”Ђ uploads.js        # File uploads (Cloudinary)
+     в”‚   в”њв”Ђв”Ђ validation.js     # Zod validation
+     в”‚   в”њв”Ђв”Ђ permissions.js    # Access control
+     в”‚   в”њв”Ђв”Ђ rateLimiter.js    # Rate limiting middleware
+     в”‚   в”њв”Ђв”Ђ errors.js         # Error handling
+     в”‚   в”њв”Ђв”Ђ logger.js         # Logging
+     в”‚   в”њв”Ђв”Ђ audit.js          # Audit logging
+     в”‚   в”њв”Ђв”Ђ csrf.js           # CSRF protection
+     в”‚   в”њв”Ђв”Ђ linkPreview.js    # Open Graph preview
+     в”‚   в”њв”Ђв”Ђ serializers.js    # Data serialization
+     в”‚   в”њв”Ђв”Ђ db.js             # PostgreSQL database
+     в”‚   в”њв”Ђв”Ђ routes/
+     в”‚   в”‚   в”њв”Ђв”Ђ chatRoutes.js       # Chats (groups/channels)
+     в”‚   в”‚   в”њв”Ђв”Ђ socialRoutes.js     # Social (posts, comments, likes, follows, reports)
+     в”‚   в”‚   в”њв”Ђв”Ђ e2eeRoutes.js       # End-to-end encryption
+     в”‚   в”‚   в”њв”Ђв”Ђ stickerRoutes.js    # Stickers
+     в”‚   в”‚   в”њв”Ђв”Ђ messengerRoutes.js  # Messenger (chats list, notifications, read status, reactions)
+     в”‚   в”‚   в”њв”Ђв”Ђ exploreRoutes.js    # Explore (builders, projects, workspaces)
+     в”‚   в”‚   в”њв”Ђв”Ђ onboardingRoutes.js # Onboarding flow
+     в”‚   в”‚   в”њв”Ђв”Ђ projectRoutes.js    # Projects CRUD
+     в”‚   в”‚   в”њв”Ђв”Ђ workspaceRoutes.js  # Workspaces CRUD
+     в”‚   в”‚   в””в”Ђв”Ђ taskRoutes.js       # Tasks within projects
+     в”‚   в”њв”Ђв”Ђ services/
+     в”‚   в”‚   в”њв”Ђв”Ђ exploreService.js   # Explore search services
+     в”‚   в”‚   в”њв”Ђв”Ђ onboardingService.js # Onboarding steps
+     в”‚   в”‚   в”њв”Ђв”Ђ projectService.js   # Project operations
+     в”‚   в”‚   в”њв”Ђв”Ђ taskService.js      # Task operations
+     в”‚   в”‚   в””в”Ђв”Ђ workspaceService.js  # Workspace operations
+     в”‚   в”њв”Ђв”Ђ validators/
+     в”‚   в”‚   в”њв”Ђв”Ђ onboardingSchemas.js # Onboarding validation
+     в”‚   в”‚   в”њв”Ђв”Ђ projectSchemas.js    # Project validation
+     в”‚   в”‚   в”њв”Ђв”Ђ taskSchemas.js       # Task validation
+     в”‚   в”‚   в””в”Ђв”Ђ workspaceSchemas.js  # Workspace validation
+     в”‚   в”њв”Ђв”Ђ search/
+     в”‚   в”‚   в””в”Ђв”Ђ messagesSearch.js    # Full-text search (Meilisearch)
+     в”‚   в””в”Ђв”Ђ middleware/
+     в”‚       в””в”Ђв”Ђ sanitize.js          # Input sanitization
+     в”‚
+     в”њв”Ђв”Ђ database/
+     в”‚   в”њв”Ђв”Ђ schema.sql                            # Base schema
+     в”‚   в”њв”Ђв”Ђ migrate.js                             # Core migrations
+     в”‚   в”њв”Ђв”Ђ migrate-rate-limit.js                  # Rate limiting migration
+     в”‚   в”њв”Ђв”Ђ migrate-communities.js                 # Groups migration
+     в”‚   в”њв”Ђв”Ђ migrate-audit.js                       # Audit migration
+     в”‚   в””в”Ђв”Ђ 013_workspace_builder_core.sql         # Workspaces/projects/tasks migration
+     в”њв”Ђв”Ђ scripts/
+     в”‚   в”њв”Ђв”Ђ db-init.js               # Database initialization
+     в”‚   в””в”Ђв”Ђ stickers-sync.js         # Sticker sync helper
+     в””в”Ђв”Ђ package.json
 ```
 
 ---
 
-## ⚙️ Key features
+## вљ™пёЏ Key features
 
 ### 1. Groups & Channels (Chats)
 
@@ -194,7 +194,7 @@ LUME/
 **Features:**
 - Chronological feed
 - Post creation (up to 420 chars) with images
-- “Resonance” reactions
+- вЂњResonanceвЂќ reactions
 - Emoji comments
 - Reposts
 - WebSocket real-time updates
@@ -211,7 +211,7 @@ LUME/
 - File and image attachments
 - Read receipts
 - Voice messages
-- Ephemeral moments
+- Media
 
 ### 4. User profiles
 
@@ -226,13 +226,13 @@ LUME/
 ### 5. Verification system
 
 **Process:**
-1. Submit request (registration ≥7 days)
+1. Submit request (registration в‰Ґ7 days)
 2. Admin review
 3. Approved for 1 month with badge
 
 **Badges:** Verified, Developer, CEO
 
-### 6. Security 🔒
+### 6. Security рџ”’
 
 - **httpOnly Cookies**: tokens not accessible via JavaScript
 - **Rate Limiting**: brute-force protection
@@ -271,13 +271,13 @@ LUME/
 - Create tasks within projects
 - Assign to team members
 - Set priority: low, medium, high, urgent
-- Status workflow: todo → in_progress → review → done
+- Status workflow: todo в†’ in_progress в†’ review в†’ done
 - Add comments to tasks
 - Source message linking (create tasks from messages)
 
 ---
 
-## 🛡️ Security
+## рџ›ЎпёЏ Security
 
 - **httpOnly Cookies**: tokens not accessible via JavaScript
 - **Rate Limiting**: brute-force protection
@@ -289,7 +289,7 @@ LUME/
 
 ---
 
-## 👥 Permissions
+## рџ‘Ґ Permissions
 
 **Chat roles:**
 - **Owner (100)**: full access, delete chat, transfer ownership
@@ -309,7 +309,7 @@ LUME/
 
 ---
 
-## 📊 Audit and Logging
+## рџ“Љ Audit and Logging
 
 **Audited events:**
 - User logins/logouts
@@ -336,7 +336,7 @@ Current backend route registration root is still [`backend/src/api.js`](backend/
 
 ---
 
-## 🛠️ Troubleshooting runbook
+## рџ› пёЏ Troubleshooting runbook
 
 ### Start commands
 
@@ -415,7 +415,7 @@ Message cache persistence and contract behavior are covered by [`src/test/messag
 
 ---
 
-## 🗄️ Database schema
+## рџ—„пёЏ Database schema
 
 ### Core tables
 
@@ -458,9 +458,9 @@ Message cache persistence and contract behavior are covered by [`src/test/messag
 | text | TEXT | Text |
 | created_at | DATETIME | Timestamp |
 | deleted_for_all | BOOLEAN | Deleted for all flag |
-| moment_id | INTEGER | Moment ID (ephemeral) |
+| media_id | INTEGER | media ID (ephemeral) |
 
-#### `moments`
+#### `media`
 | Field | Type | Description |
 |-------|------|-------------|
 | id | INTEGER | Primary key |
@@ -545,7 +545,7 @@ Message cache persistence and contract behavior are covered by [`src/test/messag
 
 ---
 
-## 📡 API documentation
+## рџ“Ў API documentation
 
 Full API docs live in [backend/API.md](./backend/API.md).
 
@@ -557,87 +557,87 @@ http://150.241.85.189:5000/api
 ### Core endpoints
 
 #### Auth
-- `POST /register` — Register
-- `POST /login` — Login
-- `POST /refresh` — Refresh token
-- `POST /logout` — Logout
+- `POST /register` вЂ” Register
+- `POST /login` вЂ” Login
+- `POST /refresh` вЂ” Refresh token
+- `POST /logout` вЂ” Logout
 
 #### Profile
-- `GET /profile` — My profile
-- `GET /profile/:userId` — User profile
-- `PUT /profile` — Update profile
-- `POST /profile/avatar` — Upload avatar
-- `POST /profile/banner` — Upload banner
-- `DELETE /profile` — Delete account
+- `GET /profile` вЂ” My profile
+- `GET /profile/:userId` вЂ” User profile
+- `PUT /profile` вЂ” Update profile
+- `POST /profile/avatar` вЂ” Upload avatar
+- `POST /profile/banner` вЂ” Upload banner
+- `DELETE /profile` вЂ” Delete account
 
 #### Posts
-- `GET /posts` — Feed
-- `GET /posts/recommended` — Recommended
-- `GET /posts/following` — Following
-- `POST /posts` — Create post
-- `DELETE /posts/:postId` — Delete post
-- `POST /posts/:postId/resonance` — Like
+- `GET /posts` вЂ” Feed
+- `GET /posts/recommended` вЂ” Recommended
+- `GET /posts/following` вЂ” Following
+- `POST /posts` вЂ” Create post
+- `DELETE /posts/:postId` вЂ” Delete post
+- `POST /posts/:postId/resonance` вЂ” Like
 
 #### Chats
-- `GET /chats` — Chat list
-- `POST /chats` — Create chat
-- `PUT /chats/:chatId` — Update chat
-- `POST /chats/:chatId/members` — Add member
-- `DELETE /chats/:chatId/members/:userId` — Remove member
-- `GET /chats/public?query=...` — Public channels
-- `POST /chats/:chatId/subscribe` — Join public channel
-- `GET /chats/:chatId/join-requests` — Join requests
-- `POST /chats/:chatId/join-requests/:requestId/review` — Approve/reject
+- `GET /chats` вЂ” Chat list
+- `POST /chats` вЂ” Create chat
+- `PUT /chats/:chatId` вЂ” Update chat
+- `POST /chats/:chatId/members` вЂ” Add member
+- `DELETE /chats/:chatId/members/:userId` вЂ” Remove member
+- `GET /chats/public?query=...` вЂ” Public channels
+- `POST /chats/:chatId/subscribe` вЂ” Join public channel
+- `GET /chats/:chatId/join-requests` вЂ” Join requests
+- `POST /chats/:chatId/join-requests/:requestId/review` вЂ” Approve/reject
 
 #### Messages
-- `GET /messages?chatId=...` — Chat history
-- `POST /messages` — Send message
-- `DELETE /messages/:messageId` — Delete message
+- `GET /messages?chatId=...` вЂ” Chat history
+- `POST /messages` вЂ” Send message
+- `DELETE /messages/:messageId` вЂ” Delete message
 
 #### Onboarding
-- `GET /onboarding/status` — Get onboarding status
-- `POST /onboarding/profile` — Save profile step
-- `POST /onboarding/skills` — Save skills step
-- `POST /onboarding/goals` — Save goals step
-- `POST /onboarding/workspace` — Save workspace step
-- `POST /onboarding/complete` — Complete onboarding
+- `GET /onboarding/status` вЂ” Get onboarding status
+- `POST /onboarding/profile` вЂ” Save profile step
+- `POST /onboarding/skills` вЂ” Save skills step
+- `POST /onboarding/goals` вЂ” Save goals step
+- `POST /onboarding/workspace` вЂ” Save workspace step
+- `POST /onboarding/complete` вЂ” Complete onboarding
 
 #### Workspaces
-- `POST /workspaces` — Create workspace
-- `GET /workspaces/my` — My workspaces
-- `GET /workspaces/public` — Public workspaces
-- `GET /workspaces/:slug` — Workspace by slug
-- `PATCH /workspaces/:id` — Update workspace
-- `DELETE /workspaces/:id` — Delete workspace
-- `POST /workspaces/:id/members` — Add member
-- `PATCH /workspaces/:id/members/:userId` — Update member role
-- `DELETE /workspaces/:id/members/:userId` — Remove member
-- `POST /workspaces/:id/invites` — Create invite
-- `POST /workspaces/join/:inviteCode` — Join via invite
-- `GET /workspaces/:id/members` — List members
+- `POST /workspaces` вЂ” Create workspace
+- `GET /workspaces/my` вЂ” My workspaces
+- `GET /workspaces/public` вЂ” Public workspaces
+- `GET /workspaces/:slug` вЂ” Workspace by slug
+- `PATCH /workspaces/:id` вЂ” Update workspace
+- `DELETE /workspaces/:id` вЂ” Delete workspace
+- `POST /workspaces/:id/members` вЂ” Add member
+- `PATCH /workspaces/:id/members/:userId` вЂ” Update member role
+- `DELETE /workspaces/:id/members/:userId` вЂ” Remove member
+- `POST /workspaces/:id/invites` вЂ” Create invite
+- `POST /workspaces/join/:inviteCode` вЂ” Join via invite
+- `GET /workspaces/:id/members` вЂ” List members
 
 #### Projects
-- `POST /projects` — Create project
-- `GET /projects/my` — My projects
-- `GET /projects/public` — Public projects
-- `GET /projects/:slug` — Project by slug
-- `PATCH /projects/:id` — Update project
-- `DELETE /projects/:id` — Delete project
-- `POST /projects/:id/members` — Add member
-- `DELETE /projects/:id/members/:userId` — Remove member
-- `POST /projects/:id/invite` — Create invite
-- `GET /projects/:id/members` — List members
+- `POST /projects` вЂ” Create project
+- `GET /projects/my` вЂ” My projects
+- `GET /projects/public` вЂ” Public projects
+- `GET /projects/:slug` вЂ” Project by slug
+- `PATCH /projects/:id` вЂ” Update project
+- `DELETE /projects/:id` вЂ” Delete project
+- `POST /projects/:id/members` вЂ” Add member
+- `DELETE /projects/:id/members/:userId` вЂ” Remove member
+- `POST /projects/:id/invite` вЂ” Create invite
+- `GET /projects/:id/members` вЂ” List members
 
 #### Tasks
-- `POST /projects/:projectId/tasks` — Create task
-- `GET /projects/:projectId/tasks` — Project tasks
-- `PATCH /tasks/:taskId` — Update task
-- `DELETE /tasks/:taskId` — Delete task
-- `POST /tasks/:taskId/comments` — Add comment
+- `POST /projects/:projectId/tasks` вЂ” Create task
+- `GET /projects/:projectId/tasks` вЂ” Project tasks
+- `PATCH /tasks/:taskId` вЂ” Update task
+- `DELETE /tasks/:taskId` вЂ” Delete task
+- `POST /tasks/:taskId/comments` вЂ” Add comment
 
 ---
 
-## 🔌 WebSocket events
+## рџ”Њ WebSocket events
 
 ### Connection
 ```
@@ -646,28 +646,28 @@ ws://150.241.85.189:5000/ws
 
 ### Events
 
-**Client → Server:**
-- `register` — Register user
-- `ping` — Heartbeat
-- `typing:start` / `typing:stop` — Typing indicator
-- `chat:read` — Mark chat read
-- `message:delivered` — Delivery
-- `chat:subscribe` / `chat:unsubscribe` — Subscribe to chat
+**Client в†’ Server:**
+- `register` вЂ” Register user
+- `ping` вЂ” Heartbeat
+- `typing:start` / `typing:stop` вЂ” Typing indicator
+- `chat:read` вЂ” Mark chat read
+- `message:delivered` вЂ” Delivery
+- `chat:subscribe` / `chat:unsubscribe` вЂ” Subscribe to chat
 
-**Server → Client:**
-- `new_post` — New post
-- `new_message` — New message
-- `typing:update` — Typing status
-- `chat:read_update` — Read status
-- `presence:update` — Online status
-- `channel:new_message` — Channel message
-- `message:deleted` — Message deleted
-- `notification_new` — New notification
-- `session_terminated` — Session terminated (logout all)
+**Server в†’ Client:**
+- `new_post` вЂ” New post
+- `new_message` вЂ” New message
+- `typing:update` вЂ” Typing status
+- `chat:read_update` вЂ” Read status
+- `presence:update` вЂ” Online status
+- `channel:new_message` вЂ” Channel message
+- `message:deleted` вЂ” Message deleted
+- `notification_new` вЂ” New notification
+- `session_terminated` вЂ” Session terminated (logout all)
 
 ---
 
-## 🛡️ Security
+## рџ›ЎпёЏ Security
 
 ### 1. httpOnly Cookies
 Tokens are stored in httpOnly cookies and inaccessible via JavaScript.
@@ -690,7 +690,7 @@ Role-based access control for chats.
 
 ---
 
-## 🚀 Installation and launch
+## рџљЂ Installation and launch
 
 ### 1. Clone
 ```bash
@@ -727,7 +727,7 @@ npm run dev
 
 ---
 
-## ⚙️ Configuration
+## вљ™пёЏ Configuration
 
 ### Backend (.env)
 ```env
@@ -748,22 +748,24 @@ API URL: `http://150.241.85.189:5000/api`
 
 ---
 
-## 📄 License
+## рџ“„ License
 
 MIT License
 
 ---
 
-## 👥 Authors
+## рџ‘Ґ Authors
 
-- **zxclovly** — Owner & Admin
+- **zxclovly** вЂ” Owner & Admin
 
 ---
 
-## 📚 Additional documentation
+## рџ“љ Additional documentation
 
-- [Features Inventory](./docs/FEATURES_INVENTORY.md) — Complete feature list
-- [Error Handling](./docs/ERROR_HANDLING.md) — Error handling system
-- [Groups Module](./docs/GROUPS_MODULE.md) — Groups module docs
-- [Project UI](./docs/PROJECT_UI/) — UI/UX documentation
-- [API Documentation](./backend/API.md) — API endpoints
+- [Features Inventory](./docs/FEATURES_INVENTORY.md) вЂ” Complete feature list
+- [Error Handling](./docs/ERROR_HANDLING.md) вЂ” Error handling system
+- [Groups Module](./docs/GROUPS_MODULE.md) вЂ” Groups module docs
+- [Project UI](./docs/PROJECT_UI/) вЂ” UI/UX documentation
+- [API Documentation](./backend/API.md) вЂ” API endpoints
+
+

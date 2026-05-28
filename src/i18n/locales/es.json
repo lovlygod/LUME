@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "loading": "Cargando...",
     "error": "Error",
@@ -410,7 +410,7 @@
     "voiceNoChat": "No hay chat seleccionado",
     "voiceSent": "Mensaje de voz enviado",
     "voiceSendError": "No se pudo enviar el mensaje de voz",
-    "momentReplyLabel": "Foto temporal"
+    "momentReplyLabel": "imagen adjunta"
   },
   "voice": {
     "record": "Grabar mensaje de voz",
@@ -1092,8 +1092,8 @@
       },
       "messages": {
         "q1": {
-          "title": "¿Cómo envío una foto temporal?",
-          "answer": "En el chat, activa el modo Moment y agrega una imagen.",
+          "title": "¿Cómo envío una imagen adjunta?",
+          "answer": "En el chat, activa el modo media y agrega una imagen.",
           "bullet1": "Se abre una vez",
           "bullet2": "Sin guardado",
           "bullet3": "Dura hasta 24 horas",
@@ -1357,3 +1357,4 @@
     "unavailable": "Estado no disponible"
   }
 }
+

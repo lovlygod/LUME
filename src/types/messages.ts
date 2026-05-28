@@ -1,4 +1,4 @@
-export interface Chat {
+﻿export interface Chat {
   id: string;
   type: "private" | "group" | "channel";
   title?: string | null;
@@ -21,7 +21,7 @@ export interface Chat {
   }>;
   verified?: boolean;
   lastMessage: string;
-  lastMessageType?: "text" | "image" | "sticker" | "voice" | "moment_image" | "diagram";
+  lastMessageType?: "text" | "image" | "sticker" | "voice" | "media_image" | "diagram";
   timestamp: string;
   unread?: number;
   projectId?: number | null;
@@ -63,7 +63,7 @@ export interface Message {
   } | null;
   text: string;
   diagramSvg?: string | null;
-  type?: "text" | "moment_image" | "voice" | "sticker";
+  type?: "text" | "media_image" | "voice" | "sticker";
   sticker?: {
     id: string;
     packId?: string | null;
@@ -71,7 +71,7 @@ export interface Message {
     filePath?: string | null;
     url?: string | null;
   } | null;
-  moment?: {
+  media?: {
     id: string;
     thumbDataUrl?: string | null;
     ttlSeconds?: number | null;
@@ -86,3 +86,4 @@ export interface Message {
   replyToMessageId?: string | null;
   linkPreview?: LinkPreview | null;
 }
+

@@ -1,6 +1,6 @@
-# LUME Messages UI
+﻿# LUME Messages UI
 
-English | [Русский](../../docs-ru/PROJECT_UI/MESSAGES_UI.ru.md) | [中文](../../docs-cn/PROJECT_UI/MESSAGES_UI.cn.md)
+English | [Р СѓСЃСЃРєРёР№](../../docs-ru/PROJECT_UI/MESSAGES_UI.ru.md) | [дё­ж–‡](../../docs-cn/PROJECT_UI/MESSAGES_UI.cn.md)
 
 **Last updated:** 2026-05-20
 
@@ -11,7 +11,7 @@ English | [Русский](../../docs-ru/PROJECT_UI/MESSAGES_UI.ru.md) | [中文
 Messages provide private 1:1 chats with real-time updates.
 
 **Files:**
-- Page: `src/pages/Messages.tsx` → `src/pages/messages/MessagesPage.tsx`
+- Page: `src/pages/Messages.tsx` в†’ `src/pages/messages/MessagesPage.tsx`
 - Components: `src/pages/messages/components/`
 - Hooks: `src/pages/messages/hooks/`
 
@@ -53,8 +53,8 @@ Chat Panel (right)
 - Shows read receipts for own messages
 - Typing indicator
 - Voice messages (record + playback)
-- Ephemeral "moment" messages with TTL and view tracking
-- **NPM Package Preview** — automatic detection of `npm <package>` commands
+- Ephemeral "media" messages with TTL and view tracking
+- **NPM Package Preview** вЂ” automatic detection of `npm <package>` commands
 
 ---
 
@@ -88,7 +88,7 @@ Chat Panel (right)
 - Reply bar
 - Attachments
 - Send button
-- Moment toggle (ephemeral image)
+- media toggle (ephemeral image)
 - Voice recorder
 
 ---
@@ -98,7 +98,7 @@ Chat Panel (right)
 | State | Behavior |
 |------|----------|
 | Loading | Skeleton list |
-| Empty | “No chats yet” placeholder |
+| Empty | вЂњNo chats yetвЂќ placeholder |
 | Error | Retry button |
 
 ---
@@ -127,11 +127,11 @@ Chat Panel (right)
 
 ---
 
-## Moments (ephemeral media)
+## Media
 
-- TTL-based ephemeral images (24 hours)
-- Open token flow: `POST /moments/:id/open` → signed content URL
-- Viewed status tracked via `POST /moments/:id/viewed`
+- - Image attachments
+- Open token flow: `POST /media/:id/open` в†’ signed content URL
+- Viewed status tracked via `POST /media/:id/viewed`
 - Hidden if already viewed
 
 ---
@@ -178,13 +178,13 @@ Chat Panel (right)
 ### Translations
 
 New keys added to `src/i18n/locales/`:
-- `messages.select` — "Select"
-- `messages.selected` — "Selected"
-- `messages.deleteSelected` — "Delete selected"
-- `messages.deleteSelectedForMe` — "Delete for me"
-- `messages.deleteSelectedForAll` — "Delete for all"
-- `messages.cancelSelection` — "Cancel selection"
-- `messages.maxSelectionError` — "Maximum 100 messages can be selected"
+- `messages.select` вЂ” "Select"
+- `messages.selected` вЂ” "Selected"
+- `messages.deleteSelected` вЂ” "Delete selected"
+- `messages.deleteSelectedForMe` вЂ” "Delete for me"
+- `messages.deleteSelectedForAll` вЂ” "Delete for all"
+- `messages.cancelSelection` вЂ” "Cancel selection"
+- `messages.maxSelectionError` вЂ” "Maximum 100 messages can be selected"
 
 ---
 
@@ -193,3 +193,4 @@ New keys added to `src/i18n/locales/`:
 - [Overview](./OVERVIEW.md)
 - [Style System](./STYLE_SYSTEM.md)
 - [Groups UI](./GROUPS_UI.md)
+
