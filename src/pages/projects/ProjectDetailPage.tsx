@@ -5,7 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { Edit2, Save, X, Camera, ExternalLink, Github } from "lucide-react";
+import { Edit2, Save, X, Camera, ExternalLink, Github, ArrowLeft, ArrowRight } from "lucide-react";
 import CustomSelect from "@/components/ui/CustomSelect";
 import ProjectSettingsModal from "@/components/projects/ProjectSettingsModal";
 import { Textarea } from "@/components/ui/textarea";
@@ -200,7 +200,10 @@ const ProjectDetailPage = () => {
     return (
       <div className="py-6 text-white/60">
         <Link to="/projects" className="text-sm text-white/70 hover:text-white">
-          ← {t("projects.title")}
+          <span className="inline-flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            <span>{t("projects.title")}</span>
+          </span>
         </Link>
         <p className="mt-4">Project not found</p>
       </div>
@@ -225,7 +228,10 @@ const ProjectDetailPage = () => {
     <div className="space-y-6 py-6 text-white">
       <div className="flex items-center justify-between">
         <Link to="/projects" className="text-sm text-white/70 hover:text-white">
-          ← {t("projects.title")}
+          <span className="inline-flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            <span>{t("projects.title")}</span>
+          </span>
         </Link>
         {canManageTasks && (
           <button
@@ -654,7 +660,10 @@ const ProjectDetailPage = () => {
               >
                 <span className="text-lg">#</span>
                 <span className="font-medium">{linkedChat.title || "Чат проекта"}</span>
-                <span className="ml-auto text-sm text-white/60">Открыть →</span>
+                <span className="ml-auto inline-flex items-center gap-1 text-sm text-white/60">
+                  <span>Открыть</span>
+                  <ArrowRight className="h-4 w-4" />
+                </span>
               </button>
               {isOwner && (
                 <button

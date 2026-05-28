@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Shield, Check, XCircle, Users, FileText, Flag, Trash2 } from 'lucide-react';
+import { X, Shield, Check, XCircle, Users, FileText, Flag, Trash2, ExternalLink } from 'lucide-react';
 import { verificationAPI, User, VerificationRequest } from '@/services/api';
 import { toast } from 'sonner';
 
@@ -253,9 +253,10 @@ const AdminPanelModal = ({ isOpen, onClose }: AdminPanelModalProps) => {
                                   href={request.tiktok_video_url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-xs text-white/80 hover:underline"
+                                  className="inline-flex items-center gap-1 text-xs text-white/80 hover:underline"
                                 >
-                                  TikTok Video →
+                                  <span>TikTok Video</span>
+                                  <ExternalLink className="h-3 w-3" />
                                 </a>
                               )}
                               <p className="text-xs text-secondary mt-2">

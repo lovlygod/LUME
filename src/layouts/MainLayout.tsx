@@ -2,6 +2,7 @@
 import AppLayout from "@/components/layout/AppLayout";
 import SidebarLeft from "@/components/layout/SidebarLeft";
 import SidebarRight from "@/components/layout/SidebarRight";
+import { ArrowLeft } from "lucide-react";
 
 const MainLayout = () => {
   const { pathname } = useLocation();
@@ -33,7 +34,8 @@ const MainLayout = () => {
                 onClick={() => navigate("/feed")}
                 className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
               >
-                ← Back to feed
+                <ArrowLeft className="h-4 w-4" />
+                <span>Back to feed</span>
               </button>
             </div>
           )}

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LayoutGroup, AnimatePresence, motion } from "framer-motion";
-import { MessageCircle, X, Trash2 } from "lucide-react";
+import { MessageCircle, X, Trash2, ArrowLeft } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -1150,9 +1150,10 @@ const MessagesPage = () => {
                           </button>
                           <button
                             onClick={() => navigate('/projects')}
-                            className="mt-3 text-sm text-white/60 hover:text-white"
+                            className="mt-3 inline-flex items-center gap-2 text-sm text-white/60 hover:text-white"
                           >
-                            ← Назад к проектам
+                            <ArrowLeft className="h-4 w-4" />
+                            <span>Назад к проектам</span>
                           </button>
                         </div>
                       </div>
