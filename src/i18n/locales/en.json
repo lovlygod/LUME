@@ -108,6 +108,8 @@
     "hasAccount": "Already have an account?",
     "loginError": "Invalid email or password",
     "registerError": "Failed to register",
+    "usernameTaken": "Username is already taken",
+    "emailTaken": "Email is already in use",
     "usernameError": "Username must be at least 3 characters and contain only English letters, numbers, underscore and dot",
     "passwordError": "Password must be at least 6 characters",
     "passwordMismatch": "Passwords do not match",

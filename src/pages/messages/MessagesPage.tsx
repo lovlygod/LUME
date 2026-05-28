@@ -103,6 +103,7 @@ const MessagesPage = () => {
   } | null>(null);
   const typingStopTimerRef = useRef<number | null>(null);
   const typingDebounceRef = useRef<number | null>(null);
+  const privateChatCreateInFlightRef = useRef<Set<string>>(new Set());
 
   const queryClient = useQueryClient();
 
@@ -250,6 +251,13 @@ const MessagesPage = () => {
       return;
     }
 
+    const targetKey = String(targetUserId);
+    if (privateChatCreateInFlightRef.current.has(targetKey)) {
+      return;
+    }
+
+    privateChatCreateInFlightRef.current.add(targetKey);
+
     let cancelled = false;
     messagesAPI
       .createChat({ type: "private", userId: targetUserId })
@@ -263,6 +271,7 @@ const MessagesPage = () => {
         console.error("Failed to create private chat", error);
       })
       .finally(() => {
+        privateChatCreateInFlightRef.current.delete(targetKey);
         queryClient.invalidateQueries({ queryKey: messageQueryKeys.chatList() });
       });
     return () => {

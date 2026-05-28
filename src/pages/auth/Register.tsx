@@ -36,11 +36,26 @@ const Register = () => {
   };
 
   const getRegisterErrorMessage = (err: unknown) => {
-    const apiError = err as { error?: { statusCode?: number; code?: string; message?: string } } | null;
+    const apiError = err as {
+      error?: { statusCode?: number; code?: string; message?: string; details?: { field?: string } };
+    } | null;
     const statusCode = apiError?.error?.statusCode;
     const code = apiError?.error?.code;
+    const field = apiError?.error?.details?.field;
 
-    if (statusCode === 409 || code === "CONFLICT") {
+    if (code === "UNIQUE_CONSTRAINT" || statusCode === 409) {
+      if (field === "username") {
+        return t("auth.usernameTaken");
+      }
+      if (field === "email") {
+        return t("auth.emailTaken");
+      }
+      if (apiError?.error?.message === "Username already exists") {
+        return t("auth.usernameTaken");
+      }
+      if (apiError?.error?.message === "Email already exists") {
+        return t("auth.emailTaken");
+      }
       return t("registerError");
     }
 

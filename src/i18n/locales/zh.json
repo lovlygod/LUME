@@ -106,6 +106,8 @@
     "hasAccount": "已有账号？",
     "loginError": "邮箱或密码错误",
     "registerError": "注册失败",
+    "usernameTaken": "用户名已被占用",
+    "emailTaken": "邮箱已被占用",
     "usernameError": "用户名至少 5 个字符，仅包含英文与数字",
     "passwordError": "密码至少 6 个字符",
     "passwordMismatch": "密码不匹配",

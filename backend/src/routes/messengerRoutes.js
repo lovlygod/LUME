@@ -495,6 +495,22 @@ module.exports = function registerMessengerRoutes(router, deps) {
       }
 
       chatMembers = [String(userId), otherUserIds[0]];
+
+      const existingPrivateChat = await db.query(
+        `SELECT c.id
+         FROM chats c
+         JOIN chat_members cm1 ON cm1.chat_id = c.id
+         JOIN chat_members cm2 ON cm2.chat_id = c.id
+         WHERE c.type = 'private'
+           AND cm1.user_id = $1
+           AND cm2.user_id = $2
+         LIMIT 1`,
+        [chatMembers[0], chatMembers[1]]
+      );
+
+      if (existingPrivateChat.rows.length > 0) {
+        return res.status(200).json({ chatId: String(existingPrivateChat.rows[0].id), existing: true });
+      }
     }
 
     const { rows } = await db.query(

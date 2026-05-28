@@ -106,6 +106,8 @@
     "hasAccount": "Já tem uma conta?",
     "loginError": "E-mail ou senha inválidos",
     "registerError": "Falha ao registrar",
+    "usernameTaken": "Nome de usuário já está em uso",
+    "emailTaken": "E-mail já está em uso",
     "usernameError": "O nome de usuário deve ter pelo menos 5 caracteres e conter apenas letras e números em inglês",
     "passwordError": "A senha deve ter pelo menos 6 caracteres",
     "passwordMismatch": "As senhas não coincidem",

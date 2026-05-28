@@ -46,6 +46,7 @@ const validateUsername = (username) => {
 // Register new user
 const register = async (req, res, next) => {
   const { email, password, name, username } = req.body;
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
 
   try {
     // Validate input
@@ -73,8 +74,21 @@ const register = async (req, res, next) => {
     const userId = await new Promise((resolve, reject) => {
       db.run(query, [email, hashedPassword, name || username, username], function(err) {
         if (err) {
-          if (err.message.includes('UNIQUE constraint failed')) {
-            const field = err.message.includes('email') ? 'email' : 'username';
+          const errorMessage = String(err.message || '').toLowerCase();
+          const isUniqueViolation =
+            err.code === '23505' ||
+            errorMessage.includes('unique constraint failed') ||
+            errorMessage.includes('duplicate key value violates unique constraint') ||
+            errorMessage.includes('нарушает ограничение уникальности');
+
+          if (isUniqueViolation) {
+            const field =
+              errorMessage.includes('email') || errorMessage.includes('users_email_key')
+                ? 'email'
+                : 'username';
+            resetRateLimit(ip, 'register').catch(rateLimitResetErr => {
+              console.error('Reset rate limit on register conflict error:', rateLimitResetErr);
+            });
             reject(new ConflictError(`${field === 'email' ? 'Email' : 'Username'} already exists`, 'UNIQUE_CONSTRAINT', { field }));
           } else {
             logger.errors.database(err, query);
@@ -110,7 +124,6 @@ const register = async (req, res, next) => {
     logger.auth.register(userId, email, req.ip);
 
     // Audit log (non-blocking, don't wait)
-    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
     audit.register(userId, email, ip).catch(err => {
       console.error('Audit register error:', err);
     });
