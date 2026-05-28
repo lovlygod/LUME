@@ -23,8 +23,6 @@ const { asyncHandler, ValidationError, AuthError, InternalError, ServiceError } 
 const { logger } = require('./logger');
 const { verifyCSRFToken } = require('./csrf');
 const { indexMessage } = require('./search/messagesSearch');
-const developerPlatformRoutes = require('./developerPlatform');
-const developerApiRoutes = require('./developerApi');
 const registerStickerRoutes = require('./routes/stickerRoutes');
 const registerMessengerRoutes = require('./routes/messengerRoutes');
 const registerE2EERoutes = require('./routes/e2eeRoutes');
@@ -499,12 +497,6 @@ router.delete('*', (req, res, next) => {
   verifyCSRFToken(req, res, next);
 });
 router.patch('*', verifyCSRFToken);
-
-// Developer platform routes
-router.use('/developer', developerPlatformRoutes);
-
-// Developer public API routes
-router.use('/developer-api', developerApiRoutes);
 
 registerE2EERoutes(router, {
   db,
