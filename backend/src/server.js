@@ -740,6 +740,20 @@ server.listen(PORT, () => {
 
   try {
     const api = require('./api');
+    if (typeof api.ensureMediaSchema === 'function') {
+      api.ensureMediaSchema().then(() => {
+        console.info('[Startup] Media schema ensured');
+      }).catch((err) => {
+        console.error('[Startup] Media schema ensure failed:', err?.message || err);
+      });
+    }
+    if (typeof api.ensureMessagesMediaColumn === 'function') {
+      api.ensureMessagesMediaColumn().then(() => {
+        console.info('[Startup] messages.media_id ensured');
+      }).catch((err) => {
+        console.error('[Startup] messages.media_id ensure failed:', err?.message || err);
+      });
+    }
     if (typeof api.ensureStickerData === 'function') {
       api.ensureStickerData().then(() => {
         console.info('[Startup] Sticker packs synced');

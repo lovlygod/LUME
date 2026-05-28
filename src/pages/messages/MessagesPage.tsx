@@ -885,17 +885,10 @@ const MessagesPage = () => {
   const handleBulkDeleteMessages = async (scope: "me" | "all") => {
     if (selectedMessages.length === 0 || !selectedChatId) return;
     try {
-      const response = await fetch(`/api/chats/${selectedChatId}/messages/bulk-delete`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ messageIds: selectedMessages, scope }),
+      const result = await chatsAPI.bulkDeleteMessages(selectedChatId, {
+        messageIds: selectedMessages,
+        scope,
       });
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Delete failed");
-      }
-      const result = await response.json();
       toast.success(`${result.deleted} messages deleted`);
       setSelectedMessages([]);
       queryClient.invalidateQueries({ queryKey: messageQueryKeys.chatMessages(selectedChatId) });

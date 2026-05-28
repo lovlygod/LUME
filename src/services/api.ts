@@ -1020,6 +1020,15 @@ export const chatsAPI = {
   getProject: async (chatId: string): Promise<{ project: any }> => {
     return apiRequest(`/chats/${chatId}/project`, { method: 'GET' });
   },
+  bulkDeleteMessages: async (
+    chatId: string,
+    payload: { messageIds: string[]; scope: 'me' | 'all' }
+  ): Promise<{ deleted: number; scope: 'me' | 'all' }> => {
+    return apiRequest(`/chats/${chatId}/messages/bulk-delete`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
 };
 
 export const tasksAPI = {

@@ -369,6 +369,61 @@ const ensureStickerData = async () => {
   }
 };
 
+const ensureMediaSchema = async () => {
+  const runStatement = (sql) => new Promise((resolve, reject) => {
+    db.exec(sql, (err) => {
+      if (err) return reject(err);
+      resolve();
+    });
+  });
+
+  await runStatement(`
+    CREATE TABLE IF NOT EXISTS media (
+      id BIGSERIAL PRIMARY KEY,
+      sender_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      receiver_id BIGINT NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+      file_path TEXT NOT NULL,
+      mime TEXT,
+      size BIGINT,
+      width INTEGER,
+      height INTEGER,
+      thumb_data_url TEXT,
+      ttl_seconds INTEGER,
+      expires_at TIMESTAMPTZ,
+      revoked_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
+  await runStatement(`
+    CREATE TABLE IF NOT EXISTS media_views (
+      media_id BIGINT NOT NULL REFERENCES media(id) ON DELETE CASCADE,
+      user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      viewed_at TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (media_id, user_id)
+    )
+  `);
+
+  await runStatement('CREATE INDEX IF NOT EXISTS idx_media_receiver_id ON media(receiver_id)');
+  await runStatement('CREATE INDEX IF NOT EXISTS idx_media_expires_at ON media(expires_at)');
+};
+
+const ensureMessagesMediaColumn = async () => {
+  const runStatement = (sql) => new Promise((resolve, reject) => {
+    db.exec(sql, (err) => {
+      if (err) return reject(err);
+      resolve();
+    });
+  });
+
+  await runStatement(`
+    ALTER TABLE messages
+    ADD COLUMN IF NOT EXISTS media_id BIGINT REFERENCES media(id) ON DELETE SET NULL
+  `);
+
+  await runStatement('CREATE INDEX IF NOT EXISTS idx_messages_media_id ON messages(media_id)');
+};
+
 const mediaUpload = uploadMemoryImage;
 
 // Test route - самый первый роут
@@ -4247,5 +4302,7 @@ router.post('/link-preview', authenticateToken, asyncHandler(async (req, res) =>
 
 module.exports = router;
 module.exports.ensureStickerData = ensureStickerData;
+module.exports.ensureMediaSchema = ensureMediaSchema;
+module.exports.ensureMessagesMediaColumn = ensureMessagesMediaColumn;
 
 

@@ -116,7 +116,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Токен из cookies не доступен, но мы можем установить флаг
       setToken('cookie');
     } catch (error) {
-      console.error('Failed to load user data:', error);
+      const statusCode = (error as { error?: { statusCode?: number } })?.error?.statusCode;
+      const isExpectedGuestState = statusCode === 401 || statusCode === 403;
+      if (!isExpectedGuestState) {
+        console.error('Failed to load user data:', error);
+      }
       setToken(null);
       setUser(null);
       localStorage.removeItem('token');
