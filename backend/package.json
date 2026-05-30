@@ -29,6 +29,7 @@
     "openai": "^4.93.0",
     "pg": "^8.13.1",
     "sanitize-html": "^2.17.1",
+    "swagger-jsdoc": "^6.2.8",
     "ua-parser-js": "^1.0.41",
     "uuid": "^9.0.1",
     "ws": "^8.19.0",

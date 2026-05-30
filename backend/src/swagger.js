@@ -315,7 +315,7 @@ const options = {
     './src/api.js',
     './src/auth.js',
     './src/profile.js',
-    './src/servers.js',
+    './src/routes/*.js',
   ],
 };
 

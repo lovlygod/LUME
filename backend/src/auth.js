@@ -13,6 +13,14 @@ const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
   throw new Error('JWT_SECRET is required. Set it in backend/.env before starting the server.');
 }
+if (process.env.NODE_ENV === 'production') {
+  if (JWT_SECRET.length < 32) {
+    throw new Error('JWT_SECRET must be at least 32 characters long in production.');
+  }
+  if (JWT_SECRET === 'change_me') {
+    throw new Error('JWT_SECRET must be changed from the default value in production.');
+  }
+}
 const REFRESH_TOKEN_EXPIRY_DAYS = 30; // Refresh token lives for 30 days
 
 // Cookie options for httpOnly tokens
