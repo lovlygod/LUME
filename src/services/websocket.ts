@@ -23,6 +23,7 @@ class WebSocketService {
   private userId: string | null = null;
   private typingTimers: Map<string, NodeJS.Timeout> = new Map();
   private subscribedChats: Set<string> = new Set();
+  private chatSubscriptionRefs: Map<string, number> = new Map();
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
   private lastPongAt: number | null = null;
 
@@ -139,6 +140,7 @@ class WebSocketService {
     }
     this.userId = null;
     this.subscribedChats.clear();
+    this.chatSubscriptionRefs.clear();
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval);
       this.heartbeatInterval = null;
@@ -167,13 +169,28 @@ class WebSocketService {
 
   // Chat subscriptions
   subscribeChat(chatId: string): void {
-    this.subscribedChats.add(String(chatId));
-    this.send({ type: 'chat:subscribe', chatId });
+    const normalizedChatId = String(chatId);
+    const currentRefs = this.chatSubscriptionRefs.get(normalizedChatId) || 0;
+    this.chatSubscriptionRefs.set(normalizedChatId, currentRefs + 1);
+
+    if (currentRefs === 0) {
+      this.subscribedChats.add(normalizedChatId);
+      this.send({ type: 'chat:subscribe', chatId: normalizedChatId });
+    }
   }
 
   unsubscribeChat(chatId: string): void {
-    this.subscribedChats.delete(String(chatId));
-    this.send({ type: 'chat:unsubscribe', chatId });
+    const normalizedChatId = String(chatId);
+    const currentRefs = this.chatSubscriptionRefs.get(normalizedChatId) || 0;
+
+    if (currentRefs <= 1) {
+      this.chatSubscriptionRefs.delete(normalizedChatId);
+      this.subscribedChats.delete(normalizedChatId);
+      this.send({ type: 'chat:unsubscribe', chatId: normalizedChatId });
+      return;
+    }
+
+    this.chatSubscriptionRefs.set(normalizedChatId, currentRefs - 1);
   }
 
   // Read receipts

@@ -21,17 +21,16 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     pathname === "/terms-of-service" ||
     pathname === "/cookie-policy";
 
-  // РџРѕРґРєР»СЋС‡РµРЅРёРµ Рє WebSocket РїСЂРё Р°СѓС‚РµРЅС‚РёС„РёРєР°С†РёРё
+  // Подключение к WebSocket при аутентификации
   useEffect(() => {
-    if (isAuthenticated() && user && token) {
-      // РџРѕРґРєР»СЋС‡Р°РµРјСЃСЏ Рє WebSocket
-      wsService.connect(user.id);
-
-      return () => {
-        wsService.disconnect();
-      };
+    const userId = user?.id;
+    if (!isAuthenticated() || !userId || !token) {
+      wsService.disconnect();
+      return;
     }
-  }, [isAuthenticated, user, token]);
+
+    wsService.connect(userId);
+  }, [isAuthenticated, user?.id, token]);
 
   useEffect(() => {
     const unsubscribe = wsService.on<{ logoutAll?: boolean }>("session_terminated", () => {
@@ -46,7 +45,6 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       {snowEffect ? <SnowEffect variant={snowVariant} /> : null}
-      {/* РћСЃРЅРѕРІРЅРѕР№ РєРѕРЅС‚РµР№РЅРµСЂ */}
         <div
           className={
             hideRightSidebar || isPolicyPage

@@ -138,8 +138,8 @@ const ChatList = ({
           return (
             <motion.div
               key={chat.id}
-            onClick={() => onSelectChat(chat.routeId || chat.id)}
-              className={`cursor-pointer rounded-xl px-3 py-3 transition-smooth max-sm:px-2.5 max-sm:py-2.5 ${
+              onClick={() => onSelectChat(chat.routeId || chat.id)}
+              className={`relative cursor-pointer rounded-xl px-3 py-3 transition-smooth max-sm:px-2.5 max-sm:py-2.5 ${
                 selectedChatId === chat.id ? "bg-white/10" : "hover:bg-white/6"
               }`}
               whileHover={{ x: 2 }}
@@ -171,9 +171,9 @@ const ChatList = ({
                       animate={{ width: "auto", opacity: 1 }}
                       exit={{ width: 0, opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="flex-1 min-w-0 overflow-hidden"
+                      className="flex-1 min-w-0 overflow-hidden pr-10"
                     >
-                      <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center justify-between mb-1 gap-2">
                         <p className="text-sm font-medium text-white truncate">
                           {user.name || `Chat ${chat.id}`}
                         </p>
@@ -204,6 +204,16 @@ const ChatList = ({
                   )}
                 </AnimatePresence>
               </div>
+
+              {!selectedChatId && (chat.unread || 0) > 0 && (
+                <span
+                  className={`absolute right-3 top-1/2 -translate-y-1/2 h-5 rounded-full bg-violet-500 text-white text-[11px] font-semibold leading-none flex items-center justify-center ${
+                    (chat.unread || 0) > 9 ? "min-w-[1.25rem] px-1.5" : "w-5"
+                  }`}
+                >
+                  {(chat.unread || 0) > 99 ? "99+" : chat.unread}
+                </span>
+              )}
             </motion.div>
           );
         })

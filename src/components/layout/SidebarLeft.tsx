@@ -21,7 +21,7 @@ import LogoutModal from "@/components/ui/LogoutModal";
 import NotificationsPanel from "@/components/NotificationsPanel";
 import { Loader } from "@/components/ui/Loader";
 import { wsService } from "@/services/websocket";
-import { apiRequest } from "@/services/api";
+import { apiRequest, messagesAPI } from "@/services/api";
 import ProtectedLogo from "@/components/ui/ProtectedLogo";
 
 const SidebarLeft = () => {
@@ -33,6 +33,7 @@ const SidebarLeft = () => {
   const [showPopover, setShowPopover] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const popoverRef = useRef<HTMLDivElement>(null);
 
   const handleHomeClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -154,6 +155,57 @@ const SidebarLeft = () => {
     };
   }, [isAuthenticated, user]);
 
+  // Fetch unread messages count + lightweight realtime updates
+  useEffect(() => {
+    if (!isAuthenticated() || !user?.id) {
+      setUnreadMessages(0);
+      return;
+    }
+
+    let mounted = true;
+
+    const refreshUnreadMessages = async () => {
+      try {
+        const data = await messagesAPI.getChats();
+        if (!mounted) return;
+
+        const chats = data.chats || [];
+        const totalUnread = chats.reduce((sum, chat) => sum + (chat.unread || 0), 0);
+        setUnreadMessages(totalUnread);
+      } catch (error: unknown) {
+        const statusCode = (error as { error?: { statusCode?: number } })?.error?.statusCode;
+        if (statusCode === 401) {
+          setUnreadMessages(0);
+          return;
+        }
+        console.error('Error fetching unread messages:', error);
+      }
+    };
+
+    refreshUnreadMessages();
+
+    const unsubNewMessage = wsService.on('new_message', (payload: { senderId?: string | number }) => {
+      if (String(payload?.senderId ?? '') === String(user.id)) return;
+      void refreshUnreadMessages();
+    });
+
+    const unsubReadUpdate = wsService.on('chat:read_update', () => {
+      void refreshUnreadMessages();
+    });
+
+    const handleFocusRefresh = () => {
+      void refreshUnreadMessages();
+    };
+    window.addEventListener('focus', handleFocusRefresh);
+
+    return () => {
+      mounted = false;
+      unsubNewMessage();
+      unsubReadUpdate();
+      window.removeEventListener('focus', handleFocusRefresh);
+    };
+  }, [isAuthenticated, user]);
+
   const getNavigationItems = () => {
     const navItems = isAuthenticated() ? [...authNavItems] : unauthNavItems;
     return navItems;
@@ -181,6 +233,8 @@ const SidebarLeft = () => {
           {getNavigationItems().map((item) => {
             const isActive = location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
             const isHome = item.to === "/home";
+            const isMessages = item.to === "/messages";
+            const hasUnreadMessages = unreadMessages > 0;
 
             if (isHome) {
               return (
@@ -189,14 +243,21 @@ const SidebarLeft = () => {
                     className={`relative flex items-center gap-3 rounded-full px-4 py-2.5 text-sm font-medium transition-smooth ${
                       isActive
                         ? "bg-white/10 text-white"
-                        : "text-secondary hover:text-white"
+                        : isMessages && hasUnreadMessages
+                          ? "text-violet-300 hover:text-violet-200"
+                          : "text-secondary hover:text-white"
                     }`}
                     whileHover={{ x: 2, scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
                     transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
                   >
-                    <item.icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-white/60'}`} />
+                    <item.icon className={`h-5 w-5 ${isActive ? 'text-white' : isMessages && hasUnreadMessages ? 'text-violet-300' : 'text-white/60'}`} />
                     <span>{item.label}</span>
+                    {isMessages && hasUnreadMessages && (
+                      <span className={`absolute right-3 top-1/2 -translate-y-1/2 h-5 flex items-center justify-center text-xs font-bold bg-violet-500 text-white rounded-full ${unreadMessages > 9 ? 'min-w-[1.25rem] px-1' : 'w-5 px-0'}`}>
+                        {unreadMessages > 99 ? '99+' : unreadMessages}
+                      </span>
+                    )}
                     {isActive && (
                       <motion.div
                         className="absolute inset-0 rounded-full bg-white/5"
@@ -216,14 +277,21 @@ const SidebarLeft = () => {
                   className={`relative flex items-center gap-3 rounded-full px-4 py-2.5 text-sm font-medium transition-smooth ${
                     isActive
                       ? "bg-white/10 text-white"
-                      : "text-secondary hover:text-white"
+                      : isMessages && hasUnreadMessages
+                        ? "text-violet-300 hover:text-violet-200"
+                        : "text-secondary hover:text-white"
                   }`}
                   whileHover={{ x: 2, scale: 1.01 }}
                   whileTap={{ scale: 0.98 }}
                   transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
                 >
-                  <item.icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-white/60'}`} />
+                  <item.icon className={`h-5 w-5 ${isActive ? 'text-white' : isMessages && hasUnreadMessages ? 'text-violet-300' : 'text-white/60'}`} />
                   <span>{item.label}</span>
+                  {isMessages && hasUnreadMessages && (
+                    <span className={`absolute right-3 top-1/2 -translate-y-1/2 h-5 flex items-center justify-center text-xs font-bold bg-violet-500 text-white rounded-full ${unreadMessages > 9 ? 'min-w-[1.25rem] px-1' : 'w-5 px-0'}`}>
+                      {unreadMessages > 99 ? '99+' : unreadMessages}
+                    </span>
+                  )}
                   {isActive && (
                     <motion.div
                       className="absolute inset-0 rounded-full bg-white/5"
@@ -370,8 +438,13 @@ const SidebarLeft = () => {
           {getNavigationItems().map((item) => {
             const isActive = location.pathname === item.to;
             const isHome = item.to === "/home";
+            const isMessages = item.to === "/messages";
             const buttonClasses = `relative flex h-10 w-10 items-center justify-center rounded-xl transition-smooth ${
-              isActive ? "bg-white/12 text-white" : "text-white/60 hover:text-white"
+              isActive
+                ? "bg-white/12 text-white"
+                : isMessages && unreadMessages > 0
+                  ? "text-violet-300 hover:text-violet-200"
+                  : "text-white/60 hover:text-white"
             }`;
 
             if (isHome) {
@@ -386,6 +459,11 @@ const SidebarLeft = () => {
             return (
               <RouterNavLink key={item.to} to={item.to} className={buttonClasses}>
                 <item.icon className="h-[18px] w-[18px]" />
+                {isMessages && unreadMessages > 0 && (
+                  <span className={`absolute -top-0.5 -right-0.5 h-4 flex items-center justify-center text-[10px] font-bold bg-violet-500 text-white rounded-full leading-none ${unreadMessages > 9 ? 'min-w-4 px-0.5' : 'w-4 px-0'}`}>
+                    {unreadMessages > 99 ? '99+' : unreadMessages}
+                  </span>
+                )}
                 <span className="sr-only">{item.label}</span>
               </RouterNavLink>
             );

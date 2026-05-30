@@ -1,6 +1,6 @@
-﻿import { useEffect } from "react";
+﻿import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import type { Attachment, Chat, Message } from "@/types/messages";
+import type { Attachment, Message } from "@/types/messages";
 import { wsService } from "@/services/websocket";
 import { messageSounds } from "@/services/messageSounds";
 import { messageQueryKeys } from "./queryKeys";
@@ -41,17 +41,31 @@ export const useChatWs = (params: {
   onReadReceipt?: (data: { chatId: string; userId: string; lastReadMessageId: string }) => void;
 }) => {
   const queryClient = useQueryClient();
+  const selectedChatIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!params.selectedChatId) return;
-    wsService.subscribeChat(params.selectedChatId);
-    return () => wsService.unsubscribeChat(params.selectedChatId as string);
+    const nextSelected = params.selectedChatId ? String(params.selectedChatId) : null;
+    const prevSelected = selectedChatIdRef.current;
+
+    if (prevSelected && prevSelected !== nextSelected) {
+      wsService.unsubscribeChat(prevSelected);
+    }
+    if (nextSelected && prevSelected !== nextSelected) {
+      wsService.subscribeChat(nextSelected);
+    }
+
+    selectedChatIdRef.current = nextSelected;
+
+    return () => {
+      if (selectedChatIdRef.current) {
+        wsService.unsubscribeChat(selectedChatIdRef.current);
+        selectedChatIdRef.current = null;
+      }
+    };
   }, [params.selectedChatId]);
 
   useEffect(() => {
-    const newMessageUnsub = wsService.on(
-      "new_message",
-      (data: {
+    const handleIncomingMessage = (data: {
         id: string | number;
         senderId: string | number;
         chatId: string | number;
@@ -65,65 +79,33 @@ export const useChatWs = (params: {
         linkPreview?: Message["linkPreview"] | null;
         sender?: Message["sender"] | null;
       }) => {
-        const message = ensureMessageShape(data);
-        const isIncoming = String(data.senderId) !== String(params.currentUserId);
-        if (isIncoming) {
-          messageSounds.playReceive();
-        }
-        const chatKey = messageQueryKeys.chatMessages(String(data.chatId));
-        const chatsKey = messageQueryKeys.chatList();
-
-        queryClient.setQueryData<{ messages: Message[] }>(chatKey, (prev) => {
-          const list = prev?.messages || [];
-          if (list.some((msg) => msg.id === message.id)) return prev ?? { messages: list };
-          return {
-            messages: [
-              ...list,
-              {
-                ...message,
-                own: String(data.senderId) === String(params.currentUserId),
-                linkPreview: message.linkPreview ?? null,
-              },
-            ],
-          };
-        });
-
-        queryClient.setQueryData<{ chats: Chat[] }>(chatsKey, (prev) => {
-          if (!prev?.chats) return prev;
-          const exists = prev.chats.find((chat) => String(chat.id) === String(data.chatId));
-          if (!exists) {
-            return {
-              chats: [
-                {
-                  id: `${Date.now()}`,
-                  type: "private",
-                  title: undefined,
-                  avatar: undefined,
-                  lastMessage: data.text,
-                  timestamp: data.timestamp,
-                  unread: String(data.senderId) === String(params.currentUserId) ? 0 : 1,
-                },
-                ...prev.chats,
-              ],
-            };
-          }
-          const updated = prev.chats.map((chat) =>
-            String(chat.id) === String(data.chatId)
-              ? {
-                  ...chat,
-                  lastMessage: data.text,
-                  timestamp: data.timestamp,
-                  unread:
-                    String(data.senderId) === String(params.currentUserId)
-                      ? chat.unread
-                      : (chat.unread || 0) + 1,
-                }
-              : chat
-          );
-          return { chats: updated.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()) };
-        });
+      const message = ensureMessageShape(data);
+      const isIncoming = String(data.senderId) !== String(params.currentUserId);
+      if (isIncoming) {
+        messageSounds.playReceive();
       }
-    );
+      const chatKey = messageQueryKeys.chatMessages(String(data.chatId));
+
+      queryClient.setQueryData<{ messages: Message[] }>(chatKey, (prev) => {
+        const list = prev?.messages || [];
+        if (list.some((msg) => msg.id === message.id)) return prev ?? { messages: list };
+        return {
+          messages: [
+            ...list,
+            {
+              ...message,
+              own: String(data.senderId) === String(params.currentUserId),
+              linkPreview: message.linkPreview ?? null,
+            },
+          ],
+        };
+      });
+
+    };
+
+    const newMessageUnsub = wsService.on("new_message", handleIncomingMessage);
+    const mediaImageUnsub = wsService.on("media_image", handleIncomingMessage);
+    const diagramUnsub = wsService.on("diagram", handleIncomingMessage);
 
     const typingUnsub = wsService.on(
       "typing:update",
@@ -193,6 +175,8 @@ export const useChatWs = (params: {
 
     return () => {
       newMessageUnsub();
+      mediaImageUnsub();
+      diagramUnsub();
       typingUnsub();
       deletedUnsub();
       editedUnsub();

@@ -21,6 +21,7 @@ import { useSendMessage } from "./hooks/useSendMessage";
 import { useDeleteMessage } from "./hooks/useDeleteMessage";
 import { useMarkRead } from "./hooks/useMarkRead";
 import { useChatWs } from "./hooks/useChatWs";
+import { useChatListWs } from "./hooks/useChatListWs";
 import { useChatBackground } from "@/hooks/useChatBackground";
 import ChatList from "./components/ChatList";
 import ChatPanel from "./components/ChatPanel";
@@ -115,6 +116,12 @@ const MessagesPage = () => {
       ) || null,
     [chatsData?.chats, selectedChatId]
   );
+
+  const subscribedChatIds = useMemo(
+    () => (chatsData?.chats || []).map((chat) => String(chat.id)).filter(Boolean),
+    [chatsData?.chats]
+  );
+
 
   const targetChatPlaceholder = useMemo<Chat | null>(() => {
     if (selectedChat || publicChannel || !pendingTargetUser) return null;
@@ -590,6 +597,12 @@ const MessagesPage = () => {
       setIsOnline(online);
       if (lastSeenAt) setLastSeen(lastSeenAt);
     },
+  });
+
+  useChatListWs({
+    currentUserId: currentUser?.id,
+    selectedChatId: activeChatId,
+    chatIds: subscribedChatIds,
   });
 
   useEffect(() => {
