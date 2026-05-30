@@ -980,6 +980,18 @@ const MessagesPage = () => {
     return `/messages/${chatIdValue}`;
   }, [chats]);
 
+  const handleCloseChat = useCallback(() => {
+    // Сбрасываем локальное состояние сразу, чтобы панель гарантированно закрывалась
+    // даже если роут/эффекты обновятся с задержкой.
+    setSelectedChatId(null);
+    setPublicChannel(null);
+    setBlockedProject(null);
+    setInviteToken(null);
+    setJoinStatus(null);
+    setChannelMeta(null);
+    navigate("/messages", { replace: true });
+  }, [navigate]);
+
   return (
     <LayoutGroup>
       <div className="flex h-screen overflow-hidden max-sm:h-[calc(100vh-76px)]">
@@ -989,7 +1001,7 @@ const MessagesPage = () => {
           selectedChatId={selectedChatId}
           currentUserId={currentUser?.id}
           onSelectChat={(chatIdValue) => navigate(resolveChatRoute(chatIdValue))}
-          onCloseChat={() => navigate("/messages")}
+          onCloseChat={handleCloseChat}
           onCreateChat={() => setCreateChatOpen(true)}
           t={t}
         />
@@ -1066,14 +1078,19 @@ const MessagesPage = () => {
           </DialogContent>
         </Dialog>
 
-        <AnimatePresence>
+        <AnimatePresence mode="wait" initial={false}>
             {selectedChatId || displayChat || blockedProject ? (
             <motion.div
               key="chat-panel"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+              initial={{ opacity: 0, x: 28, scale: 0.985, filter: "blur(6px)" }}
+              animate={{ opacity: 1, x: 0, scale: 1, filter: "blur(0px)" }}
+              exit={{ opacity: 0, x: 18, scale: 0.992, filter: "blur(3px)" }}
+              transition={{
+                opacity: { duration: 0.28, ease: [0.22, 1, 0.36, 1] },
+                x: { type: "spring", stiffness: 280, damping: 30, mass: 0.9 },
+                scale: { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
+                filter: { duration: 0.22, ease: [0.22, 1, 0.36, 1] },
+              }}
               className="flex-1 flex flex-col min-w-0 p-3 max-sm:p-0"
             >
               <div className="flex-1 flex flex-col min-h-0 relative">
@@ -1458,9 +1475,10 @@ const MessagesPage = () => {
           ) : (
             <motion.div
               key="empty-state"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0, scale: 0.99, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.995, y: 6 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
               className="flex-1 flex items-center justify-center"
             >
               <div className="rounded-3xl border border-white/10 bg-white/5 px-6 py-5 text-center">
