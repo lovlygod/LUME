@@ -741,7 +741,20 @@
     "voiceNoChat": "No chat selected",
     "voiceSent": "Voice message sent",
     "voiceSendError": "Failed to send voice message",
-    "momentReplyLabel": "image attachment"
+    "momentReplyLabel": "image attachment",
+    "loading": "Loading...",
+    "chatInfo": {
+      "title": "Chat info",
+      "goToProfile": "Go to profile",
+      "openInChat": "Open in chat",
+      "media": "Media",
+      "videos": "Videos",
+      "voice": "Voice",
+      "files": "Files",
+      "links": "Links",
+      "empty": "Nothing here yet",
+      "loadMore": "Load more"
+    }
   },
   "voice": {
     "record": "Record voice message",

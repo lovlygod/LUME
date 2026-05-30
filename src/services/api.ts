@@ -1,6 +1,6 @@
 ﻿import { API_BASE_PATH } from "@/lib/config";
 import type { User, VerificationRequest, VerificationStatus, Post, Comment } from "@/types";
-import type { Chat, Attachment, Message } from "@/types/messages";
+import type { Chat, Attachment, Message, ChatAttachmentFeedType, ChatAttachmentFeedItem } from "@/types/messages";
 import type { StickerPack, StickerPackWithStickers } from "@/types/stickers";
 
 const API_BASE_URL = API_BASE_PATH;
@@ -654,6 +654,17 @@ export const messagesAPI = {
     return apiRequest(`/chats/${chatId}/messages`, {
       method: 'GET',
     }, true, signal);
+  },
+
+  getChatAttachments: async (
+    chatId: string,
+    params: { type: ChatAttachmentFeedType; limit?: number; before?: string | null }
+  ): Promise<{ items: ChatAttachmentFeedItem[]; hasMore: boolean; nextCursor: string | null }> => {
+    const query = new URLSearchParams();
+    query.set('type', params.type);
+    if (params.limit) query.set('limit', String(params.limit));
+    if (params.before) query.set('before', params.before);
+    return apiRequest(`/chats/${chatId}/attachments?${query.toString()}`, { method: 'GET' });
   },
 
   sendMessage: async (messageData: { chatId: string; text?: string; attachmentIds?: string[]; replyToMessageId?: string | null; stickerId?: string | null }) => {

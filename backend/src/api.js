@@ -2000,16 +2000,20 @@ router.get('/chats/:chatId/messages', authenticateToken, (req, res) => {
              s.pack_id as sticker_pack_id,
              s.name as sticker_name,
              s.file_path as sticker_file_path
-        FROM messages m
+        FROM (
+          SELECT *
+          FROM messages
+          WHERE chat_id = $3
+            AND deleted_for_all_at IS NULL
+          ORDER BY created_at DESC
+          LIMIT $4 OFFSET $5
+        ) m
         JOIN users u ON m.sender_id = u.id
         LEFT JOIN stickers s ON s.id = m.sticker_id
         LEFT JOIN message_deletions md ON md.message_id = m.id AND md.user_id = $1
         LEFT JOIN media mo ON mo.id = m.media_id
         LEFT JOIN media_views mv ON mv.media_id = mo.id AND mv.user_id = $2
-        WHERE m.chat_id = $3
-          AND m.deleted_for_all_at IS NULL
         ORDER BY m.created_at ASC
-        LIMIT $4 OFFSET $5
      `;
 
     db.all(messageQuery, [currentUserId, currentUserId, chatId, limit, offset], (err, messages) => {
@@ -2683,6 +2687,161 @@ router.get('/messages/search', authenticateToken, asyncHandler(async (req, res) 
     count: results.length,
     source: 'db',
   });
+}));
+
+// Chat attachments/links feed (for chat info preview tabs)
+router.get('/chats/:chatId/attachments', authenticateToken, asyncHandler(async (req, res) => {
+  const userId = req.user.userId;
+  const chatId = req.params.chatId;
+  const type = String(req.query.type || 'media').toLowerCase();
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 30, 1), 100);
+  const before = req.query.before ? new Date(String(req.query.before)) : null;
+
+  const membership = await new Promise((resolve, reject) => {
+    db.get(
+      `SELECT 1
+       FROM chat_members
+       WHERE chat_id = $1 AND user_id = $2`,
+      [chatId, userId],
+      (err, row) => err ? reject(err) : resolve(row || null)
+    );
+  });
+
+  if (!membership) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  const beforeClause = before && !Number.isNaN(before.getTime()) ? 'AND m.created_at < $3' : '';
+  const paramsBase = before && !Number.isNaN(before.getTime()) ? [chatId, userId, before.toISOString(), limit + 1] : [chatId, userId, limit + 1];
+  const limitParamIndex = before && !Number.isNaN(before.getTime()) ? 4 : 3;
+
+  let sql = '';
+  if (type === 'voice') {
+    sql = `
+      SELECT m.id AS message_id, m.chat_id, m.created_at, m.text, m.type AS message_type,
+             a.id AS attachment_id, a.type AS attachment_type, a.url, a.mime, a.size, a.duration,
+             u.id AS sender_id, u.name AS sender_name, u.username AS sender_username, u.avatar AS sender_avatar,
+             NULL::text AS link_url, NULL::jsonb AS link_preview
+      FROM messages m
+      JOIN users u ON u.id = m.sender_id
+      JOIN attachments a ON a.message_id = m.id
+      LEFT JOIN message_deletions md ON md.message_id = m.id AND md.user_id = $2
+      WHERE m.chat_id = $1
+        AND m.deleted_for_all_at IS NULL
+        AND md.message_id IS NULL
+        AND a.type = 'voice'
+        ${beforeClause}
+      ORDER BY m.created_at DESC
+      LIMIT $${limitParamIndex}
+    `;
+  } else if (type === 'files') {
+    sql = `
+      SELECT m.id AS message_id, m.chat_id, m.created_at, m.text, m.type AS message_type,
+             a.id AS attachment_id, a.type AS attachment_type, a.url, a.mime, a.size, a.duration,
+             u.id AS sender_id, u.name AS sender_name, u.username AS sender_username, u.avatar AS sender_avatar,
+             NULL::text AS link_url, NULL::jsonb AS link_preview
+      FROM messages m
+      JOIN users u ON u.id = m.sender_id
+      JOIN attachments a ON a.message_id = m.id
+      LEFT JOIN message_deletions md ON md.message_id = m.id AND md.user_id = $2
+      WHERE m.chat_id = $1
+        AND m.deleted_for_all_at IS NULL
+        AND md.message_id IS NULL
+        AND a.type = 'file'
+        ${beforeClause}
+      ORDER BY m.created_at DESC
+      LIMIT $${limitParamIndex}
+    `;
+  } else if (type === 'videos') {
+    sql = `
+      SELECT m.id AS message_id, m.chat_id, m.created_at, m.text, m.type AS message_type,
+             a.id AS attachment_id, a.type AS attachment_type, a.url, a.mime, a.size, a.duration,
+             u.id AS sender_id, u.name AS sender_name, u.username AS sender_username, u.avatar AS sender_avatar,
+             NULL::text AS link_url, NULL::jsonb AS link_preview
+      FROM messages m
+      JOIN users u ON u.id = m.sender_id
+      JOIN attachments a ON a.message_id = m.id
+      LEFT JOIN message_deletions md ON md.message_id = m.id AND md.user_id = $2
+      WHERE m.chat_id = $1
+        AND m.deleted_for_all_at IS NULL
+        AND md.message_id IS NULL
+        AND (a.mime ILIKE 'video/%' OR a.url ~* '\\.(mp4|mov|mkv|avi|webm)$')
+        ${beforeClause}
+      ORDER BY m.created_at DESC
+      LIMIT $${limitParamIndex}
+    `;
+  } else if (type === 'links') {
+    sql = `
+      SELECT m.id AS message_id, m.chat_id, m.created_at, m.text, m.type AS message_type,
+             NULL::bigint AS attachment_id, NULL::text AS attachment_type, NULL::text AS url, NULL::text AS mime, NULL::bigint AS size, NULL::numeric AS duration,
+             u.id AS sender_id, u.name AS sender_name, u.username AS sender_username, u.avatar AS sender_avatar,
+             (CASE WHEN m.link_preview IS NOT NULL THEN (m.link_preview::jsonb ->> 'url') ELSE NULL END) AS link_url,
+             m.link_preview::jsonb AS link_preview
+      FROM messages m
+      JOIN users u ON u.id = m.sender_id
+      LEFT JOIN message_deletions md ON md.message_id = m.id AND md.user_id = $2
+      WHERE m.chat_id = $1
+        AND m.deleted_for_all_at IS NULL
+        AND md.message_id IS NULL
+        AND m.link_preview IS NOT NULL
+        ${beforeClause}
+      ORDER BY m.created_at DESC
+      LIMIT $${limitParamIndex}
+    `;
+  } else {
+    sql = `
+      SELECT m.id AS message_id, m.chat_id, m.created_at, m.text, m.type AS message_type,
+             a.id AS attachment_id, a.type AS attachment_type, a.url, a.mime, a.size, a.duration,
+             u.id AS sender_id, u.name AS sender_name, u.username AS sender_username, u.avatar AS sender_avatar,
+             NULL::text AS link_url, NULL::jsonb AS link_preview
+      FROM messages m
+      JOIN users u ON u.id = m.sender_id
+      JOIN attachments a ON a.message_id = m.id
+      LEFT JOIN message_deletions md ON md.message_id = m.id AND md.user_id = $2
+      WHERE m.chat_id = $1
+        AND m.deleted_for_all_at IS NULL
+        AND md.message_id IS NULL
+        AND a.type = 'image'
+        ${beforeClause}
+      ORDER BY m.created_at DESC
+      LIMIT $${limitParamIndex}
+    `;
+  }
+
+  const rows = await new Promise((resolve, reject) => {
+    db.all(sql, paramsBase, (err, result) => err ? reject(err) : resolve(result || []));
+  });
+
+  const hasMore = rows.length > limit;
+  const slice = rows.slice(0, limit);
+  const nextCursor = hasMore ? slice[slice.length - 1]?.created_at || null : null;
+
+  const items = slice.map((row) => ({
+    messageId: String(row.message_id),
+    chatId: String(row.chat_id),
+    timestamp: row.created_at,
+    text: row.text || null,
+    sender: {
+      id: String(row.sender_id),
+      name: row.sender_name || null,
+      username: row.sender_username || null,
+      avatar: row.sender_avatar || null,
+    },
+    attachment: row.attachment_id ? {
+      id: String(row.attachment_id),
+      type: row.attachment_type,
+      url: row.url,
+      mime: row.mime,
+      size: row.size,
+      duration: row.duration,
+    } : null,
+    link: row.link_url ? {
+      url: row.link_url,
+      preview: row.link_preview || null,
+    } : null,
+  }));
+
+  res.json({ items, hasMore, nextCursor });
 }));
 
 // Get posts for feed

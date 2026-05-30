@@ -87,3 +87,30 @@ export interface Message {
   linkPreview?: LinkPreview | null;
 }
 
+export type ChatAttachmentFeedType = "media" | "videos" | "voice" | "files" | "links";
+
+export interface ChatAttachmentFeedItem {
+  messageId: string;
+  chatId: string;
+  timestamp: string;
+  text?: string | null;
+  sender: {
+    id: string;
+    name?: string | null;
+    username?: string | null;
+    avatar?: string | null;
+  };
+  attachment?: {
+    id: string;
+    type: "image" | "file" | "voice";
+    url: string;
+    mime?: string | null;
+    size?: number | null;
+    duration?: number | null;
+  } | null;
+  link?: {
+    url: string;
+    preview?: LinkPreview | null;
+  } | null;
+}
+

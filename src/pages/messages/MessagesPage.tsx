@@ -30,8 +30,12 @@ import MessageComposer from "./components/MessageComposer";
 import { MessageSearch } from "./components/MessageSearch";
 import CreateChatModal from "./components/CreateChatModal";
 import ChatSettingsModal from "./components/ChatSettingsModal";
+import PrivateChatInfoPreview from "./components/chat-info/PrivateChatInfoPreview";
+import GroupChatInfoPreview from "./components/chat-info/GroupChatInfoPreview";
+import ChannelChatInfoPreview from "./components/chat-info/ChannelChatInfoPreview";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ImageViewer } from "@/components/media/ImageViewer";
 import StickerModal from "@/components/stickers/StickerModal";
 import TypingIndicator from "@/components/chat/TypingIndicator";
@@ -92,6 +96,7 @@ const MessagesPage = () => {
   const [joiningProject, setJoiningProject] = useState(false);
   const [selectedMessages, setSelectedMessages] = useState<string[]>([]);
   const [pendingTargetUser, setPendingTargetUser] = useState<User | null>(null);
+  const [chatInfoOpen, setChatInfoOpen] = useState(false);
   const { backgroundStyle } = useChatBackground();
 
   useEffect(() => {
@@ -992,6 +997,28 @@ const MessagesPage = () => {
     navigate("/messages", { replace: true });
   }, [navigate]);
 
+  const handleGoToProfile = useCallback(() => {
+    if (selectedChat?.type === "private") {
+      const otherMember = selectedChat.members?.find((m) => String(m.id) !== String(currentUser?.id));
+      if (otherMember?.id) {
+        navigate(getProfileRoute({ id: otherMember.id }));
+      }
+      return;
+    }
+    if (displayChat?.id) {
+      navigate(getProfileRoute({ id: displayChat.id }));
+    }
+  }, [selectedChat, currentUser?.id, navigate, displayChat?.id]);
+
+  const handleOpenMessageInChat = useCallback((messageId: string) => {
+    if (!messageId) return;
+    setChatInfoOpen(false);
+    setScrollToMessageId(messageId);
+    setScrollToMessageNonce((prev) => prev + 1);
+    setHighlightedMessageId(messageId);
+    setTimeout(() => setHighlightedMessageId(null), 1200);
+  }, []);
+
   return (
     <LayoutGroup>
       <div className="flex h-screen overflow-hidden max-sm:h-[calc(100vh-76px)]">
@@ -1110,12 +1137,7 @@ const MessagesPage = () => {
                     isTyping={isTyping}
                     lastSeen={lastSeen}
                     onOpenProfile={() => {
-                      if (selectedChat?.type === "private") {
-                        const otherMember = selectedChat.members?.find((m) => String(m.id) !== String(currentUser?.id));
-                        if (otherMember?.id) {
-                          navigate(getProfileRoute({ id: otherMember.id }));
-                        }
-                      }
+                      setChatInfoOpen(true);
                     }}
                     onOpenSettings={
                       selectedChat?.type !== "private" && (selectedChat?.role === "owner" || selectedChat?.role === "admin")
@@ -1406,6 +1428,45 @@ const MessagesPage = () => {
                   setActiveImageSrc(null);
                 }}
               />
+
+              <Sheet open={chatInfoOpen} onOpenChange={setChatInfoOpen}>
+                <SheetContent side="right" className="w-full max-w-[860px] overflow-y-auto border-white/10 bg-[#0b0b0f] px-5 py-6 text-white sm:bottom-4 sm:top-4 sm:h-auto sm:rounded-l-3xl sm:rounded-r-none sm:px-6 sm:py-7">
+                  <SheetHeader>
+                    <SheetTitle className="text-white">{t("messages.chatInfo.title")}</SheetTitle>
+                  </SheetHeader>
+                  <div className="mt-5 space-y-4 pb-4 pt-2">
+                    {displayChat?.type === "private" ? (
+                      <PrivateChatInfoPreview
+                        chatId={activeChatId || selectedChatId || ""}
+                        user={chatPanelUser}
+                        isOnline={isOnline}
+                        lastSeen={lastSeen}
+                        onGoToProfile={handleGoToProfile}
+                        onOpenInChat={handleOpenMessageInChat}
+                        t={t}
+                      />
+                    ) : displayChat?.type === "group" ? (
+                      <GroupChatInfoPreview
+                        chatId={activeChatId || selectedChatId || ""}
+                        title={displayChat?.title}
+                        membersCount={displayChat?.members?.length || channelMeta?.membersCount}
+                        onGoToProfile={handleGoToProfile}
+                        onOpenInChat={handleOpenMessageInChat}
+                        t={t}
+                      />
+                    ) : (
+                      <ChannelChatInfoPreview
+                        chatId={activeChatId || selectedChatId || ""}
+                        title={displayChat?.title}
+                        membersCount={channelMeta?.membersCount || displayChat?.members?.length}
+                        onGoToProfile={handleGoToProfile}
+                        onOpenInChat={handleOpenMessageInChat}
+                        t={t}
+                      />
+                    )}
+                  </div>
+                </SheetContent>
+              </Sheet>
 
               <StickerModal
                 open={stickerModalOpen}

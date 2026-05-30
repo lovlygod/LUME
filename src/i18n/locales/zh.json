@@ -410,7 +410,20 @@
     "voiceNoChat": "未选择聊天",
     "voiceSent": "语音消息已发送",
     "voiceSendError": "发送语音消息失败",
-    "momentReplyLabel": "图片附件"
+    "momentReplyLabel": "图片附件",
+    "loading": "加载中...",
+    "chatInfo": {
+      "title": "聊天信息",
+      "goToProfile": "前往个人资料",
+      "openInChat": "在聊天中打开",
+      "media": "媒体",
+      "videos": "视频",
+      "voice": "语音",
+      "files": "文件",
+      "links": "链接",
+      "empty": "暂无内容",
+      "loadMore": "加载更多"
+    }
   },
   "voice": {
     "record": "录制语音消息",

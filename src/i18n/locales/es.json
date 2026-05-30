@@ -410,7 +410,20 @@
     "voiceNoChat": "No hay chat seleccionado",
     "voiceSent": "Mensaje de voz enviado",
     "voiceSendError": "No se pudo enviar el mensaje de voz",
-    "momentReplyLabel": "imagen adjunta"
+    "momentReplyLabel": "imagen adjunta",
+    "loading": "Cargando...",
+    "chatInfo": {
+      "title": "Información del chat",
+      "goToProfile": "Ir al perfil",
+      "openInChat": "Abrir en el chat",
+      "media": "Media",
+      "videos": "Videos",
+      "voice": "Voz",
+      "files": "Archivos",
+      "links": "Enlaces",
+      "empty": "Aún no hay nada",
+      "loadMore": "Cargar más"
+    }
   },
   "voice": {
     "record": "Grabar mensaje de voz",
