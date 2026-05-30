@@ -41,10 +41,11 @@ function extractMentions(text) {
   const mentionRegex = /@(\w+)/g;
   const mentions = [];
   let match;
-  while ((match = mentionRegex.exec(text)) !== null) {
+  const MAX_MENTIONS = 10;
+  while ((match = mentionRegex.exec(text)) !== null && mentions.length < MAX_MENTIONS) {
     mentions.push(match[1]);
   }
-  return mentions;
+  return [...new Set(mentions)];
 }
 
 // Create notifications for mentioned users
@@ -962,15 +963,24 @@ router.get('/profile', authenticateToken, (req, res) => {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      // Get following count
+      // Get fresh follow stats from followers table (do not rely on denormalized users.followers_count)
       const followingQuery = 'SELECT COUNT(*) as count FROM followers WHERE follower_id = $1';
-      return pool.query(followingQuery, [userId]).then((followingResult) => {
-        return { user, followingCount: followingResult.rows[0] ? followingResult.rows[0].count : 0 };
+      const followersQuery = 'SELECT COUNT(*) as count FROM followers WHERE following_id = $1';
+      return Promise.all([
+        pool.query(followingQuery, [userId]),
+        pool.query(followersQuery, [userId]),
+      ]).then(([followingResult, followersResult]) => {
+        return {
+          user,
+          followingCount: followingResult.rows[0] ? followingResult.rows[0].count : 0,
+          followersCount: followersResult.rows[0] ? followersResult.rows[0].count : 0,
+        };
       });
     })
     .then((data) => {
       const user = data.user;
       const followingCount = data.followingCount;
+      const followersCount = data.followersCount;
 
       res.json({
         user: {
@@ -994,8 +1004,11 @@ router.get('/profile', authenticateToken, (req, res) => {
           githubUrl: user.github_url || null,
           telegramUsername: user.telegram_username || null,
           portfolioUrl: user.portfolio_url || null,
-          followers_count: user.followers_count || 0,
+          // Backward compatibility for existing frontend fields
+          followers_count: followersCount,
           following_count: followingCount,
+          followersCount,
+          followingCount,
           joinDate: user.join_date,
           role: user.role || 'user'
         }
@@ -1987,7 +2000,7 @@ router.get('/chats/:chatId/messages', authenticateToken, (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const limit = Math.min(Math.max(parseInt(req.query.limit) || 10000, 1), 10000);
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 200);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
 
     const messageQuery = `

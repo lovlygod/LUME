@@ -23,7 +23,7 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 
 // WebSocket сервер для реального времени
-const wss = new WebSocket.Server({ server, path: '/ws' });
+const wss = new WebSocket.Server({ server, path: '/ws', maxPayload: 64 * 1024 });
 
 // Status metrics (in-memory)
 const statusMetrics = {
@@ -413,6 +413,7 @@ wss.on('connection', (ws, req) => {
         }
         
         if (userClients.size === 0) {
+          wsRateLimits.delete(ws.userId);
           clients.delete(ws.userId);
         }
       }
