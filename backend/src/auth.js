@@ -26,7 +26,8 @@ const REFRESH_TOKEN_EXPIRY_DAYS = 30; // Refresh token lives for 30 days
 // Cookie options for httpOnly tokens
 const isProd = process.env.NODE_ENV === 'production';
 const isCrossSite = Boolean(process.env.FRONTEND_URL || process.env.FRONTEND_URLS) && !String(process.env.FRONTEND_URL || process.env.FRONTEND_URLS || '').includes('localhost');
-const COOKIE_SECURE = isCrossSite || isProd;
+const forceHttpsCookies = String(process.env.FORCE_HTTPS_COOKIES || '').toLowerCase() === 'true';
+const COOKIE_SECURE = forceHttpsCookies || isCrossSite || isProd;
 const COOKIE_SAMESITE = isProd ? 'none' : (isCrossSite ? 'none' : 'lax');
 
 const COOKIE_OPTIONS = {
