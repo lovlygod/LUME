@@ -331,6 +331,112 @@ export const sessionsAPI = {
   },
 };
 
+export const economyAPI = {
+  getWallet: async (): Promise<{ wallet: Record<string, unknown> }> => {
+    return apiRequest('/economy/wallet', { method: 'GET' });
+  },
+  getWalletStats: async (): Promise<{ stats: Record<string, unknown> }> => {
+    return apiRequest('/economy/wallet/stats', { method: 'GET' });
+  },
+  transfer: async (payload: { to: string; amount_coin: string; idempotency_key: string; encrypted?: Record<string, unknown> | null }) => {
+    return apiRequest('/economy/coin/transfers', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  getWalletE2EESync: async (params: { deviceId: string; afterId?: string | number; limit?: number }) => {
+    const q = new URLSearchParams();
+    q.set('deviceId', String(params.deviceId || ''));
+    if (params.afterId !== undefined) q.set('afterId', String(params.afterId));
+    if (params.limit !== undefined) q.set('limit', String(params.limit));
+    return apiRequest<{ items: Array<Record<string, unknown>>; nextCursor: string }>(`/economy/wallet/e2ee/sync?${q.toString()}`, { method: 'GET' });
+  },
+  ackWalletE2EEEnvelope: async (envelopeId: number | string, payload: { deviceId: string; status: 'delivered' | 'decrypted' }) => {
+    return apiRequest<{ ok: boolean }>(`/economy/wallet/e2ee/envelopes/${encodeURIComponent(String(envelopeId))}/ack`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  getRecipientPreview: async (to: string): Promise<{ recipient: { wallet_id: number; address: string; user_id: number | null; username: string | null; name: string | null; avatar: string | null } }> => {
+    return apiRequest(`/economy/coin/recipient-preview?to=${encodeURIComponent(to)}`, { method: 'GET' });
+  },
+  createCoinOrder: async (payload: { amount_coin: string; provider?: string }) => {
+    return apiRequest('/economy/coin/purchase-orders', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  getWalletTransactions: async (): Promise<{ transactions: Array<Record<string, unknown>> }> => {
+    return apiRequest('/economy/wallet/transactions', { method: 'GET' });
+  },
+  getExplorerPublic: async (): Promise<{ transactions: Array<Record<string, unknown>> }> => {
+    return apiRequest('/economy/wallet/explorer/public', { method: 'GET' });
+  },
+  getMarketListings: async (params?: {
+    cursor?: number;
+    limit?: number;
+    q?: string;
+    sort?: 'new' | 'price_asc' | 'price_desc' | 'expiring';
+    min_price_coin?: string;
+    max_price_coin?: string;
+    only_new?: boolean;
+  }): Promise<{ listings: Array<Record<string, unknown>> }> => {
+    const query = new URLSearchParams();
+    if (params?.cursor) query.set('cursor', String(params.cursor));
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.q) query.set('q', params.q);
+    if (params?.sort) query.set('sort', params.sort);
+    if (params?.min_price_coin) query.set('min_price_coin', params.min_price_coin);
+    if (params?.max_price_coin) query.set('max_price_coin', params.max_price_coin);
+    if (typeof params?.only_new === 'boolean') query.set('only_new', String(params.only_new));
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    return apiRequest(`/economy/usernames/listings${suffix}`, { method: 'GET' });
+  },
+  getMyUsernames: async (): Promise<{ usernames: Array<Record<string, unknown>> }> => {
+    return apiRequest('/economy/usernames/my', { method: 'GET' });
+  },
+  getUserUsernames: async (userId: string | number): Promise<{ usernames: Array<Record<string, unknown>> }> => {
+    return apiRequest(`/economy/users/${encodeURIComponent(String(userId))}/usernames`, { method: 'GET' });
+  },
+  setUsernameVisibility: async (usernameId: number, isVisible: boolean): Promise<{ username: Record<string, unknown> }> => {
+    return apiRequest(`/economy/usernames/${usernameId}/visibility`, {
+      method: 'PATCH',
+      body: JSON.stringify({ is_visible: isVisible }),
+    });
+  },
+  setUsernameDisplayOrder: async (usernameId: number, displayOrder: number): Promise<{ username: Record<string, unknown> }> => {
+    return apiRequest(`/economy/usernames/${usernameId}/display-order`, {
+      method: 'PATCH',
+      body: JSON.stringify({ display_order: displayOrder }),
+    });
+  },
+  clearUsernameDisplayOrder: async (usernameId: number): Promise<{ username: Record<string, unknown> }> => {
+    return apiRequest(`/economy/usernames/${usernameId}/display-order`, {
+      method: 'DELETE',
+    });
+  },
+  createMarketListing: async (payload: { username_id: number; price_coin: string }) => {
+    return apiRequest('/economy/usernames/listings', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  cancelMarketListing: async (listingId: number) => {
+    return apiRequest(`/economy/usernames/listings/${listingId}/cancel`, {
+      method: 'POST',
+    });
+  },
+  getMarketListingById: async (listingId: number): Promise<{ listing: Record<string, unknown> }> => {
+    return apiRequest(`/economy/usernames/listings/${listingId}`, { method: 'GET' });
+  },
+  buyMarketListing: async (listingId: number, idempotencyKey: string, clientRequestMs?: number) => {
+    return apiRequest(`/economy/usernames/listings/${listingId}/buy`, {
+      method: 'POST',
+      body: JSON.stringify({ idempotency_key: idempotencyKey, ...(clientRequestMs ? { client_request_ms: clientRequestMs } : {}) }),
+    });
+  },
+};
+
 export const postsAPI = {
   getUserPosts: async (userId: string, signal?: AbortSignal): Promise<{ posts: Post[] }> => {
     if (userId === 'home') {
@@ -804,6 +910,8 @@ export const usersAPI = {
   },
 
   updateProfile: async (data: { 
+    name?: string;
+    username?: string;
     bio?: string; 
     city?: string; 
     website?: string;
@@ -816,6 +924,12 @@ export const usersAPI = {
     return apiRequest('/users/me', {
       method: 'PATCH',
       body: JSON.stringify(data),
+    });
+  },
+
+  checkUsernameAvailability: async (username: string): Promise<{ available: boolean }> => {
+    return apiRequest(`/usernames/availability?username=${encodeURIComponent(username)}`, {
+      method: 'GET',
     });
   },
 

@@ -30,6 +30,16 @@ const RATE_LIMIT_CONFIG = {
     windowMs: 24 * 60 * 60 * 1000, // 24 часа
     blockDurationMs: 24 * 60 * 60 * 1000,
   },
+  economy_transfer: {
+    maxAttempts: 120,
+    windowMs: 60 * 1000,
+    blockDurationMs: 60 * 1000,
+  },
+  market_buy_ip: {
+    maxAttempts: 100,
+    windowMs: 60 * 1000,
+    blockDurationMs: 60 * 1000,
+  },
 };
 
 // ==================== Database Functions ====================
@@ -281,6 +291,8 @@ module.exports = {
   registerLimiter: createRateLimiter('register'),
   forgotPasswordLimiter: createRateLimiter('forgot_password'),
   verificationRequestLimiter: createRateLimiter('verification_request'),
+  economyTransferLimiter: createRateLimiter('economy_transfer'),
+  marketBuyIpLimiter: createRateLimiter('market_buy_ip'),
 
   // Utils
   resetRateLimit,

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Calendar, MapPin, Link as LinkIcon, MessageCircle, UserPlus, UserCheck, Users, Code, CheckCircle, Search, Clock, Github, FolderKanban, ExternalLink, QrCode } from "lucide-react";
 import { motion } from "framer-motion";
-import { profileAPI, postsAPI, onboardingAPI, projectsAPI } from "@/services/api";
+import { profileAPI, postsAPI, onboardingAPI, projectsAPI, economyAPI } from "@/services/api";
 import type { User } from "@/types/api";
 import { useParams } from 'react-router-dom';
 import Post from "@/components/post/Post";
@@ -55,6 +55,46 @@ const UserProfile = () => {
 
   // Dev profile data
   const [projects, setProjects] = useState<Array<{ id: number; name: string; slug: string; status: string }>>([]);
+  const [displayedUsernames, setDisplayedUsernames] = useState<Array<{ username: string; order: number }>>([]);
+
+  const normalizeBooleanLike = (value: unknown, fallback = false): boolean => {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value === 1;
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+      if (['false', '0', 'no', 'off'].includes(normalized)) return false;
+    }
+    return fallback;
+  };
+
+  const normalizeDisplayOrderLike = (value: unknown): number | null => {
+    if (value === null || value === undefined || value === '') return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const normalizeUsernameLike = (value: unknown): string => {
+    return String(value || '')
+      .trim()
+      .replace(/^@+/, '')
+      .replace(/[\s,.;:]+$/g, '');
+  };
+
+  const loadDisplayedUsernames = async (targetUserId: string | number) => {
+    const myNames = await economyAPI.getUserUsernames(targetUserId);
+    const rawPayload = Array.isArray(myNames.usernames) ? myNames.usernames : [];
+    const pinned = rawPayload
+      .map((row) => ({
+        username: normalizeUsernameLike((row as Record<string, unknown>)?.username),
+        order: normalizeDisplayOrderLike((row as Record<string, unknown>)?.display_order),
+        isVisible: normalizeBooleanLike((row as Record<string, unknown>)?.is_visible, true),
+      }))
+      .filter((row) => row.username.length > 0 && row.isVisible && row.order != null && row.order >= 1 && row.order <= 10)
+      .sort((a, b) => Number(a.order) - Number(b.order))
+      .map((row) => ({ username: row.username, order: Number(row.order) }));
+    setDisplayedUsernames(pinned);
+  };
 
   // Load user profile
   useEffect(() => {
@@ -92,6 +132,12 @@ const UserProfile = () => {
         // Load user's posts
         const postsResponse = await postsAPI.getUserPosts(resolvedUserId);
         setPosts(postsResponse.posts);
+
+        try {
+          await loadDisplayedUsernames(resolvedUserId);
+        } catch {
+          setDisplayedUsernames([]);
+        }
       } catch (err: unknown) {
         console.error('Failed to load profile:', err);
         setError(err instanceof Error ? err.message : 'Failed to load profile');
@@ -240,8 +286,20 @@ const UserProfile = () => {
                   </span>
                 )}
               </div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <p className="text-sm text-secondary">@{user.username}</p>
+                <div className="mt-0.5 flex flex-wrap items-center gap-2">
+                  {displayedUsernames.length > 0 ? displayedUsernames.map((item) => {
+                    const isTopPinned = item.order === 1;
+                    return (
+                      <span
+                        key={`${item.order}-${item.username}`}
+                        className={`text-sm font-mono leading-none ${isTopPinned ? 'font-bold text-violet-300' : 'font-normal text-secondary'}`}
+                      >
+                        @{item.username}
+                      </span>
+                    );
+                  }) : (
+                    <p className="text-sm text-secondary font-mono">@{user.username}</p>
+                  )}
                   {user.availability && (
                     <span className="flex items-center gap-1 text-[10px]">
                       <span className={`h-1.5 w-1.5 rounded-full ${user.availability === 'open' ? 'bg-green-400' : user.availability === 'looking' ? 'bg-yellow-400' : 'bg-red-400'}`} />

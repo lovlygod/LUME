@@ -10,6 +10,8 @@ const http = require('http');
 const WebSocket = require('ws');
 const jwt = require('jsonwebtoken');
 const apiRoutes = require('./api');
+const { authenticateToken } = require('./auth');
+const createEconomyRoutes = require('./routes/economyRoutes');
 const { errorHandler } = require('./errors');
 const { generateCSRFTokenMiddleware } = require('./csrf');
 const db = require('./db');
@@ -643,6 +645,7 @@ app.set('clients', clients);
 app.set('onlineUsers', onlineUsers);
 
 // API routes
+app.use('/api', createEconomyRoutes({ authenticateToken }));
 app.use('/api', apiRoutes);
 
 // Health check endpoint

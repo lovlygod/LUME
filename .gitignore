@@ -5,8 +5,6 @@ dist
 AUDIT.md
 tools/
 developer-platform/
-LUX-coin.md
-LUX-coin.webp
 
 # backend
 backend/node_modules

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Camera, MapPin, Link as LinkIcon, Edit2, Save, X, MessageCircle, Pin, ExternalLink, UserPlus, UserCheck, Users, BadgeCheck, Github, Code, Briefcase, FolderKanban, CheckCircle, Search, Clock, ChevronDown, QrCode } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { profileAPI, postsAPI, usersAPI, onboardingAPI, searchAPI, projectsAPI } from "@/services/api";
+import { profileAPI, postsAPI, usersAPI, onboardingAPI, searchAPI, projectsAPI, economyAPI } from "@/services/api";
+import { wsService } from "@/services/websocket";
 import type { User } from "@/types/api";
 import { useAuth, isVerifiedUser, isDeveloper, isDeveloperCrown, VerifiedBadge, DeveloperBadge, DeveloperCrownBadge } from "@/contexts/AuthContext";
 import Post from "@/components/post/Post";
@@ -12,6 +13,32 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import FollowModal from "@/components/profile/FollowModal";
 import QRCodeModal from "@/components/profile/QRCodeModal";
 import { getProfileRoute } from "@/lib/profileRoute";
+import { Button } from "@/components/ui/button";
+
+const normalizeBooleanLike = (value: unknown, fallback = false): boolean => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+    if (['false', '0', 'no', 'off'].includes(normalized)) return false;
+  }
+  return fallback;
+};
+
+const normalizeDisplayOrderLike = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return null;
+  return parsed;
+};
+
+const normalizeUsernameLike = (value: unknown): string => {
+  return String(value || '')
+    .trim()
+    .replace(/^@+/, '')
+    .replace(/[\s,.;:]+$/g, '');
+};
 
 type PostItem = {
   id: string | number;
@@ -62,6 +89,7 @@ const ProfilePage = () => {
     telegramUsername: ''
   });
   const [isUpdating, setIsUpdating] = useState(false);
+  const [usernameAvailability, setUsernameAvailability] = useState<"idle" | "checking" | "ok" | "taken">("idle");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -79,6 +107,31 @@ const ProfilePage = () => {
   // Dev profile data
   const [projects, setProjects] = useState<UserProject[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
+  const [displayedUsernames, setDisplayedUsernames] = useState<Array<{ username: string; order: number; isPrimary: boolean }>>([]);
+
+  const loadDisplayedUsernames = async (primaryUsername: string) => {
+    const myNames = await economyAPI.getMyUsernames();
+    const rawPayload = Array.isArray(myNames.usernames) ? myNames.usernames : [];
+    const currentNormalized = normalizeUsernameLike(primaryUsername).toLowerCase();
+    const pinned = rawPayload
+      .map((row) => {
+        const normalizedName = normalizeUsernameLike((row as Record<string, unknown>)?.username);
+        return {
+          username: normalizedName,
+          order: normalizeDisplayOrderLike((row as Record<string, unknown>)?.display_order),
+          isVisible: normalizeBooleanLike((row as Record<string, unknown>)?.is_visible, true),
+          isPrimary: normalizeBooleanLike((row as Record<string, unknown>)?.is_primary, false),
+        };
+      })
+      .filter((row) => row.isVisible && row.order != null && row.order >= 1 && row.order <= 10)
+      .filter((row) => row.username.length > 0)
+      .sort((a, b) => Number(a.order) - Number(b.order))
+      .map((row) => ({ username: row.username, order: Number(row.order), isPrimary: row.isPrimary || row.username.toLowerCase() === currentNormalized }));
+
+    console.log('[Profile] economyAPI.getMyUsernames raw payload:', rawPayload);
+    console.log('[Profile] filtered pinned usernames for profile:', pinned);
+    setDisplayedUsernames(pinned);
+  };
 
   // Type helpers for dev profile fields
   const devUser = user as { primaryRole?: string; skills?: string[]; availability?: string; githubUrl?: string; telegramUsername?: string } | null;
@@ -148,6 +201,8 @@ const ProfilePage = () => {
         primaryRole: response.user.primaryRole || '',
         skills: response.user.skills?.join(', ') || '',
         availability: response.user.availability || 'open',
+        availabilityOpen: false,
+        roleOpen: false,
         githubUrl: response.user.githubUrl || '',
         telegramUsername: response.user.telegramUsername || ''
       });
@@ -167,6 +222,13 @@ const ProfilePage = () => {
 
       // Check if we're viewing another user's profile - load follow status
       const isAnotherUser = authUser && String(authUser.id) !== String(response.user.id);
+
+      try {
+        await loadDisplayedUsernames(response.user.username);
+      } catch {
+        setDisplayedUsernames([]);
+      }
+
       if (isAnotherUser) {
         try {
           const followStatus = await onboardingAPI.checkFollowing(response.user.id);
@@ -209,10 +271,79 @@ const ProfilePage = () => {
 
     window.addEventListener('refreshPosts', handleRefreshPosts);
 
+    const handleRefreshDisplayedUsernames = () => {
+      const currentPrimary = String((user?.username || authUser?.username || '')).trim();
+      if (!currentPrimary) return;
+      void loadDisplayedUsernames(currentPrimary);
+    };
+
+    const handleFocus = () => {
+      handleRefreshDisplayedUsernames();
+    };
+
+    window.addEventListener('lume:usernames:updated', handleRefreshDisplayedUsernames as EventListener);
+    window.addEventListener('focus', handleFocus);
+
     return () => {
       window.removeEventListener('refreshPosts', handleRefreshPosts);
+      window.removeEventListener('lume:usernames:updated', handleRefreshDisplayedUsernames as EventListener);
+      window.removeEventListener('focus', handleFocus);
     };
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.username, authUser?.username]);
+
+  useEffect(() => {
+    if (!isEditing) return;
+    const next = String(editData.username || '').trim();
+    if (!next) {
+      setUsernameAvailability('idle');
+      return;
+    }
+
+    setUsernameAvailability('checking');
+    const timer = window.setTimeout(async () => {
+      try {
+        const res = await usersAPI.checkUsernameAvailability(next);
+        setUsernameAvailability(res.available ? 'ok' : 'taken');
+      } catch {
+        setUsernameAvailability('taken');
+      }
+    }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, [editData.username, isEditing]);
+
+  useEffect(() => {
+    if (!isEditing) return;
+    const recheck = async () => {
+      const next = String(editData.username || '').trim();
+      if (!next) return;
+      try {
+        const res = await usersAPI.checkUsernameAvailability(next);
+        setUsernameAvailability(res.available ? 'ok' : 'taken');
+      } catch {
+        setUsernameAvailability('taken');
+      }
+    };
+
+    const reloadDisplayed = async () => {
+      await recheck();
+      const currentPrimary = String((user?.username || authUser?.username || '')).trim();
+      if (currentPrimary) {
+        await loadDisplayedUsernames(currentPrimary);
+      }
+    };
+
+    const offSold = wsService.on('market.username.listing.sold', reloadDisplayed);
+    const offCreated = wsService.on('market.username.listing.created', reloadDisplayed);
+    const offUpdated = wsService.on('market.username.listing.updated', reloadDisplayed);
+    return () => {
+      offSold();
+      offCreated();
+      offUpdated();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditing, editData.username, user?.username, authUser?.username]);
 
   const handleEditToggle = () => {
     if (isEditing) {
@@ -222,7 +353,14 @@ const ProfilePage = () => {
           username: user.username,
           bio: user.bio || '',
           city: user.city || '',
-          website: user.website || ''
+          website: user.website || '',
+          primaryRole: user.primaryRole || '',
+          skills: user.skills?.join(', ') || '',
+          availability: user.availability || 'open',
+          availabilityOpen: false,
+          roleOpen: false,
+          githubUrl: user.githubUrl || '',
+          telegramUsername: user.telegramUsername || '',
         });
       }
       setIsEditing(false);
@@ -235,6 +373,11 @@ const ProfilePage = () => {
 
   const handleSaveProfile = async () => {
     if (!user) return;
+
+    if (usernameAvailability === 'taken') {
+      toast.error(t("auth.usernameTaken") || 'Username is already taken');
+      return;
+    }
 
     setIsUpdating(true);
     try {
@@ -509,6 +652,20 @@ const ProfilePage = () => {
                     onChange={(e) => setEditData({...editData, username: e.target.value})}
                     className="glass-input w-full px-5 py-3 text-sm text-white"
                   />
+                  {usernameAvailability === 'checking' && (
+                    <p className="mt-1 text-xs text-white/60">{t("common.loading") || 'Checking...'}</p>
+                  )}
+                  {usernameAvailability === 'taken' && (
+                    <p className="mt-1 text-xs text-red-300">{t("auth.usernameTaken") || 'Username is already taken'}</p>
+                  )}
+                  {usernameAvailability === 'ok' && (
+                    <p className="mt-1 text-xs text-emerald-300">{t("profile.usernameAvailable") || 'Username is available'}</p>
+                  )}
+                  <div className="mt-3">
+                    <Button type="button" variant="outline" onClick={() => navigate('/settings/usernames')}>
+                      {t("profile.manageDisplayedUsernames") || "Manage displayed usernames"}
+                    </Button>
+                  </div>
                 </div>
 
                 <div>
@@ -705,15 +862,27 @@ const ProfilePage = () => {
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <p className="text-sm text-secondary font-mono">@{user.username}</p>
-                    {devUser?.availability && (
-                      <span className="flex items-center gap-1 text-[10px]">
-                        <span className={`h-1.5 w-1.5 rounded-full ${devUser.availability === 'open' ? 'bg-green-400' : devUser.availability === 'looking' ? 'bg-yellow-400' : 'bg-red-400'}`} />
-                        <span className="text-white/40">{devUser.availability === 'open' ? t('profile.available') : devUser.availability === 'looking' ? t('profile.looking') : t('profile.busy')}</span>
+                <div className="mt-0.5 flex flex-wrap items-center gap-2">
+                  {displayedUsernames.length > 0 ? displayedUsernames.map((item) => {
+                    const isTopPinned = item.order === 1;
+                    return (
+                      <span
+                        key={`${item.order}-${item.username}`}
+                        className={`text-sm font-mono leading-none ${isTopPinned ? 'font-bold text-violet-300' : 'font-normal text-secondary'}`}
+                      >
+                        @{item.username}
                       </span>
-                    )}
-                  </div>
+                    );
+                  }) : (
+                    <p className="text-sm text-secondary font-mono">@{user.username}</p>
+                  )}
+                  {devUser?.availability && (
+                    <span className="flex items-center gap-1 text-[10px]">
+                      <span className={`h-1.5 w-1.5 rounded-full ${devUser.availability === 'open' ? 'bg-green-400' : devUser.availability === 'looking' ? 'bg-yellow-400' : 'bg-red-400'}`} />
+                      <span className="text-white/40">{devUser.availability === 'open' ? t('profile.available') : devUser.availability === 'looking' ? t('profile.looking') : t('profile.busy')}</span>
+                    </span>
+                  )}
+                </div>
                 </div>
 
                 {/* City & Website */}
@@ -736,7 +905,6 @@ const ProfilePage = () => {
                     </a>
                   )}
                 </div>
-
                 {/* Bio */}
                 <p className="mt-4 text-sm text-white/80 leading-relaxed break-words">
                   {user.bio || t("profile.noBio")}

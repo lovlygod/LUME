@@ -100,48 +100,67 @@ const updateUserProfile = async (req, res) => {
   }
 
   try {
-    // Check if username is already taken by another user
-    const checkUsernameQuery = 'SELECT id FROM users WHERE username = $1 AND id != $2';
-    db.get(checkUsernameQuery, [username, userId], (err, existingUser) => {
+    const normalizedUsername = String(username || '').trim().toLowerCase();
+
+    // Canonical rule: profile can only keep/switch to username already owned by this user
+    const checkUsernameQuery = `
+      SELECT owner_id
+      FROM usernames
+      WHERE normalized_username = $1
+      LIMIT 1
+    `;
+    db.get(checkUsernameQuery, [normalizedUsername], (err, existingUser) => {
       if (err) {
         return res.status(500).json({ error: 'Database error' });
       }
 
-      if (existingUser) {
+      if (!existingUser || Number(existingUser.owner_id) !== Number(userId)) {
         return res.status(400).json({ error: 'Username already taken' });
       }
 
-      // Build update query dynamically
-      const updates = [];
-      const values = [];
-
-      updates.push('name = $1', 'username = $2', 'bio = $3');
-      values.push(name, username, bio);
-
-      if (city !== undefined) {
-        updates.push(`city = $${updates.length + 1}`);
-        values.push(city ? city.trim() : null);
-      }
-
-      if (normalizedWebsite !== undefined) {
-        updates.push(`website = $${updates.length + 1}`);
-        values.push(normalizedWebsite);
-      }
-
-      values.push(userId);
-
-      const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${updates.length + 1}`;
-
-      db.run(query, values, function(err) {
-        if (err) {
+      // Backward-compat check against legacy users.username field too
+      const checkLegacyQuery = 'SELECT id FROM users WHERE LOWER(username) = LOWER($1) AND id != $2 LIMIT 1';
+      db.get(checkLegacyQuery, [username, userId], (legacyErr, legacyUser) => {
+        if (legacyErr) {
           return res.status(500).json({ error: 'Database error' });
         }
 
-        if (this.changes === 0) {
-          return res.status(404).json({ error: 'User not found' });
+        if (legacyUser) {
+          return res.status(400).json({ error: 'Username already taken' });
         }
 
-        res.json({ message: 'Profile updated successfully' });
+        // Build update query dynamically
+        const updates = [];
+        const values = [];
+
+        updates.push('name = $1', 'username = $2', 'bio = $3');
+        values.push(name, username, bio);
+
+        if (city !== undefined) {
+          updates.push(`city = $${updates.length + 1}`);
+          values.push(city ? city.trim() : null);
+        }
+
+        if (normalizedWebsite !== undefined) {
+          updates.push(`website = $${updates.length + 1}`);
+          values.push(normalizedWebsite);
+        }
+
+        values.push(userId);
+
+        const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${updates.length + 1}`;
+
+        db.run(query, values, function(err) {
+          if (err) {
+            return res.status(500).json({ error: 'Database error' });
+          }
+
+          if (this.changes === 0) {
+            return res.status(404).json({ error: 'User not found' });
+          }
+
+          res.json({ message: 'Profile updated successfully' });
+        });
       });
     });
   } catch (error) {

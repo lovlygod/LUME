@@ -3,6 +3,7 @@
     "loading": "Loading...",
     "error": "Error",
     "success": "Success",
+    "refresh": "Refresh",
     "delete": "Delete",
     "edit": "Edit",
     "close": "Close",
@@ -74,6 +75,8 @@
   },
   "navigation": {
     "home": "Home",
+    "wallet": "Wallet",
+    "economy": "Economy",
     "workspaces": "Workspaces",
     "projects": "Projects",
     "explore": "Explore",
@@ -84,6 +87,154 @@
     "logout": "Logout",
     "login": "Login",
     "register": "Register"
+  },
+  "economy": {
+    "title": "Economy",
+    "tabs": {
+      "wallet": "Wallet",
+      "market": "Username Market",
+      "explorer": "Explorer",
+      "history": "History"
+    },
+    "wallet": {
+      "balance": "Balance",
+      "locked": "Locked",
+      "available": "Available",
+      "transfer": "Transfer",
+      "send": "Send",
+      "sendAction": "Send",
+      "buyAction": "Buy",
+      "receiveAction": "Receive",
+      "buyModalDesc": "Enter LUX amount and check total price.",
+      "buyAmountLux": "LUX amount",
+      "buyPreviewLux": "Will be credited",
+      "buyPreviewRate": "Rate",
+      "buyPreviewRateValue": "1 LUX = 2.3 ₽",
+      "buyPreviewTotal": "Total to pay",
+      "payAction": "Pay",
+      "sendModalDesc": "Enter recipient and transfer amount.",
+      "toField": "Recipient address or @username",
+      "toPlaceholder": "@username or lume_xxx",
+      "recipientUserNotFound": "This username does not exist",
+      "recipientAddressNotFound": "This wallet address does not exist",
+      "recipientNotFound": "Recipient not found",
+      "amountField": "Amount LUX",
+      "receiveModalDesc": "Show this QR to sender or tap address to copy.",
+      "receiveTapHint": "Tap the address to copy it.",
+      "walletAddress": "Wallet address",
+      "buy": "Buy coins",
+      "createOrder": "Create order",
+      "lastTx": "Recent transactions",
+      "emptyTx": "No transactions yet",
+      "fee": "Fee",
+      "debit": "Will be debited",
+      "receive": "Recipient gets",
+      "incomeRecent": "Income (recent)",
+      "expenseRecent": "Expense (recent)",
+      "feesPaid": "Fees paid",
+      "errorInsufficientBalance": "Not enough funds for this operation",
+      "errorInsufficientForFee": "Not enough funds including transfer fee",
+      "errorDailyLimit": "Daily transfer limit exceeded",
+      "errorInvalidRecipient": "You cannot send to your own wallet",
+      "errorValidation": "Please check your input and try again",
+      "feeReserve": "To reserve",
+      "feeBurn": "Burn",
+      "liveActivity": "Live activity",
+      "liveActivityEmpty": "No real-time events yet",
+      "liveTransferEvent": "New transfer event",
+      "securityCenter": "Security center",
+      "e2eeEnabled": "E2EE enabled",
+      "e2eeDisabled": "E2EE disabled",
+      "secureDeviceId": "Device",
+      "pendingEnvelopes": "Pending decrypt",
+      "e2eeTurnOn": "Enable E2EE",
+      "e2eeTurnOff": "Disable E2EE",
+      "securityOps": "Security operations",
+      "securityOpsEmpty": "No operations yet",
+      "e2eeSyncPending": "E2EE enabled, waiting for secure sync",
+      "walletLevel": "Wallet level",
+      "levelShort": "LVL",
+      "nextLevelTarget": "Next level target",
+      "weeklyMission": "Weekly mission",
+      "goal": "Goal",
+      "progress": "Progress",
+      "smartInsights": "Smart insights",
+      "avgTransfer": "Avg transfer",
+      "transferCount": "Transfers",
+      "momentum": "Momentum"
+    },
+    "market": {
+      "buy": "Buy",
+      "buySection": "Buy usernames",
+      "sellSection": "Sell usernames",
+      "filtersTitle": "Search & filters",
+      "search": "Search by username",
+      "sortNew": "Newest",
+      "sortPriceAsc": "Price asc",
+      "sortPriceDesc": "Price desc",
+      "sortExpiring": "Expiring soon",
+      "minPrice": "Min COIN",
+      "maxPrice": "Max COIN",
+      "onlyNew": "Only new (<24h)",
+      "seller": "Seller",
+      "yours": "This is your username",
+      "confirmPrice": "Price",
+      "confirmFee": "Platform fee (included)",
+      "confirmTotal": "Total debit",
+      "irreversible": "This operation is irreversible.",
+      "createTitle": "Create listing",
+      "selectUsername": "Select username",
+      "createAction": "List",
+      "myListings": "My active listings",
+      "emptyMy": "No my listings",
+      "noOwnedUsernames": "You have no usernames available for listing yet.",
+      "cancel": "Cancel",
+      "errorAlreadyListed": "Username already listed",
+      "errorInsufficient": "Insufficient balance",
+      "errorNotActive": "Listing no longer active",
+      "placeholder": "Username market actions are available via API and will be expanded in next UI iteration.",
+      "empty": "No active listings"
+    },
+    "explorer": {
+      "empty": "No transactions"
+    },
+    "history": {
+      "chartTotal": "Total flow",
+      "hideChart": "Hide",
+      "showChart": "Show",
+      "filterType": "Type",
+      "allTypes": "All types",
+      "filterPeriod": "Period",
+      "allPeriods": "All time",
+      "period24h": "24h",
+      "period7d": "7d",
+      "period30d": "30d",
+      "filterHash": "TX hash",
+      "hashPlaceholder": "Search tx hash",
+      "emptyFiltered": "No transactions for selected filters",
+      "detailsTitle": "Transaction details",
+      "detailsSubtitle": "Complete operation details",
+      "type": "Type",
+      "amount": "Amount",
+      "fee": "Fee",
+      "burn": "Burn",
+      "status": "Status",
+      "date": "Date",
+      "txHash": "TX hash"
+      ,
+      "typeTransfer": "Transfer",
+      "typeTransferSent": "Sent",
+      "typeTransferReceived": "Received",
+      "groupToday": "Today",
+      "groupYesterday": "Yesterday",
+      "groupWeek": "This week",
+      "groupMonth": "Earlier",
+      "groupReceived": "Received",
+      "groupSent": "Sent",
+      "groupFee": "Fee",
+      "typeUsernamePurchase": "Username purchase",
+      "typeCoinPurchase": "Coin purchase"
+    }
   },
   "auth": {
     "signIn": "Sign In",
@@ -205,7 +356,14 @@
     "chatBackgroundZoom": "Zoom",
     "chatBackgroundCustomApplied": "Custom background applied",
     "chatBackgroundCustomError": "Failed to upload custom background",
-    "doubleClickHeart": "React with ❤️"
+    "doubleClickHeart": "React with ❤️",
+    "usernames": "Usernames",
+    "usernamesDescription": "Choose which usernames are displayed in your profile",
+    "usernamesSearch": "Search by username",
+    "usernamesPinnedHint": "Pinned in profile: up to 10",
+    "usernamesEmpty": "No usernames found",
+    "usernamesSecondary": "Secondary",
+    "usernamesUnpinned": "Not pinned"
     ,
     "sections": {
       "appearance": {
@@ -219,6 +377,9 @@
       },
       "language": {
         "description": "Interface language and locale settings."
+      },
+      "usernames": {
+        "description": "Visibility and pinning of profile usernames."
       },
       "danger": {
         "description": "Account deletion and sensitive actions."
@@ -428,6 +589,7 @@
     "following": "following",
     "follow": "Follow",
     "followingLabel": "Following",
+    "manageDisplayedUsernames": "Manage displayed usernames",
     "message": "Message",
     "editProfile": "Edit Profile",
     "name": "Name",
@@ -456,7 +618,8 @@
     "busy": "Busy",
     "avatarUpdated": "Avatar updated",
     "avatarError": "Failed to upload avatar",
-    "qrCode": "QR Code"
+    "qrCode": "QR Code",
+    "usernameAvailable": "Username is available"
   },
   "messages": {
     "title": "Messages",
@@ -1527,4 +1690,7 @@
     "unavailable": "Status unavailable"
   }
 }
+
+
+
 

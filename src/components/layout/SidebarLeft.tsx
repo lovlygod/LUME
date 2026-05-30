@@ -6,6 +6,7 @@ import {
   MessageCircle,
   Briefcase,
   FolderKanban,
+  Wallet,
   User,
   LogOut,
   Settings,
@@ -55,6 +56,7 @@ const SidebarLeft = () => {
 
   const authNavItems = [
     { to: "/home", icon: Home, label: t("navigation.home") },
+    { to: "/wallet", icon: Wallet, label: t("navigation.wallet") || "Wallet" },
     { to: "/workspaces", icon: Briefcase, label: t("navigation.workspaces") },
     { to: "/projects", icon: FolderKanban, label: t("navigation.projects") },
     { to: "/messages", icon: MessageCircle, label: t("navigation.messages") },
@@ -177,7 +179,7 @@ const SidebarLeft = () => {
         {/* Navigation */}
         <nav className="flex flex-1 flex-col gap-1">
           {getNavigationItems().map((item) => {
-            const isActive = location.pathname === item.to;
+            const isActive = location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
             const isHome = item.to === "/home";
 
             if (isHome) {

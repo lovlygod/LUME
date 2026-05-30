@@ -406,7 +406,7 @@ CREATE TABLE IF NOT EXISTS developer_api_usage (
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);
 CREATE INDEX IF NOT EXISTS idx_messages_sender_id ON messages(sender_id);
-CREATE INDEX IF NOT EXISTS idx_messages_receiver_id ON messages(receiver_id);
+CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id);
 CREATE INDEX IF NOT EXISTS idx_server_members_server_id ON server_members(server_id);
 CREATE INDEX IF NOT EXISTS idx_server_messages_channel_id ON server_messages(channel_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);

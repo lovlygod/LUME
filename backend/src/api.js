@@ -3874,68 +3874,146 @@ router.patch('/users/me', authenticateToken, (req, res) => {
   const updates = [];
   const values = [];
 
-  if (name !== undefined) {
-    updates.push(`name = $${updates.length + 1}`);
-    values.push(name.trim());
-  }
-  if (username !== undefined) {
-    updates.push(`username = $${updates.length + 1}`);
-    values.push(username.trim().toLowerCase());
-  }
-  if (bio !== undefined) {
-    updates.push(`bio = $${updates.length + 1}`);
-    values.push(bio);
-  }
-  if (city !== undefined) {
-    updates.push(`city = $${updates.length + 1}`);
-    values.push(city ? city.trim() : null);
-  }
-  if (normalizedWebsite !== undefined) {
-    updates.push(`website = $${updates.length + 1}`);
-    values.push(normalizedWebsite);
-  }
-  if (primaryRole !== undefined) {
-    updates.push(`primary_role = $${updates.length + 1}`);
-    values.push(primaryRole || null);
-  }
-  if (skills !== undefined) {
-    updates.push(`skills = $${updates.length + 1}`);
-    if (skills && Array.isArray(skills)) {
-      values.push(`{${skills.map(s => s.replace(/[",\\]/g, '\\$&')).join(',')}}`);
-    } else {
-      values.push(null);
+  const normalizedUsername = username !== undefined ? String(username || '').trim().toLowerCase() : null;
+
+  const proceedUpdate = () => {
+    if (name !== undefined) {
+      updates.push(`name = $${updates.length + 1}`);
+      values.push(name.trim());
     }
-  }
-  if (availability !== undefined) {
-    updates.push(`availability = $${updates.length + 1}`);
-    values.push(availability || 'open');
-  }
-  if (normalizedGithubUrl !== undefined) {
-    updates.push(`github_url = $${updates.length + 1}`);
-    values.push(normalizedGithubUrl || null);
-  }
-  if (telegramUsername !== undefined) {
-    updates.push(`telegram_username = $${updates.length + 1}`);
-    values.push(telegramUsername ? telegramUsername.replace(/^@/, '') : null);
-  }
+    if (username !== undefined) {
+      updates.push(`username = $${updates.length + 1}`);
+      values.push(String(username || '').trim().toLowerCase());
+    }
+    if (bio !== undefined) {
+      updates.push(`bio = $${updates.length + 1}`);
+      values.push(bio);
+    }
+    if (city !== undefined) {
+      updates.push(`city = $${updates.length + 1}`);
+      values.push(city ? city.trim() : null);
+    }
+    if (normalizedWebsite !== undefined) {
+      updates.push(`website = $${updates.length + 1}`);
+      values.push(normalizedWebsite);
+    }
+    if (primaryRole !== undefined) {
+      updates.push(`primary_role = $${updates.length + 1}`);
+      values.push(primaryRole || null);
+    }
+    if (skills !== undefined) {
+      updates.push(`skills = $${updates.length + 1}`);
+      if (skills && Array.isArray(skills)) {
+        values.push(`{${skills.map(s => s.replace(/[",\\]/g, '\\$&')).join(',')}}`);
+      } else {
+        values.push(null);
+      }
+    }
+    if (availability !== undefined) {
+      updates.push(`availability = $${updates.length + 1}`);
+      values.push(availability || 'open');
+    }
+    if (normalizedGithubUrl !== undefined) {
+      updates.push(`github_url = $${updates.length + 1}`);
+      values.push(normalizedGithubUrl || null);
+    }
+    if (telegramUsername !== undefined) {
+      updates.push(`telegram_username = $${updates.length + 1}`);
+      values.push(telegramUsername ? telegramUsername.replace(/^@/, '') : null);
+    }
 
-  if (updates.length === 0) {
-    return res.status(400).json({ error: 'No fields to update' });
-  }
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
 
-  values.push(userId);
+    values.push(userId);
 
-  const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${updates.length + 1}`;
+    const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${updates.length + 1}`;
 
-  const pool = require('./db').pool;
-  pool.query(query, values)
-    .then(() => {
-      res.json({ message: 'Profile updated successfully' });
-    })
-    .catch((err) => {
-      console.error('Profile update error:', err);
-      res.status(500).json({ error: 'Database error' });
+    const pool = require('./db').pool;
+    pool.query(query, values)
+      .then(() => {
+        res.json({ message: 'Profile updated successfully' });
+      })
+      .catch((err) => {
+        console.error('Profile update error:', err);
+        res.status(500).json({ error: 'Database error' });
+      });
+  };
+
+  if (normalizedUsername) {
+    // Username is available if not used by anyone OR already belongs to current user
+    const ownershipQuery = `SELECT id, owner_id FROM usernames WHERE normalized_username = $1 LIMIT 1`;
+    return db.get(ownershipQuery, [normalizedUsername], (err, row) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+
+      if (!row) {
+        // Create a personal username record for profile-created usernames
+        const insertQuery = `
+          INSERT INTO usernames (username, normalized_username, owner_id, is_primary, is_market_acquired, created_at, updated_at)
+          VALUES ($1, $2, $3, TRUE, FALSE, NOW(), NOW())
+          RETURNING id
+        `;
+        return db.get(insertQuery, [String(username).trim(), normalizedUsername, userId], (insertErr, inserted) => {
+          if (insertErr) return res.status(500).json({ error: 'Database error' });
+
+          const setPrimaryQuery = `
+            UPDATE usernames
+            SET is_primary = CASE WHEN id = $1 THEN TRUE ELSE FALSE END,
+                updated_at = NOW()
+            WHERE owner_id = $2
+          `;
+          db.run(setPrimaryQuery, [inserted.id, userId], (primaryErr) => {
+            if (primaryErr) return res.status(500).json({ error: 'Database error' });
+
+            const syncUserQuery = 'UPDATE users SET main_username_id = $1 WHERE id = $2';
+            db.run(syncUserQuery, [inserted.id, userId], (syncErr) => {
+              if (syncErr) return res.status(500).json({ error: 'Database error' });
+              return proceedUpdate();
+            });
+          });
+        });
+      }
+
+      if (Number(row.owner_id) !== Number(userId)) {
+        return res.status(400).json({ error: 'Username already taken' });
+      }
+
+      // Username belongs to current user: mark as primary and sync users.main_username_id
+      const setPrimaryQuery = `
+        UPDATE usernames
+        SET is_primary = CASE WHEN id = $1 THEN TRUE ELSE FALSE END,
+            updated_at = NOW()
+        WHERE owner_id = $2
+      `;
+      db.run(setPrimaryQuery, [row.id, userId], (primaryErr) => {
+        if (primaryErr) return res.status(500).json({ error: 'Database error' });
+        const syncUserQuery = 'UPDATE users SET main_username_id = $1 WHERE id = $2';
+        db.run(syncUserQuery, [row.id, userId], (syncErr) => {
+          if (syncErr) return res.status(500).json({ error: 'Database error' });
+          return proceedUpdate();
+        });
+      });
     });
+  }
+
+  return proceedUpdate();
+});
+
+// Username availability for profile editing (canonical usernames ownership-aware)
+router.get('/usernames/availability', authenticateToken, (req, res) => {
+  const userId = req.user.userId;
+  const normalizedUsername = String(req.query.username || '').trim().toLowerCase();
+  if (!normalizedUsername) {
+    return res.status(400).json({ error: 'username is required' });
+  }
+
+  const q = `SELECT owner_id FROM usernames WHERE normalized_username = $1 LIMIT 1`;
+  db.get(q, [normalizedUsername], (err, row) => {
+    if (err) return res.status(500).json({ error: 'Database error' });
+    const available = !row || Number(row.owner_id) === Number(userId);
+    return res.json({ available });
+  });
 });
 
 // ==================== PINNED POST ====================

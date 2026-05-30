@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Sun, Lock, MessageCircle, Globe, MonitorSmartphone, AlertTriangle, ChevronRight } from "lucide-react";
+import { Sun, Lock, MessageCircle, Globe, MonitorSmartphone, AlertTriangle, ChevronRight, AtSign } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const Settings = () => {
@@ -35,6 +35,12 @@ const Settings = () => {
       icon: MonitorSmartphone,
       title: t("sessions.title"),
       description: t("sessions.subtitle"),
+    },
+    {
+      to: "/settings/usernames",
+      icon: AtSign,
+      title: t("settings.usernames") || "Usernames",
+      description: t("settings.sections.usernames.description") || "Manage which usernames are shown in profile",
     },
     {
       to: "/settings/danger",

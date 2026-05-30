@@ -18,6 +18,7 @@ import ChatPage from "./pages/settings/ChatPage";
 import LanguagePage from "./pages/settings/LanguagePage";
 import DangerPage from "./pages/settings/DangerPage";
 import SessionsPage from "./pages/settings/SessionsPage";
+import UsernamesPage from "./pages/settings/UsernamesPage";
 import NotFound from "./pages/NotFound";
 import Register from "./pages/auth/Register";
 import Login from "./pages/auth/Login";
@@ -37,6 +38,9 @@ import ContactsPage from "@/pages/ContactsPage";
 import CookiePolicy from "@/pages/CookiePolicy";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfService from "@/pages/TermsOfService";
+import WalletPage from "@/pages/wallet/WalletPage";
+import WalletMarketPage from "@/pages/wallet/WalletMarketPage";
+import WalletHistoryPage from "@/pages/wallet/WalletHistoryPage";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import GuestRoute from "@/components/auth/GuestRoute";
 import MainLayout from "@/layouts/MainLayout";
@@ -87,6 +91,9 @@ const AppContent = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/:userId" element={<UserProfile />} />
           <Route path="/explore" element={<Explore />} />
+          <Route path="/wallet" element={<WalletPage />} />
+          <Route path="/wallet/market" element={<WalletMarketPage />} />
+          <Route path="/wallet/history" element={<WalletHistoryPage />} />
           <Route path="/verified" element={<Verified />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/settings/appearance" element={<AppearancePage />} />
@@ -95,6 +102,7 @@ const AppContent = () => {
           <Route path="/settings/language" element={<LanguagePage />} />
           <Route path="/settings/danger" element={<DangerPage />} />
           <Route path="/settings/sessions" element={<SessionsPage />} />
+          <Route path="/settings/usernames" element={<UsernamesPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/admin" element={<AdminPanel />} />
         </Route>
