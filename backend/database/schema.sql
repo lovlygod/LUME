@@ -123,6 +123,8 @@ CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id);
 CREATE INDEX IF NOT EXISTS idx_chat_members_user_id ON chat_members(user_id);
 CREATE INDEX IF NOT EXISTS idx_chat_join_requests_chat_id ON chat_join_requests(chat_id);
 CREATE INDEX IF NOT EXISTS idx_chat_join_requests_user_id ON chat_join_requests(user_id);
+CREATE INDEX IF NOT EXISTS idx_messages_chat_created ON messages(chat_id, created_at DESC)
+  WHERE deleted_for_all_at IS NULL;
 
 CREATE TABLE IF NOT EXISTS attachments (
   id BIGSERIAL PRIMARY KEY,
@@ -145,6 +147,8 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
   expires_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires ON refresh_tokens(expires_at);
 
 CREATE TABLE IF NOT EXISTS sessions (
   id BIGSERIAL PRIMARY KEY,
@@ -163,6 +167,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   last_active TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
 
 CREATE TABLE IF NOT EXISTS ip_geo_cache (
   ip TEXT PRIMARY KEY,
@@ -210,6 +215,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   read INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(user_id, read);
 
 CREATE TABLE IF NOT EXISTS verification_requests (
   id BIGSERIAL PRIMARY KEY,

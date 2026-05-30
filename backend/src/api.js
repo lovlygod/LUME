@@ -93,6 +93,18 @@ async function createMentionNotifications(text, authorId, options, req) {
 }
 
 const router = express.Router();
+
+// CSRF protection should be attached before route registration
+router.use((req, res, next) => {
+  const safeMethods = new Set(['GET', 'HEAD', 'OPTIONS']);
+  const csrfExclusions = new Set(['/login', '/register', '/refresh', '/logout', '/csrf-token']);
+
+  if (safeMethods.has(req.method) || csrfExclusions.has(req.path)) {
+    return next();
+  }
+
+  return verifyCSRFToken(req, res, next);
+});
 const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || '').trim().toLowerCase();
 
 const AUTH_COOKIE_OPTIONS = {
@@ -104,21 +116,10 @@ const AUTH_COOKIE_OPTIONS = {
 
 const STICKERS_BASE_DIR = path.resolve(__dirname, 'assets/stickers');
 
-const INVITE_TOKEN_LENGTH = 16;
-const INVITE_TOKEN_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const PUBLIC_NUMBER_LENGTH = 7;
 const PUBLIC_NUMBER_MAX = Math.pow(10, PUBLIC_NUMBER_LENGTH) - 1;
 
-const generateInviteToken = () => {
-  let token = '';
-  while (token.length < INVITE_TOKEN_LENGTH) {
-    const bytes = crypto.randomBytes(INVITE_TOKEN_LENGTH);
-    for (let i = 0; i < bytes.length && token.length < INVITE_TOKEN_LENGTH; i += 1) {
-      token += INVITE_TOKEN_CHARS[bytes[i] % INVITE_TOKEN_CHARS.length];
-    }
-  }
-  return token;
-};
+const generateInviteToken = () => crypto.randomBytes(16).toString('hex');
 
 const generatePublicNumber = () => {
   const value = crypto.randomInt(0, PUBLIC_NUMBER_MAX + 1);
@@ -539,20 +540,7 @@ router.get('/npm/:packageName', asyncHandler(async (req, res) => {
   res.json(packageInfo);
 }));
 
-// CSRF protection for state-changing requests
-router.post('*', (req, res, next) => {
-  const csrfExclusions = new Set(['/login', '/register', '/refresh', '/logout', '/csrf-token']);
-  if (csrfExclusions.has(req.path)) {
-    return next();
-  }
-  verifyCSRFToken(req, res, next);
-});
-router.put('*', (req, res, next) => {
-  verifyCSRFToken(req, res, next);
-});
-router.delete('*', (req, res, next) => {
-  verifyCSRFToken(req, res, next);
-});
+// CSRF protection is applied above via router.use(...)
 router.patch('*', verifyCSRFToken);
 
 registerE2EERoutes(router, {

@@ -4,6 +4,7 @@ const NPM_REGISTRY_URL = 'https://registry.npmjs.org';
 
 const npmCache = new Map();
 const CACHE_TTL_MS = 15 * 60 * 1000;
+const NPM_CACHE_MAX = 1000;
 
 const isValidPackageName = (name) => {
   if (!name || typeof name !== 'string') return false;
@@ -36,6 +37,13 @@ const getNpmPackageInfo = async (packageName) => {
       description: data.description || null,
       url: data.homepage || data.repository?.url || null,
     };
+
+    if (npmCache.size >= NPM_CACHE_MAX) {
+      const firstKey = npmCache.keys().next().value;
+      if (firstKey) {
+        npmCache.delete(firstKey);
+      }
+    }
 
     npmCache.set(packageName, { data: result, timestamp: Date.now() });
     

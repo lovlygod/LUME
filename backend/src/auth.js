@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const axios = require('axios');
 const UAParser = require('ua-parser-js');
 const db = require('./db');
-const { ValidationError, ConflictError, AuthError, InternalError, TooManyRequestsError } = require('./errors');
+const { ValidationError, ConflictError, AuthError, InternalError, TooManyRequestsError, ServiceError } = require('./errors');
 const { logger } = require('./logger');
 const { audit } = require('./audit');
 const { resetRateLimit } = require('./rateLimiter');
@@ -284,9 +284,7 @@ const authenticateToken = (req, res, next) => {
     [refreshToken, new Date().toISOString()],
     (err, row) => {
       if (err) {
-        res.clearCookie('refreshToken', { path: '/' });
-        res.clearCookie('token', { path: '/' });
-        return next(new AuthError('Invalid token', 'INVALID_TOKEN'));
+        return next(new ServiceError('Authentication service temporarily unavailable'));
       }
       if (!row) {
         res.clearCookie('refreshToken', { path: '/' });
