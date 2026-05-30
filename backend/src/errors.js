@@ -161,6 +161,23 @@ const errorHandler = (err, req, res, next) => {
     return res.status(validationError.statusCode).json(validationError.toJSON());
   }
 
+  // Обработка ошибок провайдера хранилища (Cloudinary) по размеру файла
+  if (
+    err?.http_code === 400
+    && /file size too large/i.test(String(err?.message || ''))
+  ) {
+    const validationDetails = {
+      maxSize: '25MB',
+    };
+    if (process.env.NODE_ENV !== 'production') {
+      validationDetails.http_code = err.http_code;
+      validationDetails.message = err.message;
+      validationDetails.name = err.name;
+    }
+    const validationError = new ValidationError('File too large', validationDetails);
+    return res.status(validationError.statusCode).json(validationError.toJSON());
+  }
+
   // Обработка ошибок базы данных
   if (err.message && err.message.includes('SQLITE')) {
     console.error('Database error:', err.message);
