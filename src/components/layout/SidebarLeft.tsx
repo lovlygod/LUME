@@ -57,10 +57,10 @@ const SidebarLeft = () => {
 
   const authNavItems = [
     { to: "/home", icon: Home, label: t("navigation.home") },
+    { to: "/messages", icon: MessageCircle, label: t("navigation.messages") },
     { to: "/wallet", icon: Wallet, label: t("navigation.wallet") || "Wallet" },
     { to: "/workspaces", icon: Briefcase, label: t("navigation.workspaces") },
     { to: "/projects", icon: FolderKanban, label: t("navigation.projects") },
-    { to: "/messages", icon: MessageCircle, label: t("navigation.messages") },
     { to: "/explore", icon: Compass, label: t("navigation.explore") },
     { to: "/profile", icon: User, label: t("navigation.profile") },
   ];
