@@ -956,7 +956,7 @@ const ProfilePage = () => {
                 <div className="mt-4 flex items-center gap-4 pt-3 text-sm border-t border-white/5">
                   <div className="flex items-center gap-1">
                     <span className="font-semibold text-white">{posts.length + (pinnedPost ? 1 : 0)}</span>
-                    <span className="text-secondary">{t("profile.signals")}</span>
+                    <span className="text-secondary">{t("profile.posts")}</span>
                   </div>
                   <button onClick={() => openFollowModal('followers')} className="flex items-center gap-1 hover:text-white">
                     <span className="font-semibold text-white">{user.followers_count || 0}</span>
@@ -1019,8 +1019,8 @@ const ProfilePage = () => {
       {/* Posts Section */}
       <div className="mt-6">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="font-semibold text-white">Signals</h3>
-          <span className="text-xs text-secondary">{posts.length} posts</span>
+          <h3 className="font-semibold text-white">{t("profile.posts")}</h3>
+          <span className="text-xs text-secondary">{posts.length} {t("profile.posts")}</span>
         </div>
 
         {posts.length > 0 ? (
@@ -1048,9 +1048,9 @@ const ProfilePage = () => {
             <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-white/8 mb-3">
               <Calendar className="h-6 w-6 text-white/60" />
             </div>
-            <p className="text-white font-medium">No signals yet</p>
+            <p className="text-white font-medium">{t("profile.noPosts")}</p>
             <p className="text-sm text-secondary mt-1">
-              {isOwnProfile ? 'Share your first signal!' : 'This user has not posted yet'}
+              {isOwnProfile ? t("profile.firstPost") : t("profile.notPosted")}
             </p>
           </div>
         )}

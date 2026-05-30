@@ -276,9 +276,9 @@ const Index = () => {
         ) : (
           <div className="px-4 py-16 text-center">
             <Zap className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-            <p className="text-lg font-medium text-foreground">{t("feed.noSignals")}</p>
+            <p className="text-lg font-medium text-foreground">{t("feed.noPosts")}</p>
             <p className="text-sm text-muted-foreground mt-1">
-              {t("feed.firstSignal")}
+              {t("feed.firstPost")}
             </p>
           </div>
         )}

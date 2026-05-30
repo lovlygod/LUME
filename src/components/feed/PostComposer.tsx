@@ -198,7 +198,7 @@ const PostComposer = () => {
             onKeyDown={handleKeyDown}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            placeholder={t("feed.signalPlaceholder")}
+            placeholder={t("feed.postPlaceholder")}
             className="w-full resize-none border-none bg-transparent text-white placeholder:text-white/35 focus:outline-none focus:ring-0 text-[15px] leading-relaxed"
             rows={1}
           />
@@ -314,12 +314,12 @@ const PostComposer = () => {
                 {posting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>{t("feed.sendingSignal")}</span>
+                    <span>{t("feed.sendingPost")}</span>
                   </>
                 ) : (
                   <>
                     <Zap className="h-4 w-4" />
-                    <span>{t("feed.sendSignal")}</span>
+                    <span>{t("feed.sendPost")}</span>
                   </>
                 )}
               </motion.button>

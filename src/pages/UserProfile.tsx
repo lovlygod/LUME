@@ -460,8 +460,8 @@ const UserProfile = () => {
 {/* Posts Section */}
       <div className="mt-6">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="font-semibold text-white">{t("profile.signals")}</h3>
-          <span className="text-xs text-secondary">{posts.length} posts</span>
+          <h3 className="font-semibold text-white">{t("profile.posts")}</h3>
+          <span className="text-xs text-secondary">{posts.length} {t("profile.posts")}</span>
         </div>
         {posts.length > 0 ? (
           <div className="space-y-[16px]">
@@ -485,7 +485,7 @@ const UserProfile = () => {
           </div>
         ) : (
           <div className="rounded-3xl border border-white/10 bg-white/5 px-5 py-6 text-center">
-            <p className="text-sm text-secondary">{t("profile.noSignals")}</p>
+            <p className="text-sm text-secondary">{t("profile.noPosts")}</p>
           </div>
         )}
       </div>

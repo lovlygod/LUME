@@ -79,8 +79,8 @@ const keyMapping: Record<string, string> = {
   'common.cancel': 'common.cancel',
   
   // Profile
-  'signals': 'profile.signals',
-  'signal': 'profile.signal',
+  'posts': 'profile.posts',
+  'post': 'profile.post',
   'followers': 'profile.followers',
   'following': 'profile.following',
   'follow': 'profile.follow',
@@ -95,8 +95,8 @@ const keyMapping: Record<string, string> = {
   'website': 'profile.website',
   'joined': 'profile.joined',
   'noBio': 'profile.noBio',
-  'noSignals': 'profile.noSignals',
-  'firstSignal': 'profile.firstSignal',
+  'noPosts': 'profile.noPosts',
+  'firstPost': 'profile.firstPost',
   'viewNow': 'feed.viewNow',
   
   // Messages
