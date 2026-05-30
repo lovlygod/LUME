@@ -4,6 +4,7 @@ module.exports = function registerMessengerRoutes(router, deps) {
     asyncHandler,
     db,
     ValidationError,
+    sanitizeText,
   } = deps;
 
   // Chat list for current user
@@ -468,10 +469,17 @@ module.exports = function registerMessengerRoutes(router, deps) {
 
     const isPrivateChat = type === 'private';
     const normalizedTitle = typeof title === 'string' ? title.trim() : '';
+    const MAX_CHAT_TITLE_LENGTH = 128;
 
     if (!isPrivateChat && normalizedTitle.length === 0) {
       return res.status(400).json({ error: 'Title is required' });
     }
+
+    if (!isPrivateChat && normalizedTitle.length > MAX_CHAT_TITLE_LENGTH) {
+      return res.status(400).json({ error: `Title too long (max ${MAX_CHAT_TITLE_LENGTH} chars)` });
+    }
+
+    const safeTitle = !isPrivateChat ? sanitizeText(normalizedTitle) : null;
 
     const publicGroup = isPublic && username;
     if (publicGroup && !/^[a-z0-9_]{5,}$/i.test(username)) {
@@ -517,7 +525,7 @@ module.exports = function registerMessengerRoutes(router, deps) {
         `INSERT INTO chats (type, title, is_public, is_private, username, owner_id)
          VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING id`,
-        [type, isPrivateChat ? null : normalizedTitle, Boolean(isPublic), Boolean(isPrivate) || isPrivateChat, username || null, userId]
+        [type, safeTitle, Boolean(isPublic), Boolean(isPrivate) || isPrivateChat, username || null, userId]
       );
     const chatId = rows[0].id;
 

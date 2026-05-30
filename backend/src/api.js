@@ -33,6 +33,7 @@ const createTaskRoutes = require('./routes/taskRoutes');
 const createExploreRoutes = require('./routes/exploreRoutes');
 const createDiagramRoutes = require('./routes/diagramRoutes');
 const { getNpmPackageInfo, isValidPackageName } = require('./npm');
+const { sanitizeText } = require('./xss');
 
 // Helper function to extract @mentions from text
 function extractMentions(text) {
@@ -579,6 +580,7 @@ registerMessengerRoutes(router, {
   asyncHandler,
   db,
   ValidationError,
+  sanitizeText,
 });
 
 router.use('/', createOnboardingRoutes({
@@ -1083,7 +1085,16 @@ router.post('/follow/batch', authenticateToken, asyncHandler(async (req, res) =>
   const userIds = Array.isArray(req.body?.userIds) ? req.body.userIds : [];
   if (!userIds.length) return res.status(400).json({ error: 'userIds is required' });
 
-  const sanitized = [...new Set(userIds.map((v) => String(v)).filter((id) => id !== String(followerId)))];
+  const sanitized = [...new Set(
+    userIds
+      .map((v) => String(v).trim())
+      .filter((id) => /^\d+$/.test(id))
+      .filter((id) => id !== String(followerId))
+  )];
+
+  if (!sanitized.length) {
+    return res.status(400).json({ error: 'No valid target users to follow' });
+  }
   for (const followingId of sanitized) {
     // eslint-disable-next-line no-await-in-loop
     await db.query(

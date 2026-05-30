@@ -279,14 +279,6 @@ CREATE TABLE IF NOT EXISTS media_views (
   PRIMARY KEY (media_id, user_id)
 );
 
-CREATE TABLE IF NOT EXISTS chat_reads (
-  chat_id BIGINT NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
-  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  last_read_message_id BIGINT NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  PRIMARY KEY (chat_id, user_id)
-);
-
 CREATE TABLE IF NOT EXISTS servers (
   id BIGSERIAL PRIMARY KEY,
   username TEXT UNIQUE,

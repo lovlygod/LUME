@@ -220,6 +220,15 @@ const checkRateLimit = async (ip, action) => {
       attempts: record.attempts,
       blockedUntil: blockedUntil.toISOString(),
     });
+
+    logger.warn('SECURITY: Brute force detected', {
+      ip,
+      action,
+      attempts: record.attempts,
+      category: 'security',
+      alertAdmin: true,
+      blockedUntil: blockedUntil.toISOString(),
+    });
     
     const retryAfter = Math.ceil(config.blockDurationMs / 1000);
     throw new TooManyRequestsError(
