@@ -3960,29 +3960,80 @@ router.patch('/users/me', authenticateToken, (req, res) => {
       if (err) return res.status(500).json({ error: 'Database error' });
 
       if (!row) {
-        // Create a personal username record for profile-created usernames
-        const insertQuery = `
-          INSERT INTO usernames (username, normalized_username, owner_id, is_primary, is_market_acquired, created_at, updated_at)
-          VALUES ($1, $2, $3, TRUE, FALSE, NOW(), NOW())
-          RETURNING id
+        // If user already has a primary username record, rename that record instead of creating a new one.
+        // This prevents accidental growth of owned usernames when editing profile username.
+        const currentPrimaryQuery = `
+          SELECT u.main_username_id,
+                 un.id,
+                 un.owner_id,
+                 COALESCE(un.is_market_acquired, FALSE) AS is_market_acquired
+          FROM users u
+          LEFT JOIN usernames un ON un.id = u.main_username_id
+          WHERE u.id = $1
+          LIMIT 1
         `;
-        return db.get(insertQuery, [String(username).trim(), normalizedUsername, userId], (insertErr, inserted) => {
-          if (insertErr) return res.status(500).json({ error: 'Database error' });
+        return db.get(currentPrimaryQuery, [userId], (primaryLookupErr, primaryRow) => {
+          if (primaryLookupErr) return res.status(500).json({ error: 'Database error' });
 
-          const setPrimaryQuery = `
-            UPDATE usernames
-            SET is_primary = CASE WHEN id = $1 THEN TRUE ELSE FALSE END,
-                updated_at = NOW()
-            WHERE owner_id = $2
-          `;
-          db.run(setPrimaryQuery, [inserted.id, userId], (primaryErr) => {
-            if (primaryErr) return res.status(500).json({ error: 'Database error' });
+          const canRenamePrimary =
+            primaryRow &&
+            primaryRow.id &&
+            Number(primaryRow.owner_id) === Number(userId) &&
+            !primaryRow.is_market_acquired;
 
-            const syncUserQuery = 'UPDATE users SET main_username_id = $1 WHERE id = $2';
-            db.run(syncUserQuery, [inserted.id, userId], (syncErr) => {
-              if (syncErr) return res.status(500).json({ error: 'Database error' });
-              return proceedUpdate();
+          const finalizePrimaryAndProceed = (primaryId) => {
+            const setPrimaryQuery = `
+              UPDATE usernames
+              SET is_primary = CASE WHEN id = $1 THEN TRUE ELSE FALSE END,
+                  updated_at = NOW()
+              WHERE owner_id = $2
+            `;
+            db.run(setPrimaryQuery, [primaryId, userId], (primaryErr) => {
+              if (primaryErr) return res.status(500).json({ error: 'Database error' });
+
+              const syncUserQuery = 'UPDATE users SET main_username_id = $1 WHERE id = $2';
+              db.run(syncUserQuery, [primaryId, userId], (syncErr) => {
+                if (syncErr) return res.status(500).json({ error: 'Database error' });
+                return proceedUpdate();
+              });
             });
+          };
+
+          if (canRenamePrimary) {
+            const renamePrimaryQuery = `
+              UPDATE usernames
+              SET username = $1,
+                  normalized_username = $2,
+                  updated_at = NOW()
+              WHERE id = $3 AND owner_id = $4
+              RETURNING id
+            `;
+            return db.get(renamePrimaryQuery, [String(username).trim(), normalizedUsername, primaryRow.id, userId], (renameErr, renamed) => {
+              if (renameErr) {
+                if (renameErr.code === '23505') {
+                  return res.status(400).json({ error: 'Username already taken' });
+                }
+                return res.status(500).json({ error: 'Database error' });
+              }
+              if (!renamed?.id) return res.status(500).json({ error: 'Database error' });
+              return finalizePrimaryAndProceed(renamed.id);
+            });
+          }
+
+          // Fallback: create a personal username record if no mutable primary record exists
+          const insertQuery = `
+            INSERT INTO usernames (username, normalized_username, owner_id, is_primary, is_market_acquired, created_at, updated_at)
+            VALUES ($1, $2, $3, TRUE, FALSE, NOW(), NOW())
+            RETURNING id
+          `;
+          return db.get(insertQuery, [String(username).trim(), normalizedUsername, userId], (insertErr, inserted) => {
+            if (insertErr) {
+              if (insertErr.code === '23505') {
+                return res.status(400).json({ error: 'Username already taken' });
+              }
+              return res.status(500).json({ error: 'Database error' });
+            }
+            return finalizePrimaryAndProceed(inserted.id);
           });
         });
       }
