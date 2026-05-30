@@ -87,6 +87,30 @@ export interface Message {
   linkPreview?: LinkPreview | null;
 }
 
+export interface ChatPinnedMessage {
+  id: string;
+  chatId: string;
+  messageId: string;
+  pinnedBy: {
+    id: string;
+    name?: string | null;
+    username?: string | null;
+  };
+  pinnedAt: string;
+  message: {
+    id: string;
+    text: string;
+    type?: "text" | "media_image" | "voice" | "sticker" | string;
+    timestamp: string;
+    sender: {
+      id: string;
+      name?: string | null;
+      username?: string | null;
+      avatar?: string | null;
+    };
+  };
+}
+
 export type ChatAttachmentFeedType = "media" | "videos" | "voice" | "files" | "links";
 
 export interface ChatAttachmentFeedItem {

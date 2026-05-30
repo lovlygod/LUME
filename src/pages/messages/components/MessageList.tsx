@@ -39,7 +39,11 @@ interface MessageListProps {
   onToggleHeart: (msg: Message) => void;
   doubleClickAction: "reply" | "heart";
   reactionMap: Record<string, boolean>;
-  onOpenContextMenu: (msg: Message, position: { x: number; y: number }) => void;
+  onOpenContextMenu: (
+    msg: Message,
+    position: { x: number; y: number },
+    bounds?: { left: number; top: number; right: number; bottom: number }
+  ) => void;
   onReplyJump: (messageId: string) => void;
   onDeleteRequest: (messageId: string, x: number, y: number) => void;
   onOpenSticker: (sticker: Sticker) => void;
@@ -51,6 +55,8 @@ interface MessageListProps {
   onCommand?: (command: string) => void;
   selectedMessages?: string[];
   onSelectMessage?: (messageId: string) => void;
+  onVisibleRangeChange?: (range: { startIndex: number; endIndex: number }) => void;
+  onUserScroll?: () => void;
 }
 
 const MessageList = ({
@@ -78,6 +84,8 @@ const MessageList = ({
   onCommand,
   selectedMessages,
   onSelectMessage,
+  onVisibleRangeChange,
+  onUserScroll,
 }: MessageListProps) => {
   const parentRef = useRef<HTMLDivElement | null>(null);
   const lastMessageIdRef = useRef<string | null>(null);
@@ -177,6 +185,13 @@ const MessageList = ({
   const totalSize = rowVirtualizer.getTotalSize();
   const virtualItems = rowVirtualizer.getVirtualItems();
 
+  useEffect(() => {
+    if (!onVisibleRangeChange || virtualItems.length === 0) return;
+    const startIndex = virtualItems[0]?.index ?? 0;
+    const endIndex = virtualItems[virtualItems.length - 1]?.index ?? startIndex;
+    onVisibleRangeChange({ startIndex, endIndex });
+  }, [onVisibleRangeChange, virtualItems]);
+
   const beginDrag = (messageId: string, clientX: number, clientY: number) => {
     const selection = window.getSelection();
     if (selection && selection.type === "Range" && selection.toString().length > 0) {
@@ -231,8 +246,41 @@ const MessageList = ({
     setDragState((prev) => (prev ? { ...prev, isDragging: false, dragX: 0, messageId: null } : prev));
   };
 
+  const getChatBounds = () => {
+    const rect = parentRef.current?.getBoundingClientRect();
+    if (!rect) return undefined;
+    return {
+      left: rect.left,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+    };
+  };
+
+  const getPointerPosition = (
+    event:
+      | React.MouseEvent<HTMLDivElement>
+      | React.TouchEvent<HTMLDivElement>
+      | { clientX: number; clientY: number }
+  ) => {
+    if ("touches" in event) {
+      const touch = event.touches[0];
+      if (!touch) return null;
+      return { x: touch.clientX, y: touch.clientY };
+    }
+    if ("clientX" in event && "clientY" in event) {
+      return { x: event.clientX, y: event.clientY };
+    }
+    return null;
+  };
+
   return (
-    <div ref={parentRef} className="flex-1 h-full overflow-y-auto px-5 py-6 md:px-8 min-h-0 space-y-4 mb-3">
+    <div
+      ref={parentRef}
+      className="flex-1 h-full overflow-y-auto px-5 pt-0 pb-6 md:px-8 min-h-0 space-y-4 mb-3"
+      onWheel={() => onUserScroll?.()}
+      onTouchMove={() => onUserScroll?.()}
+    >
       <div style={{ height: totalSize, position: "relative" }}>
         {virtualItems.map((virtualRow) => {
           const msg = visibleMessages[virtualRow.index];
@@ -290,14 +338,6 @@ const MessageList = ({
               }}
               onContextMenu={(event) => {
                 event.preventDefault();
-                const target = event.target as HTMLElement | null;
-                if (target?.closest("button")) {
-                  return;
-                }
-                if (window.getSelection()?.toString()) {
-                  return;
-                }
-                onOpenContextMenu(msg, { x: event.clientX, y: event.clientY });
               }}
               onTouchStart={(event) => {
                 const touch = event.touches[0];
@@ -307,7 +347,7 @@ const MessageList = ({
                   if (window.getSelection()?.toString()) {
                     return;
                   }
-                  onOpenContextMenu(msg, { x: touch.clientX, y: touch.clientY });
+                  onOpenContextMenu(msg, { x: touch.clientX, y: touch.clientY }, getChatBounds());
                 }, 550);
                 target.dataset.longPressTimer = String(timerId);
               }}
@@ -407,6 +447,33 @@ const MessageList = ({
                 onTouchEnd={() => {
                   if (isOwnMessage || isStickerBotChat) return;
                   endDrag(msg);
+                }}
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  const target = event.target as HTMLElement | null;
+                  if (target?.closest("button") || target?.closest("a")) {
+                    return;
+                  }
+                  if (window.getSelection()?.toString()) {
+                    return;
+                  }
+                  const pointer = getPointerPosition(event);
+                  if (!pointer) return;
+                  onOpenContextMenu(msg, pointer, getChatBounds());
+                }}
+                onClick={(event) => {
+                  if ((selectedMessages?.length ?? 0) > 0) return;
+                  const target = event.target as HTMLElement | null;
+                  if (target?.closest("button") || target?.closest("a")) {
+                    return;
+                  }
+                  if (window.getSelection()?.toString()) {
+                    return;
+                  }
+                  if (event.detail > 1) return;
+                  const pointer = getPointerPosition(event);
+                  if (!pointer) return;
+                  onOpenContextMenu(msg, pointer, getChatBounds());
                 }}
               >
                 {!isOwnMessage && !isStickerBotChat && (

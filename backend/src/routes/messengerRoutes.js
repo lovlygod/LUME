@@ -286,6 +286,166 @@ module.exports = function registerMessengerRoutes(router, deps) {
     });
   });
 
+  // List pinned messages in chat
+  router.get('/chats/:chatId/pins', authenticateToken, asyncHandler(async (req, res) => {
+    const userId = req.user.userId;
+    const chatId = req.params.chatId;
+
+    const membership = await db.query(
+      'SELECT cm.role FROM chat_members cm WHERE cm.chat_id = $1 AND cm.user_id = $2 LIMIT 1',
+      [chatId, userId]
+    );
+
+    if (!membership.rows[0]) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const result = await db.query(
+      `SELECT cp.id,
+              cp.chat_id,
+              cp.message_id,
+              cp.pinned_by,
+              cp.created_at,
+              m.text,
+              m.type,
+              m.created_at AS message_created_at,
+              m.deleted_for_all_at,
+              u.id AS sender_id,
+              u.name AS sender_name,
+              u.username AS sender_username,
+              u.avatar AS sender_avatar,
+              pu.name AS pinned_by_name,
+              pu.username AS pinned_by_username
+       FROM chat_pins cp
+       JOIN messages m ON m.id = cp.message_id
+       JOIN users u ON u.id = m.sender_id
+       JOIN users pu ON pu.id = cp.pinned_by
+       WHERE cp.chat_id = $1
+         AND m.deleted_for_all_at IS NULL
+       ORDER BY cp.created_at DESC
+       LIMIT 20`,
+      [chatId]
+    );
+
+    res.json({
+      pins: result.rows.map((row) => ({
+        id: String(row.id),
+        chatId: String(row.chat_id),
+        messageId: String(row.message_id),
+        pinnedBy: {
+          id: String(row.pinned_by),
+          name: row.pinned_by_name,
+          username: row.pinned_by_username,
+        },
+        pinnedAt: row.created_at,
+        message: {
+          id: String(row.message_id),
+          text: row.text || '',
+          type: row.type || 'text',
+          timestamp: row.message_created_at,
+          sender: {
+            id: String(row.sender_id),
+            name: row.sender_name,
+            username: row.sender_username,
+            avatar: row.sender_avatar,
+          },
+        },
+      })),
+    });
+  }));
+
+  // Pin message in chat
+  router.post('/chats/:chatId/pins/:messageId', authenticateToken, asyncHandler(async (req, res) => {
+    const userId = req.user.userId;
+    const chatId = req.params.chatId;
+    const messageId = req.params.messageId;
+
+    const memberResult = await db.query(
+      `SELECT cm.role, c.type
+       FROM chat_members cm
+       JOIN chats c ON c.id = cm.chat_id
+       WHERE cm.chat_id = $1 AND cm.user_id = $2
+       LIMIT 1`,
+      [chatId, userId]
+    );
+    const membership = memberResult.rows[0];
+    if (!membership) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const canPin = membership.type === 'private' || membership.role === 'owner' || membership.role === 'admin';
+    if (!canPin) {
+      return res.status(403).json({ error: 'Insufficient permissions to pin messages' });
+    }
+
+    const messageResult = await db.query(
+      'SELECT id, chat_id, deleted_for_all_at FROM messages WHERE id = $1 LIMIT 1',
+      [messageId]
+    );
+    const message = messageResult.rows[0];
+
+    if (!message || String(message.chat_id) !== String(chatId)) {
+      return res.status(404).json({ error: 'Message not found in this chat' });
+    }
+    if (message.deleted_for_all_at) {
+      return res.status(400).json({ error: 'Cannot pin deleted message' });
+    }
+
+    const inserted = await db.query(
+      `INSERT INTO chat_pins (chat_id, message_id, pinned_by)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (chat_id, message_id) DO NOTHING
+       RETURNING id, created_at`,
+      [chatId, messageId, userId]
+    );
+
+    res.status(inserted.rows[0] ? 201 : 200).json({
+      pinned: true,
+      alreadyPinned: !inserted.rows[0],
+      chatId: String(chatId),
+      messageId: String(messageId),
+      pinId: inserted.rows[0] ? String(inserted.rows[0].id) : null,
+      pinnedAt: inserted.rows[0]?.created_at || null,
+    });
+  }));
+
+  // Unpin message in chat
+  router.delete('/chats/:chatId/pins/:messageId', authenticateToken, asyncHandler(async (req, res) => {
+    const userId = req.user.userId;
+    const chatId = req.params.chatId;
+    const messageId = req.params.messageId;
+
+    const memberResult = await db.query(
+      `SELECT cm.role, c.type
+       FROM chat_members cm
+       JOIN chats c ON c.id = cm.chat_id
+       WHERE cm.chat_id = $1 AND cm.user_id = $2
+       LIMIT 1`,
+      [chatId, userId]
+    );
+    const membership = memberResult.rows[0];
+    if (!membership) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const canUnpin = membership.type === 'private' || membership.role === 'owner' || membership.role === 'admin';
+    if (!canUnpin) {
+      return res.status(403).json({ error: 'Insufficient permissions to unpin messages' });
+    }
+
+    const result = await db.query(
+      'DELETE FROM chat_pins WHERE chat_id = $1 AND message_id = $2',
+      [chatId, messageId]
+    );
+
+    res.json({
+      unpinned: true,
+      chatId: String(chatId),
+      messageId: String(messageId),
+      existed: (result.rowCount || 0) > 0,
+    });
+  }));
+
   // Delete message (for me or for all)
   router.delete('/messages/:messageId', authenticateToken, (req, res) => {
     const userId = req.user.userId;

@@ -51,10 +51,11 @@ const ChatPanel = ({
   const isPrivate = chatType === "private";
 
   return (
-    <div
-      className="flex items-center gap-4 px-6 py-4 border-b border-white/10 cursor-pointer transition-smooth bg-white/3 backdrop-blur-[18px] max-sm:gap-2.5 max-sm:px-3.5 max-sm:py-3"
-      onClick={() => onOpenProfile()}
-    >
+    <div className="border-b border-white/10 bg-white/3 backdrop-blur-[18px]">
+      <div
+        className="flex items-center gap-4 px-6 py-4 cursor-pointer transition-smooth max-sm:gap-2.5 max-sm:px-3.5 max-sm:py-3"
+        onClick={() => onOpenProfile()}
+      >
       <div className="relative">
         {user.avatar ? (
           <img
@@ -131,6 +132,8 @@ const ChatPanel = ({
           {t("messages.chatSettingsButton") || "Настройки"}
         </button>
       )}
+      </div>
+
     </div>
   );
 };

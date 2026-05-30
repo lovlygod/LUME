@@ -1,6 +1,6 @@
 ﻿import { API_BASE_PATH } from "@/lib/config";
 import type { User, VerificationRequest, VerificationStatus, Post, Comment } from "@/types";
-import type { Chat, Attachment, Message, ChatAttachmentFeedType, ChatAttachmentFeedItem } from "@/types/messages";
+import type { Chat, Attachment, Message, ChatAttachmentFeedType, ChatAttachmentFeedItem, ChatPinnedMessage } from "@/types/messages";
 import type { StickerPack, StickerPackWithStickers } from "@/types/stickers";
 
 const API_BASE_URL = API_BASE_PATH;
@@ -775,6 +775,36 @@ export const messagesAPI = {
     if (limit) params.append('limit', String(limit));
     return apiRequest(`/messages/search?${params}`, {
       method: 'GET',
+    });
+  },
+
+  getPinnedMessages: async (chatId: string): Promise<{ pins: ChatPinnedMessage[] }> => {
+    return apiRequest(`/chats/${chatId}/pins`, {
+      method: 'GET',
+    });
+  },
+
+  pinMessage: async (chatId: string, messageId: string): Promise<{
+    pinned: boolean;
+    alreadyPinned: boolean;
+    chatId: string;
+    messageId: string;
+    pinId: string | null;
+    pinnedAt: string | null;
+  }> => {
+    return apiRequest(`/chats/${chatId}/pins/${messageId}`, {
+      method: 'POST',
+    });
+  },
+
+  unpinMessage: async (chatId: string, messageId: string): Promise<{
+    unpinned: boolean;
+    chatId: string;
+    messageId: string;
+    existed: boolean;
+  }> => {
+    return apiRequest(`/chats/${chatId}/pins/${messageId}`, {
+      method: 'DELETE',
     });
   },
 };

@@ -5,7 +5,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import type { User } from "@/types";
-import type { Attachment, Chat, Message } from "@/types/messages";
+import type { Attachment, Chat, Message, ChatPinnedMessage } from "@/types/messages";
 import type { Sticker, StickerPack } from "@/types/stickers";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/contexts/AuthContext";
@@ -97,6 +97,9 @@ const MessagesPage = () => {
   const [selectedMessages, setSelectedMessages] = useState<string[]>([]);
   const [pendingTargetUser, setPendingTargetUser] = useState<User | null>(null);
   const [chatInfoOpen, setChatInfoOpen] = useState(false);
+  const [pinnedMessages, setPinnedMessages] = useState<ChatPinnedMessage[]>([]);
+  const [activePinnedIndex, setActivePinnedIndex] = useState(0);
+  const [visibleRange, setVisibleRange] = useState<{ startIndex: number; endIndex: number } | null>(null);
   const { backgroundStyle } = useChatBackground();
 
   useEffect(() => {
@@ -106,10 +109,13 @@ const MessagesPage = () => {
   const [contextMenuState, setContextMenuState] = useState<{
     message: Message;
     position: { x: number; y: number };
+    bounds?: { left: number; top: number; right: number; bottom: number };
   } | null>(null);
   const typingStopTimerRef = useRef<number | null>(null);
   const typingDebounceRef = useRef<number | null>(null);
   const privateChatCreateInFlightRef = useRef<Set<string>>(new Set());
+  const manualPinSwitchLockUntilRef = useRef(0);
+  const isManualPinPreviewRef = useRef(false);
 
   const queryClient = useQueryClient();
 
@@ -212,6 +218,27 @@ const MessagesPage = () => {
   const markRead = useMarkRead(activeChatId);
 
   const messages = useMemo(() => messagesData?.messages || [], [messagesData?.messages]);
+  const visibleMessages = useMemo(
+    () => messages.filter((msg) => !msg.deletedForAll && !msg.deletedForMe),
+    [messages]
+  );
+  const visibleMessageIndexMap = useMemo(() => {
+    const map = new Map<string, number>();
+    visibleMessages.forEach((msg, index) => map.set(String(msg.id), index));
+    return map;
+  }, [visibleMessages]);
+  const sortedPinnedMessages = useMemo(() => {
+    return [...pinnedMessages].sort((a, b) => {
+      const idxA = visibleMessageIndexMap.get(String(a.messageId)) ?? -1;
+      const idxB = visibleMessageIndexMap.get(String(b.messageId)) ?? -1;
+      return idxB - idxA;
+    });
+  }, [pinnedMessages, visibleMessageIndexMap]);
+  const activePinnedMessage = useMemo(() => {
+    if (sortedPinnedMessages.length === 0) return null;
+    const safeIndex = Math.min(activePinnedIndex, sortedPinnedMessages.length - 1);
+    return sortedPinnedMessages[safeIndex] || null;
+  }, [sortedPinnedMessages, activePinnedIndex]);
   const channelRole = useMemo(
     () => selectedChat?.role || channelMeta?.role || publicChannel?.role || null,
     [selectedChat?.role, channelMeta?.role, publicChannel?.role]
@@ -225,6 +252,53 @@ const MessagesPage = () => {
     if (displayChat?.type === "channel") return false;
     return true;
   }, [selectedChat, displayChat]);
+
+  useEffect(() => {
+    if (!activeChatId) {
+      setPinnedMessages([]);
+      setActivePinnedIndex(0);
+      return;
+    }
+
+    let cancelled = false;
+    messagesAPI
+      .getPinnedMessages(activeChatId)
+      .then((res) => {
+        if (!cancelled) setPinnedMessages(res.pins || []);
+      })
+      .catch(() => {
+        if (!cancelled) setPinnedMessages([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeChatId, messages]);
+
+  useEffect(() => {
+    setActivePinnedIndex(0);
+  }, [activeChatId]);
+
+  useEffect(() => {
+    setActivePinnedIndex((prev) => {
+      if (sortedPinnedMessages.length === 0) return 0;
+      return Math.min(prev, sortedPinnedMessages.length - 1);
+    });
+  }, [sortedPinnedMessages.length]);
+
+  useEffect(() => {
+    if (!visibleRange || sortedPinnedMessages.length === 0) return;
+    if (isManualPinPreviewRef.current) return;
+    if (Date.now() < manualPinSwitchLockUntilRef.current) return;
+    const nextIndex = sortedPinnedMessages.findIndex((pin) => {
+      const idx = visibleMessageIndexMap.get(String(pin.messageId));
+      if (idx === undefined) return false;
+      return idx <= visibleRange.endIndex;
+    });
+    if (nextIndex >= 0 && nextIndex !== activePinnedIndex) {
+      setActivePinnedIndex(nextIndex);
+    }
+  }, [visibleRange, sortedPinnedMessages, visibleMessageIndexMap, activePinnedIndex]);
 
   useEffect(() => {
     const routeId = chatId && rest ? `${chatId}/${rest}` : chatId;
@@ -1019,6 +1093,35 @@ const MessagesPage = () => {
     setTimeout(() => setHighlightedMessageId(null), 1200);
   }, []);
 
+  const canManagePins = useMemo(() => {
+    if (displayChat?.type === "private") return true;
+    return displayChat?.role === "owner" || displayChat?.role === "admin";
+  }, [displayChat?.type, displayChat?.role]);
+
+  const handlePinMessage = useCallback(async (messageId: string) => {
+    if (!activeChatId) return;
+    try {
+      await messagesAPI.pinMessage(activeChatId, messageId);
+      const res = await messagesAPI.getPinnedMessages(activeChatId);
+      setPinnedMessages(res.pins || []);
+      toast.success(t("messages.pinMessageSuccess") || "Сообщение закреплено");
+    } catch {
+      toast.error(t("messages.pinMessageError") || "Не удалось закрепить сообщение");
+    }
+  }, [activeChatId, t]);
+
+  const handleUnpinMessage = useCallback(async (messageId: string) => {
+    if (!activeChatId) return;
+    try {
+      await messagesAPI.unpinMessage(activeChatId, messageId);
+      const res = await messagesAPI.getPinnedMessages(activeChatId);
+      setPinnedMessages(res.pins || []);
+      toast.success(t("messages.unpinMessageSuccess") || "Сообщение откреплено");
+    } catch {
+      toast.error(t("messages.unpinMessageError") || "Не удалось открепить сообщение");
+    }
+  }, [activeChatId, t]);
+
   return (
     <LayoutGroup>
       <div className="flex h-screen overflow-hidden max-sm:h-[calc(100vh-76px)]">
@@ -1121,7 +1224,7 @@ const MessagesPage = () => {
               className="flex-1 flex flex-col min-w-0 p-3 max-sm:p-0"
             >
               <div className="flex-1 flex flex-col min-h-0 relative">
-                  <div className="flex-1 flex flex-col min-h-0 rounded-3xl overflow-hidden border border-white/10 bg-transparent relative max-sm:rounded-none max-sm:border-0">
+                  <div className="flex-1 flex flex-col min-h-0 rounded-3xl overflow-hidden border border-white/10 bg-transparent relative max-sm:rounded-none max-sm:border-0" style={backgroundStyle}>
                     <ChatPanel
                     user={chatPanelUser}
                     chatType={displayChat?.type}
@@ -1161,7 +1264,7 @@ const MessagesPage = () => {
                       t={t}
                     />
 
-                  <div className="flex-1 min-h-0 bg-white/5 backdrop-blur-[24px] overflow-hidden flex flex-col" style={backgroundStyle}>
+                  <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
                     {blockedProject ? (
                       <div className="flex-1 flex items-center justify-center p-6">
                         <div className="max-w-md w-full rounded-3xl border border-white/10 bg-black/40 p-8 text-center">
@@ -1208,6 +1311,31 @@ const MessagesPage = () => {
                       </div>
                     ) : messages.length === 0 ? (
                       <div className="flex-1 flex items-center justify-center text-center px-6 relative">
+                        {activePinnedMessage && selectedMessages.length === 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              manualPinSwitchLockUntilRef.current = Date.now() + 900;
+                              isManualPinPreviewRef.current = true;
+                              handleOpenMessageInChat(activePinnedMessage.messageId);
+                              setActivePinnedIndex((prev) =>
+                                sortedPinnedMessages.length > 0 ? (prev + 1) % sortedPinnedMessages.length : 0
+                              );
+                            }}
+                            className="absolute top-2 left-1/2 -translate-x-1/2 z-10 w-[min(92%,860px)] grid grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-2 rounded-xl bg-white/12 border border-white/15 backdrop-blur-md hover:bg-white/16 transition-colors"
+                            title={activePinnedMessage.message.text || (t("messages.pinnedMessageFallback") || "Закрепленное сообщение")}
+                          >
+                            <span className="shrink-0 min-w-[108px] text-xs text-white/70 uppercase tracking-wide text-left">
+                              {t("messages.pinned") || "Закреплено"}
+                            </span>
+                            <span className="min-w-0 w-full truncate text-sm text-white/90 text-center">
+                              {activePinnedMessage.message.text || (t("messages.pinnedMessageFallback") || "Закрепленное сообщение")}
+                            </span>
+                            <span className="shrink-0 min-w-[108px] text-right text-xs text-white/65">
+                              {sortedPinnedMessages.length}
+                            </span>
+                          </button>
+                        )}
                         {selectedMessages.length > 0 && (
                           <div className="absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/10 border border-white/10 backdrop-blur-md">
                             <span className="text-xs text-white/70">{selectedMessages.length} {t("messages.selected")}</span>
@@ -1232,6 +1360,31 @@ const MessagesPage = () => {
                       </div>
                     ) : (
                       <div className="flex-1 flex flex-col min-h-0 relative">
+                        {activePinnedMessage && selectedMessages.length === 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              manualPinSwitchLockUntilRef.current = Date.now() + 900;
+                              isManualPinPreviewRef.current = true;
+                              handleOpenMessageInChat(activePinnedMessage.messageId);
+                              setActivePinnedIndex((prev) =>
+                                sortedPinnedMessages.length > 0 ? (prev + 1) % sortedPinnedMessages.length : 0
+                              );
+                            }}
+                            className="absolute top-2 left-1/2 -translate-x-1/2 z-10 w-[min(92%,860px)] grid grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-2 rounded-xl bg-white/12 border border-white/15 backdrop-blur-md hover:bg-white/16 transition-colors"
+                            title={activePinnedMessage.message.text || (t("messages.pinnedMessageFallback") || "Закрепленное сообщение")}
+                          >
+                            <span className="shrink-0 min-w-[108px] text-xs text-white/70 uppercase tracking-wide text-left">
+                              {t("messages.pinned") || "Закреплено"}
+                            </span>
+                            <span className="min-w-0 w-full truncate text-sm text-white/90 text-center">
+                              {activePinnedMessage.message.text || (t("messages.pinnedMessageFallback") || "Закрепленное сообщение")}
+                            </span>
+                            <span className="shrink-0 min-w-[108px] text-right text-xs text-white/65">
+                              {sortedPinnedMessages.length}
+                            </span>
+                          </button>
+                        )}
                         {selectedMessages.length > 0 && (
                           <div className="absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/10 border border-white/10 backdrop-blur-md z-10">
                             <span className="text-xs text-white/70">{selectedMessages.length} {t("messages.selected")}</span>
@@ -1263,8 +1416,8 @@ const MessagesPage = () => {
                         onToggleHeart={handleToggleHeart}
                         doubleClickAction={doubleClickAction}
                         reactionMap={reactionMap}
-                        onOpenContextMenu={(message, position) =>
-                          setContextMenuState({ message, position })
+                        onOpenContextMenu={(message, position, bounds) =>
+                          setContextMenuState({ message, position, bounds })
                         }
                         onReplyJump={handleReplyJump}
                         onDeleteRequest={(msgId, x, y) => setShowDeleteMenu({ msgId, x, y })}
@@ -1295,6 +1448,10 @@ const MessagesPage = () => {
                         onCommand={handleCommandClick}
                         selectedMessages={selectedMessages}
                         onSelectMessage={handleSelectMessage}
+                        onVisibleRangeChange={setVisibleRange}
+                        onUserScroll={() => {
+                          isManualPinPreviewRef.current = false;
+                        }}
                       />
                       </div>
                     )}
@@ -1485,10 +1642,11 @@ const MessagesPage = () => {
 
               <AnimatePresence>
                 {contextMenuState && (
-                  <MessageContextMenu
-                    message={contextMenuState.message}
-                    position={contextMenuState.position}
-                    onClose={() => setContextMenuState(null)}
+                    <MessageContextMenu
+                      message={contextMenuState.message}
+                      position={contextMenuState.position}
+                      bounds={contextMenuState.bounds}
+                      onClose={() => setContextMenuState(null)}
                     onReply={setReplyFromMessage}
                     onCopyText={handleCopyMessageText}
                     onDeleteForMe={(messageId) => handleDeleteMessage(messageId, "me")}
@@ -1501,6 +1659,9 @@ const MessagesPage = () => {
                     isSelected={selectedMessages.includes(contextMenuState.message.id)}
                     chatType={displayChat?.type || "private"}
                     chatRole={displayChat?.role}
+                    isPinned={pinnedMessages.some((pin) => String(pin.messageId) === String(contextMenuState.message.id))}
+                    onPin={canManagePins ? handlePinMessage : undefined}
+                    onUnpin={canManagePins ? handleUnpinMessage : undefined}
                   />
                 )}
               </AnimatePresence>
