@@ -91,6 +91,7 @@ const MessagesPage = () => {
   const [publicChannel, setPublicChannel] = useState<Chat | null>(null);
   const [joinStatus, setJoinStatus] = useState<string | null>(null);
   const [channelLoading, setChannelLoading] = useState(false);
+  const [forceClosedPanel, setForceClosedPanel] = useState(false);
   const [publicJoinModalOpen, setPublicJoinModalOpen] = useState(false);
   const [blockedProject, setBlockedProject] = useState<any>(null);
   const [joiningProject, setJoiningProject] = useState(false);
@@ -1062,7 +1063,9 @@ const MessagesPage = () => {
   const handleCloseChat = useCallback(() => {
     // Сбрасываем локальное состояние сразу, чтобы панель гарантированно закрывалась
     // даже если роут/эффекты обновятся с задержкой.
+    setForceClosedPanel(true);
     setSelectedChatId(null);
+    setPendingTargetUser(null);
     setPublicChannel(null);
     setBlockedProject(null);
     setInviteToken(null);
@@ -1083,6 +1086,15 @@ const MessagesPage = () => {
       navigate(getProfileRoute({ id: displayChat.id }));
     }
   }, [selectedChat, currentUser?.id, navigate, displayChat?.id]);
+
+  const hasOpenedChatPanel = Boolean(chatId || selectedChatId || targetUserId || inviteToken || blockedProject);
+  const shouldShowChatPanel = hasOpenedChatPanel && !forceClosedPanel;
+
+  useEffect(() => {
+    if (chatId || targetUserId || inviteToken || blockedProject) {
+      setForceClosedPanel(false);
+    }
+  }, [chatId, targetUserId, inviteToken, blockedProject]);
 
   const handleOpenMessageInChat = useCallback((messageId: string) => {
     if (!messageId) return;
@@ -1130,7 +1142,10 @@ const MessagesPage = () => {
           loading={isLoading}
           selectedChatId={selectedChatId}
           currentUserId={currentUser?.id}
-          onSelectChat={(chatIdValue) => navigate(resolveChatRoute(chatIdValue))}
+          onSelectChat={(chatIdValue) => {
+            setForceClosedPanel(false);
+            navigate(resolveChatRoute(chatIdValue));
+          }}
           onCloseChat={handleCloseChat}
           onCreateChat={() => setCreateChatOpen(true)}
           t={t}
@@ -1209,7 +1224,7 @@ const MessagesPage = () => {
         </Dialog>
 
         <AnimatePresence mode="wait" initial={false}>
-            {selectedChatId || displayChat || blockedProject ? (
+            {shouldShowChatPanel ? (
             <motion.div
               key="chat-panel"
               initial={{ opacity: 0, x: 28, scale: 0.985, filter: "blur(6px)" }}
@@ -1255,7 +1270,7 @@ const MessagesPage = () => {
                               .leaveChat(selectedChat.id, currentUser.id)
                               .then(() => {
                                 queryClient.invalidateQueries({ queryKey: messageQueryKeys.chatList() });
-                                navigate("/messages");
+                                handleCloseChat();
                               })
                               .catch(() => null);
                           }
@@ -1534,7 +1549,7 @@ const MessagesPage = () => {
                                     })
                                     .catch(() => null);
                                 }
-                                navigate("/messages");
+                                handleCloseChat();
                               })
                                 .catch(() => null);
                             }}
